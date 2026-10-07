@@ -69,7 +69,7 @@ let bad=0;const mem={},ls=(k,v)=>{try{return v===undefined?localStorage.getItem(
 const errs=()=>{try{return JSON.parse(ls(ST)||'{}')}catch(e){return{}}};
 const putErrs=x=>{ls(ST,JSON.stringify(x));$$('.ecn').forEach(e=>e.textContent=Object.keys(x).length)};
 const fmt=s=>{s=Math.max(0,s);let h=Math.floor(s/3600),m=Math.floor(s%3600/60);return(h?h+':':'')+String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
-const img=q=>q.text.replace(/(<img[^>]*src=")([^"]+)(")/i,(_,a,_s,b)=>a+'img/'+q.id+'.webp'+b).replace(/<img/i,'<img loading="lazy" decoding="async" alt="صورة السؤال"');
+const img=q=>q.text.replace(/(<img\b[^>]*\bsrc=")([^"]+)(")/i,(_,a,_s,b)=>a+'img/'+q.id+'.webp'+b).replace(/<img\b/i,'<img loading="lazy" decoding="async" alt="صورة السؤال"');
 const view=v=>{['setup','quiz','result','errors'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==v));document.body.classList.toggle('testing',v==='quiz');$('#timer').classList.toggle('hidden',v!=='quiz'||!total);hh();window.scrollTo(0,0)};
 const avail=()=>DATA.filter(q=>chosen.has(q.sectionId)).length;
 function est(){let k=Math.min(+$('#cn').value||0,avail()),p=+$('#per').value;$('#est').textContent=p?'الزمن الكلي: '+fmt(k*p):'بدون مؤقت.'}
