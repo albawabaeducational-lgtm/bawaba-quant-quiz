@@ -1,0 +1,52 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>لوحة التحكم | البوابة التعليمية</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f8;font-family:Cairo,Tahoma,Arial,sans-serif;color:#1d2b3a;padding:14px}
+.w{max-width:1000px;margin:auto}h1{margin:0 0 12px;color:#12345a;font-size:22px}h2{margin:0 0 10px;font-size:17px;color:#12345a}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #12345a14}
+.cs{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.st{background:#f3f8fc;border-radius:12px;padding:12px;text-align:center}.st b{display:block;font-size:24px;color:#1769aa}.st span{font-size:13px;color:#5b6b7b}
+button,select,input,textarea{font:inherit}button{border:0;border-radius:10px;padding:8px 14px;background:#12345a;color:#fff;cursor:pointer;font-weight:700}button.g{background:#e3ebf3;color:#12345a}button.r{background:#c0392b}button.o{background:#1e8a4c}
+input,textarea,select{padding:10px;border:2px solid #cfdde8;border-radius:10px;width:100%}textarea{min-height:90px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;border-bottom:1px solid #e6edf3;text-align:right;white-space:nowrap}th{color:#5b6b7b;font-weight:600}.sc{overflow-x:auto}
+.b{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700}.ok{background:#dff3e6;color:#1e8a4c}.no{background:#fbe1de;color:#c0392b}.mu{background:#e9eef3;color:#5b6b7b}
+code{direction:ltr;display:inline-block;background:#f3f8fc;padding:2px 8px;border-radius:8px;letter-spacing:2px;font-weight:700}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.sp{justify-content:space-between}.m{color:#5b6b7b;font-size:13px}
+</style></head><body><div class="w" id="app"></div>
+<script>
+var NM={'aksam kamy':'أقسام الكمي','aksam lafzi':'أقسام اللفظي','muhaky mohawsab':'المحاكي المحوسب','muhaky warky1':'الورقي – النموذج الأول','muhaky warky2':'الورقي – النموذج الثاني','tasis lafzi':'تأسيس اللفظي'};
+var D=null,pg='',app=document.getElementById('app');
+var nm=function(p){return NM[p]||p};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var fmtC=function(c){return c.slice(0,4)+'-'+c.slice(4)};
+async function api(p,b){var r=await fetch('/api/admin/'+p,b===undefined?{}:{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});var d=await r.json().catch(function(){return{}});if(r.status===401&&d.error==='auth'){D=null;login();throw 0}if(!r.ok)throw new Error(d.error||'خطأ');return d}
+function login(msg){app.innerHTML='<div class="card" style="max-width:360px;margin:12vh auto"><h1>🔒 لوحة التحكم</h1><input id="pw" type="password" placeholder="كلمة مرور المشرف"><div class="m" id="le" style="color:#c0392b;min-height:20px;margin:6px 0">'+esc(msg||'')+'</div><button id="lb" style="width:100%">دخول</button></div>';
+var go=async function(){try{await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:document.getElementById('pw').value})}).then(async function(r){var d=await r.json();if(!r.ok)throw new Error(d.error)});load()}catch(e){login(e.message)}};
+document.getElementById('lb').onclick=go;document.getElementById('pw').onkeydown=function(e){if(e.key==='Enter')go()}}
+async function load(){try{D=await api('data');if(!pg){var ps=pages();pg=ps[0]||''}draw()}catch(e){if(e)alert(e.message)}}
+function pages(){var s={};D.pages.forEach(function(r){s[r.page]=1});Object.keys(NM).forEach(function(k){s[k]=1});return Object.keys(s)}
+function ago(t){if(!t)return'—';var m=Math.round((Date.now()-new Date(t))/60000);return m<1?'الآن':m<60?'قبل '+m+' د':m<1440?'قبل '+Math.round(m/60)+' س':'قبل '+Math.round(m/1440)+' يوم'}
+function draw(){
+ var S=D.students,att=0,tot=0,sc=0,act=0;D.pages.forEach(function(r){att+=r.attempts});S.forEach(function(s){if(s.avg!=null){sc+=s.avg;tot++}if(s.last_seen&&Date.now()-new Date(s.last_seen)<7*864e5)act++});
+ var pop={};D.pages.forEach(function(r){pop[r.page]=(pop[r.page]||0)+r.opens});var top=Object.keys(pop).sort(function(a,b){return pop[b]-pop[a]})[0];
+ var h='<div class="row sp"><h1>🛠 لوحة التحكم</h1><button class="g" id="rf">تحديث</button></div>';
+ h+='<div class="card"><div class="cs"><div class="st"><b>'+S.length+'</b><span>طالب</span></div><div class="st"><b>'+act+'</b><span>نشط آخر ٧ أيام</span></div><div class="st"><b>'+att+'</b><span>محاولة محلولة</span></div><div class="st"><b>'+(tot?Math.round(sc/tot):'—')+'٪</b><span>متوسط الدرجات</span></div><div class="st"><b style="font-size:15px">'+esc(top?nm(top):'—')+'</b><span>الأكثر فتحًا</span></div></div></div>';
+ h+='<div class="card"><h2>⚙ الدخول</h2><div class="row sp"><div>اشتراط الدخول بالكود: <span class="b '+(D.require_login?'ok':'mu')+'">'+(D.require_login?'مفعّل — لا أحد يدخل بدون كود':'غير مفعّل — الموقع مفتوح للجميع')+'</span><div class="m">فعّله فقط بعد ما توزّع الأكواد على الطلاب.</div></div><button id="rq" class="'+(D.require_login?'r':'o')+'">'+(D.require_login?'إيقاف الاشتراط':'تفعيل الاشتراط')+'</button></div></div>';
+ h+='<div class="card"><h2>➕ إضافة طلاب</h2><textarea id="nn" placeholder="اكتب اسم كل طالب في سطر"></textarea><div class="row" style="margin-top:8px"><button id="ad">إضافة وتوليد الأكواد</button></div><div id="added"></div></div>';
+ h+='<div class="card"><h2>👥 الطلاب</h2><div class="sc"><table><tr><th>الاسم</th><th>الكود</th><th>الحالة</th><th>محاولات</th><th>المتوسط</th><th>الوقت</th><th>آخر دخول</th><th></th></tr>';
+ S.forEach(function(s){h+='<tr><td>'+esc(s.name)+'</td><td><code>'+fmtC(s.code)+'</code></td><td><span class="b '+(s.status==='active'?'ok':'no')+'">'+(s.status==='active'?'مفعّل':'محظور')+'</span></td><td>'+s.attempts+'</td><td>'+(s.avg!=null?s.avg+'٪':'—')+'</td><td>'+Math.round(s.secs/60)+' د</td><td>'+ago(s.last_seen)+'</td><td><button data-t="'+s.id+'" data-s="'+s.status+'" class="'+(s.status==='active'?'r':'o')+'">'+(s.status==='active'?'حظر':'تفعيل')+'</button> <button data-d="'+s.id+'" class="g">حذف</button></td></tr>'});
+ h+=(S.length?'':'<tr><td colspan="8" class="m">لا يوجد طلاب بعد. أضف أسماءهم من الأعلى.</td></tr>')+'</table></div><div class="row" style="margin-top:10px"><button class="g" id="cs">⬇ تصدير الطلاب Excel/CSV</button></div></div>';
+ h+='<div class="card"><h2>✅ مين حلّ ومين لسه</h2><select id="ps">'+pages().map(function(p){return'<option value="'+esc(p)+'"'+(p===pg?' selected':'')+'>'+esc(nm(p))+'</option>'}).join('')+'</select><div class="sc" style="margin-top:10px"><table><tr><th>الطالب</th><th>الحالة</th><th>مرات الفتح</th><th>محاولات</th><th>أفضل درجة</th><th>آخر نشاط</th></tr>';
+ var done=0;S.forEach(function(s){var r=D.pages.filter(function(x){return x.student_id===s.id&&x.page===pg})[0]||{opens:0,attempts:0};var ok=r.attempts>0;if(ok)done++;
+  h+='<tr><td>'+esc(s.name)+'</td><td><span class="b '+(ok?'ok':r.opens?'mu':'no')+'">'+(ok?'حلّ':r.opens?'فتح فقط':'لم يفتح')+'</span></td><td>'+r.opens+'</td><td>'+r.attempts+'</td><td>'+(r.best!=null?r.best+'٪':'—')+'</td><td>'+ago(r.last)+'</td></tr>'});
+ h+='</table></div><div class="m" style="margin-top:8px">حلّ '+done+' من '+S.length+'. الاختبارات الورقية تُحسب «حلّ» عند ظهور النتيجة النهائية.</div></div>';
+ app.innerHTML=h;
+ document.getElementById('rf').onclick=load;
+ document.getElementById('rq').onclick=async function(){if(!D.require_login&&!confirm('بعد التفعيل لن يدخل الموقع إلا من معه كود. متأكد؟'))return;await api('require',{on:!D.require_login});load()};
+ document.getElementById('ad').onclick=async function(){var v=document.getElementById('nn').value;if(!v.trim())return;var r=await api('add',{names:v});await load();var t=r.added.map(function(a){return a.name+'\t'+fmtC(a.code)}).join('\n');
+  document.getElementById('added').innerHTML='<p class="m">تمت الإضافة. انسخ القائمة وابعت لكل طالب كوده:</p><textarea readonly>'+esc(t)+'</textarea>'};
+ document.getElementById('ps').onchange=function(e){pg=e.target.value;draw()};
+ document.getElementById('cs').onclick=function(){var rows=[['الاسم','الكود','الحالة','محاولات','المتوسط','دقائق','آخر دخول']].concat(S.map(function(s){return[s.name,fmtC(s.code),s.status==='active'?'مفعّل':'محظور',s.attempts,s.avg==null?'':s.avg,Math.round(s.secs/60),s.last_seen||'']}));
+  var c='\ufeff'+rows.map(function(r){return r.map(function(x){return'"'+String(x).replace(/"/g,'""')+'"'}).join(',')}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv'}));a.download='students.csv';a.click()};
+ app.querySelectorAll('[data-t]').forEach(function(b){b.onclick=async function(){await api('status',{id:b.dataset.t,status:b.dataset.s==='active'?'blocked':'active'});load()}});
+ app.querySelectorAll('[data-d]').forEach(function(b){b.onclick=async function(){if(confirm('حذف الطالب ونتائجه نهائيًا؟')){await api('delete',{id:b.dataset.d});load()}}});
+}
+load();
+</script></body></html>
