@@ -1,13 +1,18 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>دخول الطالب | البوابة التعليمية</title>
 <style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#eef7fb;font-family:Cairo,Tahoma,Arial,sans-serif;color:#1d2b3a}
-.box{width:min(92vw,380px);background:#fff;border-radius:18px;padding:26px;box-shadow:0 10px 30px #12345a22;text-align:center}h1{margin:0 0 6px;color:#12345a;font-size:22px}p{margin:0 0 16px;color:#5b6b7b;font-size:14px}
+.box{width:min(92vw,400px);background:#fff;border-radius:18px;padding:26px;box-shadow:0 10px 30px #12345a22;text-align:center}h1{margin:0 0 6px;color:#12345a;font-size:22px}p{margin:0 0 16px;color:#5b6b7b;font-size:14px}
 input{width:100%;padding:13px;font-size:20px;text-align:center;letter-spacing:3px;border:2px solid #cfdde8;border-radius:12px;direction:ltr;text-transform:uppercase}input:focus{outline:none;border-color:#1769aa}
-button{width:100%;margin-top:12px;padding:13px;font-size:17px;font-weight:700;border:0;border-radius:12px;background:#12345a;color:#fff;cursor:pointer}.e{color:#c0392b;min-height:22px;margin-top:10px;font-size:14px}</style></head>
-<body><form class="box" id="f"><h1>منصة البوابة التعليمية</h1><p>اكتب الكود الخاص بك للدخول</p><input id="c" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="XXXXXXXX" autofocus><button>دخول</button><div class="e" id="e"></div></form>
+button{width:100%;margin-top:12px;padding:13px;font-size:17px;font-weight:700;border:0;border-radius:12px;background:#12345a;color:#fff;cursor:pointer}.e{color:#c0392b;min-height:22px;margin-top:10px;font-size:14px}
+.n{background:#fff6dd;color:#8a6200;border-radius:12px;padding:10px;font-size:14px;margin-bottom:14px;display:none}
+.wa{display:none;margin-top:16px;padding:13px;border-radius:12px;background:#25d366;color:#fff;font-weight:700;text-decoration:none;font-size:16px}.wa small{display:block;font-weight:400;font-size:12px;opacity:.95;margin-top:2px}</style></head>
+<body><form class="box" id="f"><h1>منصة البوابة التعليمية</h1><div class="n" id="n"></div><p>اكتب الكود الخاص بك للدخول</p><input id="c" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="XXXXXXXX" autofocus><button>دخول</button><div class="e" id="e"></div>
+<a class="wa" id="wa" target="_blank" rel="noopener">💬 ليس لديك كود؟ تواصل معنا عبر واتساب<small id="wn"></small></a></form>
 <script>
-var q=new URLSearchParams(location.search),e=document.getElementById('e');
-if(q.get('blocked'))e.textContent='تم إيقاف حسابك. تواصل مع المشرف.';
+var q=new URLSearchParams(location.search),e=document.getElementById('e'),n=document.getElementById('n');
+var W={blocked:'تم إيقاف كودك. تواصل مع المنصة.',expired:'انتهت صلاحية كودك. تواصل مع المنصة للتجديد.',trial_ended:'انتهت فترة التجربة المجانية. سجّل دخولك بكودك لمتابعة التدريب.',need:'الدخول لهذه المنصة بالكود الخاص بك.'};
+if(W[q.get('why')]){n.textContent=W[q.get('why')];n.style.display='block'}
+fetch('/api/public').then(function(r){return r.json()}).then(function(d){if(d.contact){var a=document.getElementById('wa');a.href='https://wa.me/'+d.contact+'?text='+encodeURIComponent('السلام عليكم، أريد الاشتراك في منصة البوابة التعليمية');document.getElementById('wn').textContent='0'+d.contact.replace(/^966/,'');a.style.display='block'}}).catch(function(){});
 document.getElementById('f').onsubmit=async function(ev){ev.preventDefault();e.textContent='';
 try{var r=await fetch('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:document.getElementById('c').value})}),d=await r.json();
-if(r.ok){var n=q.get('next')||'/';location.href=(n.charAt(0)==='/'&&n.charAt(1)!=='/')?n:'/'}else e.textContent=d.error||'حدث خطأ'}catch(x){e.textContent='تعذّر الاتصال، حاول مرة أخرى'}};
+if(r.ok){var x=q.get('next')||'/';location.href=(x.charAt(0)==='/'&&x.charAt(1)!=='/')?x:'/'}else e.textContent=d.error||'حدث خطأ'}catch(x){e.textContent='تعذّر الاتصال، حاول مرة أخرى'}};
 </script></body></html>

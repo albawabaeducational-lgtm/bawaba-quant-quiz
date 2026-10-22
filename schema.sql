@@ -1,6 +1,11 @@
-CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, status TEXT NOT NULL DEFAULT 'active', created_at TEXT, last_seen TEXT);
+CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, status TEXT NOT NULL DEFAULT 'active', created_at TEXT, last_seen TEXT, kind TEXT NOT NULL DEFAULT 'single', max_devices INTEGER NOT NULL DEFAULT 2, expires_at TEXT);
 CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, page TEXT NOT NULL, kind TEXT NOT NULL, sub TEXT, score INTEGER, correct INTEGER, total INTEGER, created_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS ev_student ON events(student_id, page);
 CREATE TABLE IF NOT EXISTS usage (student_id INTEGER NOT NULL, page TEXT NOT NULL, day TEXT NOT NULL, seconds INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (student_id, page, day));
+CREATE TABLE IF NOT EXISTS devices (student_id INTEGER NOT NULL, device TEXT NOT NULL, first_seen TEXT, last_seen TEXT, PRIMARY KEY (student_id, device));
+CREATE TABLE IF NOT EXISTS login_fails (ip TEXT NOT NULL, at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS lf_ip ON login_fails(ip, at);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 INSERT OR IGNORE INTO settings (key, value) VALUES ('require_login', '0');
+INSERT OR IGNORE INTO settings (key, value) VALUES ('trial_minutes', '0');
+INSERT OR IGNORE INTO settings (key, value) VALUES ('contact', '966556992385');
