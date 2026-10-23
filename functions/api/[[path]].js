@@ -280,7 +280,26 @@ export async function onRequest({ request, env, params }) {
     const groupMembers = can(A, 'manage_groups') ? (await DB.prepare('SELECT gm.group_id,gm.student_id FROM group_members gm').all()).results : [];
     const guestStats = can(A, 'view_guests') ? { visitors: (await DB.prepare('SELECT COUNT(*) n FROM trials').first()).n, leads: (await DB.prepare('SELECT COUNT(*) n FROM guest_leads').first().catch(()=>({n:0}))).n } : { visitors: 0, leads: 0 };
     const guestLeads = can(A, 'view_guests') ? (await DB.prepare('SELECT id,name,phone,source,interest,status,created_at,last_contacted_at FROM guest_leads ORDER BY id DESC LIMIT 100').all().catch(()=>({results:[]}))).results : [];
-    return J({ actor: A, staff, groups, groupMembers, guestStats, guestLeads, students, pages, feed, bans, flagged, plans: plansOf(await setting('plans')), settings: { require_login: await setting('require_login') === '1', trial_minutes: +(await setting('trial_minutes')) || 0, contact: await setting('contact'), trial_guard: await setting('trial_guard') !== '0' } });
+    const activeSince = new Date(now - 15 * 60000).toISOString();
+    const dashboard = can(A, 'view_reports') ? {
+      window_minutes: 15,
+      active: {
+        guests: (await DB.prepare('SELECT COUNT(*) n FROM trials WHERE last_at>?').bind(now - 15 * 60000).first()).n,
+        teachers: (await DB.prepare("SELECT COUNT(*) n FROM staff_users WHERE role='teacher' AND status='active' AND last_seen>?").bind(activeSince).first()).n,
+        staff: (await DB.prepare("SELECT COUNT(*) n FROM staff_users WHERE status='active' AND last_seen>?").bind(activeSince).first()).n,
+        students: (await DB.prepare("SELECT COUNT(*) n FROM students WHERE status='active' AND last_seen>? AND (expires_at IS NULL OR expires_at>?)").bind(activeSince, iso).first()).n
+      },
+      totals: {
+        students: (await DB.prepare("SELECT COUNT(*) n FROM students WHERE status='active' AND (expires_at IS NULL OR expires_at>?)").bind(iso).first()).n,
+        teachers: (await DB.prepare("SELECT COUNT(*) n FROM staff_users WHERE role='teacher' AND status='active'").first()).n,
+        guests: (await DB.prepare('SELECT COUNT(*) n FROM trials').first()).n
+      },
+      topPages: (await DB.prepare("SELECT page,SUM(kind='open') opens,SUM(kind='attempt') attempts,COUNT(DISTINCT student_id) students,MAX(created_at) last FROM events GROUP BY page ORDER BY opens DESC LIMIT 12").all()).results,
+      scoreByPage: (await DB.prepare("SELECT page,COUNT(*) attempts,COUNT(DISTINCT student_id) students,ROUND(AVG(score)) average,MAX(score) best,COALESCE(SUM(correct),0) correct,COALESCE(SUM(total),0) total FROM events WHERE kind='attempt' GROUP BY page ORDER BY attempts DESC LIMIT 12").all()).results,
+      activityByDay: (await DB.prepare("SELECT substr(created_at,1,10) day,COUNT(*) events,COUNT(DISTINCT student_id) students FROM events WHERE created_at>? GROUP BY substr(created_at,1,10) ORDER BY day DESC LIMIT 14").bind(new Date(now - 14 * 86400000).toISOString()).all()).results,
+      timeByStudent: (await DB.prepare("SELECT s.id,s.name,s.last_seen,COALESCE(SUM(u.seconds),0) seconds,COUNT(DISTINCT u.page) pages FROM students s LEFT JOIN usage u ON u.student_id=s.id GROUP BY s.id ORDER BY seconds DESC LIMIT 20").all()).results
+    } : { window_minutes: 15, active: { guests: 0, teachers: 0, staff: 0, students: 0 }, totals: { students: 0, teachers: 0, guests: 0 }, topPages: [], scoreByPage: [], activityByDay: [], timeByStudent: [] };
+    return J({ actor: A, staff, groups, groupMembers, guestStats, guestLeads, dashboard, students, pages, feed, bans, flagged, plans: plansOf(await setting('plans')), settings: { require_login: await setting('require_login') === '1', trial_minutes: +(await setting('trial_minutes')) || 0, contact: await setting('contact'), trial_guard: await setting('trial_guard') !== '0' } });
   }
   if (p === 'admin/preview') {
     const h = new Headers({ location: '/' });
