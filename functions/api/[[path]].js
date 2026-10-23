@@ -82,7 +82,19 @@ export async function onRequest({ request, env, params }) {
     const feed = (await DB.prepare(`SELECT s.name,e.page,e.kind,e.sub,e.score,e.created_at FROM events e JOIN students s ON s.id=e.student_id ORDER BY e.id DESC LIMIT 15`).all()).results;
     return J({ students, pages, feed, settings: { require_login: await setting('require_login') === '1', trial_minutes: +(await setting('trial_minutes')) || 0, contact: await setting('contact') } });
   }
+  if (p === 'admin/preview') {
+    const h = new Headers({ location: '/' });
+    for (const n of ['bw_code', 'bw_trial', 'bw_dev']) h.append('set-cookie', `${n}=; Path=/; Max-Age=0`);
+    return new Response(null, { status: 302, headers: h });
+  }
   const b = await body();
+  if (p === 'admin/mode') {
+    const mode = b.mode, tm = +b.trial_minutes;
+    if (!['open', 'code', 'trial'].includes(mode) || (mode === 'trial' && !TRIALS.includes(tm))) return J({ error: 'قيمة غير مسموحة' }, 400);
+    const put = (k, v) => DB.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(k, v);
+    await DB.batch([put('require_login', mode === 'open' ? '0' : '1'), put('trial_minutes', mode === 'trial' ? String(tm) : '0')]);
+    return J({ ok: 1 });
+  }
   if (p === 'admin/add') {
     const kind = b.kind === 'group' ? 'group' : 'single';
     let md = parseInt(b.max_devices); if (isNaN(md) || md < 0) md = kind === 'group' ? 30 : 2;

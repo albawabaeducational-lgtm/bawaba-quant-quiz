@@ -15,6 +15,8 @@ export async function onRequest({ request, env, next }) {
   const valid = !!st && st.status === 'active' && (!st.expires_at || st.expires_at > iso);
   const addScript = (res, html) => new HTMLRewriter().on('body', { element(e) { e.append(html, { html: true }); } }).transform(res);
   const isHtml = r => (r.headers.get('content-type') || '').includes('text/html');
+  const contact = String(S.contact || '').replace(/\D/g, '');
+  const ui = o => `<script>window.__bw=${JSON.stringify({ contact, ...o })}</script><script src="/bw-ui.js"></script>`;
 
   if (S.require_login === '1' && !valid) {
     const tm = +S.trial_minutes || 0, ts = +cookie(request, 'bw_trial') || 0;
@@ -23,7 +25,7 @@ export async function onRequest({ request, env, next }) {
       if (!isHtml(res)) return res;
       const start = ts || now;
       if (!ts) { res = new Response(res.body, res); res.headers.append('set-cookie', `bw_trial=${start}; Path=/; Max-Age=31536000; Secure; SameSite=Lax`); }
-      return addScript(res, `<script>window.__bwTrialEnd=${start + tm * 60000}</script><script src="/bw-trial.js"></script>`);
+      return addScript(res, ui({ trialStart: start, trialEnd: start + tm * 60000 }));
     }
     const to = new URL('/login', url);
     to.searchParams.set('next', p);
@@ -31,6 +33,6 @@ export async function onRequest({ request, env, next }) {
     return Response.redirect(to.toString(), 302);
   }
   const res = await next();
-  if (!valid || !isHtml(res)) return res;
-  return addScript(res, '<script src="/bw-tracker.js"></script>');
+  if (!isHtml(res)) return res;
+  return addScript(res, valid ? ui({}) + '<script src="/bw-tracker.js"></script>' : ui({}));
 }

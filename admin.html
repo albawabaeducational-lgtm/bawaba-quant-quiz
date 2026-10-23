@@ -35,8 +35,12 @@ function draw(){
  var pop={};D.pages.forEach(function(r){pop[r.page]=(pop[r.page]||0)+r.opens});var top=Object.keys(pop).sort(function(a,b){return pop[b]-pop[a]})[0];
  var h='<div class="row sp"><h1>🛠 لوحة التحكم</h1><button class="g" id="rf">تحديث</button></div>';
  h+='<div class="card"><div class="cs"><div class="st"><b>'+S.length+'</b><span>كود / طالب</span></div><div class="st"><b>'+act+'</b><span>نشط آخر ٧ أيام</span></div><div class="st"><b>'+att+'</b><span>محاولة محلولة</span></div><div class="st"><b>'+(tot?Math.round(sc/tot):'—')+'٪</b><span>متوسط الدرجات</span></div><div class="st"><b style="font-size:15px">'+esc(top?nm(top):'—')+'</b><span>الأكثر فتحًا</span></div></div></div>';
- h+='<div class="card"><h2>⚙ الدخول والتجربة المجانية</h2><div class="row sp"><div>اشتراط الدخول بالكود: <span class="b '+(ST.require_login?'ok':'mu')+'">'+(ST.require_login?'مفعّل':'غير مفعّل — الموقع مفتوح للجميع')+'</span><div class="m">فعّله بعد ما توزّع الأكواد. التجربة المجانية تعمل فقط والاشتراط مفعّل.</div></div><button id="rq" class="'+(ST.require_login?'r':'o')+'">'+(ST.require_login?'إيقاف الاشتراط':'تفعيل الاشتراط')+'</button></div>'
-  +'<div class="g3"><div><label>مدة التجربة المجانية للزائر الجديد</label><select id="tr">'+opts(TR,ST.trial_minutes)+'</select></div><div><label>رقم واتساب المنصة (يظهر في صفحة الدخول)</label><div class="row" style="flex-wrap:nowrap"><input id="ct" dir="ltr" value="'+esc(ST.contact)+'" placeholder="9665XXXXXXXX"><button id="cts" class="g">حفظ</button></div></div></div></div>';
+ var mode=!ST.require_login?'open':ST.trial_minutes>0?'trial':'code';
+ var MX={open:'الموقع <b>مفتوح للجميع</b>: أي شخص يدخل ويحل من غير كود. مفيش تجربة ولا حظر.',code:'<b>لا أحد يدخل بدون كود.</b> الزائر الجديد يشوف صفحة كتابة الكود وزر واتساب للتواصل.',trial:'الزائر الجديد <b>يدخل مجانًا</b> وتظهر له رسالة «تجربتك تنتهي بعد…» في الصفحة الرئيسية، وبعد انتهاء المدة <b>يحتاج كودًا</b>.'};
+ h+='<div class="card"><h2>⚙ نمط الدخول</h2><div class="g3" style="margin-top:0"><div><label>اختر النمط</label><select id="md0"><option value="open"'+(mode==='open'?' selected':'')+'>١) مفتوح للجميع (بدون كود)</option><option value="code"'+(mode==='code'?' selected':'')+'>٢) بالكود فقط</option><option value="trial"'+(mode==='trial'?' selected':'')+'>٣) تجربة مجانية ثم الكود</option></select></div>'
+  +(mode==='trial'?'<div><label>مدة التجربة المجانية</label><select id="tr">'+opts(TR.slice(1),ST.trial_minutes)+'</select></div>':'')
+  +'<div><label>رقم واتساب المنصة (يظهر للزوار)</label><div class="row" style="flex-wrap:nowrap"><input id="ct" dir="ltr" value="'+esc(ST.contact)+'" placeholder="9665XXXXXXXX"><button id="cts" class="g">حفظ</button></div></div></div>'
+  +'<p class="m" style="margin:12px 0 0"><b>النمط الحالي:</b> '+MX[mode]+'</p><div class="row" style="margin-top:10px"><button class="g" id="pv">👁 جرّب الموقع كزائر جديد</button><span class="m">يفتح الموقع في تبويب جديد وكأنك زائر لأول مرة (بيمسح الكود المحفوظ في متصفحك).</span></div></div>';
  h+='<div class="card"><h2>➕ إضافة أكواد</h2><textarea id="nn" placeholder="اكتب اسم كل طالب في سطر (أو اسم المجموعة للكود الجماعي)"></textarea>'
   +'<div class="g3"><div><label>نوع الكود</label><select id="kd"><option value="single">فردي — لطالب واحد</option><option value="group">جماعي — لعدة أشخاص</option></select></div>'
   +'<div><label>أقصى عدد أجهزة (٠ = بلا حد)</label><input id="md" type="number" min="0" placeholder="فردي ٢ — جماعي ٣٠"></div>'
@@ -57,8 +61,9 @@ function draw(){
  if(fq){var n=document.getElementById('q');n.focus();n.setSelectionRange(pos,pos)}
  var $=function(i){return document.getElementById(i)};
  $('rf').onclick=load;
- $('rq').onclick=async function(){if(!ST.require_login&&!confirm('بعد التفعيل لن يدخل الموقع إلا من معه كود (أو في فترة التجربة). متأكد؟'))return;await api('setting',{key:'require_login',value:!ST.require_login});load()};
- $('tr').onchange=async function(e){await api('setting',{key:'trial_minutes',value:+e.target.value});load()};
+ $('md0').onchange=async function(e){var v=e.target.value;if(v==='open'&&!confirm('الموقع هيبقى مفتوح للجميع بدون كود. متأكد؟')){draw();return}await api('mode',{mode:v,trial_minutes:v==='trial'?(ST.trial_minutes||720):0});load()};
+ if($('tr'))$('tr').onchange=async function(e){await api('mode',{mode:'trial',trial_minutes:+e.target.value});load()};
+ $('pv').onclick=function(){window.open('/api/admin/preview','_blank')};
  $('cts').onclick=async function(){await api('setting',{key:'contact',value:$('ct').value});load()};
  $('ad').onclick=async function(){var v=$('nn').value;if(!v.trim())return;var r=await api('add',{names:v,kind:$('kd').value,max_devices:$('md').value,days:+$('vd').value});await load();var t=r.added.map(function(a){return a.name+'\t'+fmtC(a.code)}).join('\n');
   $('added').innerHTML='<p class="m">تمت الإضافة. انسخ القائمة وابعت لكل شخص كوده (أو استخدم «رسالة واتساب» من قائمة الإجراءات):</p><textarea readonly>'+esc(t)+'</textarea>'};
