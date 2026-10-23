@@ -15,7 +15,7 @@ code{direction:ltr;display:inline-block;background:#f3f8fc;padding:2px 8px;borde
 var NM={'aksam kamy':'أقسام الكمي','aksam lafzi':'أقسام اللفظي','muhaky mohawsab':'المحاكي المحوسب','muhaky warky1':'الورقي – النموذج الأول','muhaky warky2':'الورقي – النموذج الثاني','tasis lafzi':'تأسيس اللفظي'};
 var TR=[[0,'بدون تجربة (الدخول بالكود فقط)'],[120,'ساعتان'],[720,'١٢ ساعة'],[1440,'يوم'],[2880,'يومان'],[10080,'أسبوع'],[14400,'١٠ أيام'],[43200,'شهر']];
 var VD=[[0,'دائم (بدون انتهاء)'],[7,'٧ أيام'],[30,'٣٠ يومًا'],[90,'٩٠ يومًا'],[180,'٦ شهور'],[365,'سنة']];
-var D=null,pg='',q='',app=document.getElementById('app');
+var D=null,PL=[],pg='',q='',app=document.getElementById('app');
 var nm=function(p){return NM[p]||p};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var fmtC=function(c){return c.slice(0,4)+'-'+c.slice(4)};
@@ -24,7 +24,7 @@ async function api(p,b){var r=await fetch('/api/admin/'+p,b===undefined?{}:{meth
 function login(msg){app.innerHTML='<div class="card" style="max-width:360px;margin:12vh auto"><h1>🔒 لوحة التحكم</h1><input id="pw" type="password" placeholder="كلمة مرور المشرف"><div class="m" id="le" style="color:#c0392b;min-height:20px;margin:6px 0">'+esc(msg||'')+'</div><button id="lb" style="width:100%">دخول</button></div>';
 var go=async function(){try{var r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:document.getElementById('pw').value})});var d=await r.json();if(!r.ok)throw new Error(d.error);load()}catch(e){login(e.message)}};
 document.getElementById('lb').onclick=go;document.getElementById('pw').onkeydown=function(e){if(e.key==='Enter')go()}}
-async function load(){try{D=await api('data');if(!pg){var ps=pages();pg=ps[0]||''}draw()}catch(e){if(e)alert(e.message)}}
+async function load(){try{D=await api('data');PL=D.plans.map(function(x){return{name:x.name,days:x.days,price:x.price}});if(!pg){var ps=pages();pg=ps[0]||''}draw()}catch(e){if(e)alert(e.message)}}
 function pages(){var s={};D.pages.forEach(function(r){s[r.page]=1});Object.keys(NM).forEach(function(k){s[k]=1});return Object.keys(s)}
 function ago(t){if(!t)return'—';var m=Math.round((Date.now()-new Date(t))/60000);return m<1?'الآن':m<60?'قبل '+m+' د':m<1440?'قبل '+Math.round(m/60)+' س':'قبل '+Math.round(m/1440)+' يوم'}
 function dt(t){return t?new Date(t).toLocaleDateString('ar-EG'):'∞'}
@@ -41,6 +41,11 @@ function draw(){
   +(mode==='trial'?'<div><label>مدة التجربة المجانية</label><select id="tr">'+opts(TR.slice(1),ST.trial_minutes)+'</select></div>':'')
   +'<div><label>رقم واتساب المنصة (يظهر للزوار)</label><div class="row" style="flex-wrap:nowrap"><input id="ct" dir="ltr" value="'+esc(ST.contact)+'" placeholder="9665XXXXXXXX"><button id="cts" class="g">حفظ</button></div></div></div>'
   +'<p class="m" style="margin:12px 0 0"><b>النمط الحالي:</b> '+MX[mode]+'</p><div class="row" style="margin-top:10px"><button class="g" id="pv">👁 جرّب الموقع كزائر جديد</button><span class="m">يفتح الموقع في تبويب جديد وكأنك زائر لأول مرة (بيمسح الكود المحفوظ في متصفحك).</span></div></div>';
+ h+='<div class="card"><h2>💰 باقات الاشتراك (تظهر في صفحة الدخول)</h2><div id="pls">'+PL.map(function(x,i){return'<div class="row" style="margin-bottom:8px;flex-wrap:nowrap"><input data-pn="'+i+'" value="'+esc(x.name)+'" placeholder="اسم الباقة" style="flex:2"><input data-pd="'+i+'" type="number" min="1" value="'+x.days+'" placeholder="أيام" style="flex:1"><input data-pp="'+i+'" type="number" min="0" value="'+x.price+'" placeholder="السعر (ريال)" style="flex:1"><button class="g" data-px="'+i+'">✕</button></div>'}).join('')+'</div><div class="row"><button class="g" id="pla">+ إضافة باقة</button><button id="pls2">حفظ الباقات</button></div><p class="m" style="margin:8px 0 0">الأسعار بالريال. الباقة تظهر للزائر مع زر واتساب جاهز بالرسالة.</p></div>';
+ h+='<div class="card"><h2>🛡 حماية التجربة المجانية</h2><div class="row sp"><div>الحماية من تجديد التجربة بمسح المتصفح: <span class="b '+(ST.trial_guard?'ok':'mu')+'">'+(ST.trial_guard?'مفعّلة':'موقوفة')+'</span><div class="m">تحذير أول، ثم تحذير ثانٍ مع منع التجربة (بكود فقط)، ثم حظر الشبكة من التجربة ٣٠ يومًا. صاحب الكود الصحيح لا يتأثر أبدًا.</div></div><button id="tg" class="'+(ST.trial_guard?'r':'o')+'">'+(ST.trial_guard?'إيقاف الحماية':'تفعيل الحماية')+'</button></div>'
+  +'<p class="m" style="margin:10px 0 6px">أجهزة تم تنبيهها: <b>'+D.flagged+'</b> — شبكات محظورة من التجربة: <b>'+D.bans.length+'</b></p>'
+  +D.bans.map(function(x){return'<div class="row sp" style="padding:6px 0;border-bottom:1px solid #eef3f8"><span><code>'+esc(x.ip)+'</code> <span class="m">حتى '+dt(x.until)+'</span></span><button class="g" data-ub="'+esc(x.ip)+'">رفع الحظر</button></div>'}).join('')
+  +'<div class="row" style="margin-top:10px"><button class="g" id="gr">تصفير كل التنبيهات والحظر</button><span class="m">لو ظلمت أحدًا (شبكة مدرسة مثلًا)، ارفع الحظر أو صفّر الكل.</span></div></div>';
  h+='<div class="card"><h2>➕ إضافة أكواد</h2><textarea id="nn" placeholder="اكتب اسم كل طالب في سطر (أو اسم المجموعة للكود الجماعي)"></textarea>'
   +'<div class="g3"><div><label>نوع الكود</label><select id="kd"><option value="single">فردي — لطالب واحد</option><option value="group">جماعي — لعدة أشخاص</option></select></div>'
   +'<div><label>أقصى عدد أجهزة (٠ = بلا حد)</label><input id="md" type="number" min="0" placeholder="فردي ٢ — جماعي ٣٠"></div>'
@@ -48,9 +53,9 @@ function draw(){
   +'<div class="row" style="margin-top:10px"><button id="ad">إضافة وتوليد الأكواد</button></div><div id="added"></div></div>';
  var f=q.trim().toLowerCase(),L=S.filter(function(s){return!f||s.name.toLowerCase().indexOf(f)>=0||s.code.toLowerCase().indexOf(f)>=0});
  h+='<div class="card"><div class="row sp"><h2 style="margin:0">👥 الأكواد والطلاب ('+L.length+')</h2><input id="q" style="max-width:240px" placeholder="🔎 بحث بالاسم أو الكود" value="'+esc(q)+'"></div><div class="sc" style="margin-top:8px"><table><tr><th>الاسم</th><th>النوع</th><th>الكود</th><th>الحالة</th><th>الأجهزة</th><th>الصلاحية</th><th>محاولات</th><th>المتوسط</th><th>الوقت</th><th>آخر دخول</th><th></th></tr>';
- L.forEach(function(s){var ex=isExp(s),stt=s.status!=='active'?['no','محظور']:ex?['wn','منتهي']:['ok','مفعّل'];
-  h+='<tr><td>'+esc(s.name)+'</td><td><span class="b mu">'+(s.kind==='group'?'جماعي':'فردي')+'</span></td><td><code>'+fmtC(s.code)+'</code></td><td><span class="b '+stt[0]+'">'+stt[1]+'</span></td><td>'+s.devices+' / '+(s.max_devices||'∞')+'</td><td>'+dt(s.expires_at)+'</td><td>'+s.attempts+'</td><td>'+(s.avg!=null?s.avg+'٪':'—')+'</td><td>'+Math.round(s.secs/60)+' د</td><td>'+ago(s.last_seen)+'</td>'
-  +'<td><select data-s="'+s.id+'" style="width:130px;padding:6px"><option value="">إجراءات…</option><option value="tg">'+(s.status==='active'?'حظر':'تفعيل')+'</option><option value="e30">تمديد ٣٠ يومًا</option><option value="e365">تمديد سنة</option><option value="ne">جعل الصلاحية دائمة</option><option value="md">تغيير حد الأجهزة</option><option value="rd">تصفير الأجهزة</option><option value="wa">رسالة واتساب</option><option value="del">حذف</option></select></td></tr>'});
+ L.forEach(function(s){var ex=isExp(s),ps=s.pause_until&&s.pause_until>Date.now(),stt=s.status!=='active'?['no','محظور']:ps?['wn','استراحة']:ex?['wn','منتهي']:['ok','مفعّل'];var bud=s.duration_minutes?'استراحة مستخدمة '+Math.round(s.pause_used/60)+' من '+Math.floor(s.duration_minutes*0.1/60)+' ساعة':'';
+  h+='<tr><td>'+esc(s.name)+'</td><td><span class="b mu">'+(s.kind==='group'?'جماعي':'فردي')+'</span></td><td><code>'+fmtC(s.code)+'</code></td><td><span class="b '+stt[0]+'">'+stt[1]+'</span></td><td>'+s.devices+' / '+(s.max_devices||'∞')+'</td><td title="'+bud+'">'+dt(s.expires_at)+'</td><td>'+s.attempts+'</td><td>'+(s.avg!=null?s.avg+'٪':'—')+'</td><td>'+Math.round(s.secs/60)+' د</td><td>'+ago(s.last_seen)+'</td>'
+  +'<td><select data-s="'+s.id+'" style="width:130px;padding:6px"><option value="">إجراءات…</option><option value="tg">'+(s.status==='active'?'حظر':'تفعيل')+'</option><option value="e30">تمديد ٣٠ يومًا</option><option value="e365">تمديد سنة</option><option value="ne">جعل الصلاحية دائمة</option><option value="md">تغيير حد الأجهزة</option><option value="rd">تصفير الأجهزة</option>'+(ps?'<option value="ep">إنهاء الاستراحة</option>':'')+'<option value="wa">رسالة واتساب</option><option value="del">حذف</option></select></td></tr>'});
  h+=(L.length?'':'<tr><td colspan="11" class="m">لا يوجد نتائج.</td></tr>')+'</table></div><div class="row" style="margin-top:10px"><button class="g" id="cs">⬇ تصدير Excel/CSV</button></div></div>';
  h+='<div class="card"><h2>✅ مين حلّ ومين لسه</h2><select id="ps">'+pages().map(function(p){return'<option value="'+esc(p)+'"'+(p===pg?' selected':'')+'>'+esc(nm(p))+'</option>'}).join('')+'</select><div class="sc" style="margin-top:10px"><table><tr><th>الطالب</th><th>الحالة</th><th>مرات الفتح</th><th>محاولات</th><th>أفضل درجة</th><th>آخر نشاط</th></tr>';
  var done=0;S.forEach(function(s){var r=D.pages.filter(function(x){return x.student_id===s.id&&x.page===pg})[0]||{opens:0,attempts:0};var ok=r.attempts>0;if(ok)done++;
@@ -64,12 +69,21 @@ function draw(){
  $('md0').onchange=async function(e){var v=e.target.value;if(v==='open'&&!confirm('الموقع هيبقى مفتوح للجميع بدون كود. متأكد؟')){draw();return}await api('mode',{mode:v,trial_minutes:v==='trial'?(ST.trial_minutes||720):0});load()};
  if($('tr'))$('tr').onchange=async function(e){await api('mode',{mode:'trial',trial_minutes:+e.target.value});load()};
  $('pv').onclick=function(){window.open('/api/admin/preview','_blank')};
+ $('pla').onclick=function(){if(PL.length<6){PL.push({name:'',days:30,price:0});draw()}};
+ app.querySelectorAll('[data-pn]').forEach(function(i){i.oninput=function(){PL[+i.dataset.pn].name=i.value}});
+ app.querySelectorAll('[data-pd]').forEach(function(i){i.oninput=function(){PL[+i.dataset.pd].days=+i.value}});
+ app.querySelectorAll('[data-pp]').forEach(function(i){i.oninput=function(){PL[+i.dataset.pp].price=+i.value}});
+ app.querySelectorAll('[data-px]').forEach(function(b){b.onclick=function(){PL.splice(+b.dataset.px,1);draw()}});
+ $('pls2').onclick=async function(){await api('plans',{plans:PL});alert('تم حفظ الباقات');load()};
+ $('tg').onclick=async function(){await api('setting',{key:'trial_guard',value:!ST.trial_guard});load()};
+ $('gr').onclick=async function(){if(confirm('سيُمسح كل سجل التنبيهات والحظر. متأكد؟')){await api('guardreset',{});load()}};
+ app.querySelectorAll('[data-ub]').forEach(function(b){b.onclick=async function(){await api('unban',{ip:b.dataset.ub});load()}});
  $('cts').onclick=async function(){await api('setting',{key:'contact',value:$('ct').value});load()};
  $('ad').onclick=async function(){var v=$('nn').value;if(!v.trim())return;var r=await api('add',{names:v,kind:$('kd').value,max_devices:$('md').value,days:+$('vd').value});await load();var t=r.added.map(function(a){return a.name+'\t'+fmtC(a.code)}).join('\n');
   $('added').innerHTML='<p class="m">تمت الإضافة. انسخ القائمة وابعت لكل شخص كوده (أو استخدم «رسالة واتساب» من قائمة الإجراءات):</p><textarea readonly>'+esc(t)+'</textarea>'};
  $('ps').onchange=function(e){pg=e.target.value;draw()};
  $('q').oninput=function(e){q=e.target.value;draw()};
- $('cs').onclick=function(){var rows=[['الاسم','النوع','الكود','الحالة','الأجهزة','الصلاحية','محاولات','المتوسط','دقائق','آخر دخول']].concat(S.map(function(s){return[s.name,s.kind==='group'?'جماعي':'فردي',fmtC(s.code),s.status==='active'?(isExp(s)?'منتهي':'مفعّل'):'محظور',s.devices+'/'+(s.max_devices||'∞'),s.expires_at||'',s.attempts,s.avg==null?'':s.avg,Math.round(s.secs/60),s.last_seen||'']}));
+ $('cs').onclick=function(){var rows=[['الاسم','النوع','الكود','الحالة','الأجهزة','الصلاحية','محاولات','المتوسط','دقائق','آخر دخول']].concat(S.map(function(s){return[s.name,s.kind==='group'?'جماعي':'فردي',fmtC(s.code),s.status==='active'?(isExp(s)?'منتهي':(s.pause_until&&s.pause_until>Date.now()?'استراحة':'مفعّل')):'محظور',s.devices+'/'+(s.max_devices||'∞'),s.expires_at||'',s.attempts,s.avg==null?'':s.avg,Math.round(s.secs/60),s.last_seen||'']}));
   var c='\ufeff'+rows.map(function(r){return r.map(function(x){return'"'+String(x).replace(/"/g,'""')+'"'}).join(',')}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv'}));a.download='students.csv';a.click()};
  app.querySelectorAll('select[data-s]').forEach(function(sel){sel.onchange=async function(){var id=+sel.dataset.s,v=sel.value,s=S.filter(function(x){return x.id===id})[0];if(!v)return;
   try{
@@ -78,6 +92,7 @@ function draw(){
    else if(v==='e365')await api('update',{id:id,add_days:365});
    else if(v==='ne')await api('update',{id:id,no_expiry:1});
    else if(v==='md'){var n=prompt('أقصى عدد أجهزة لهذا الكود (٠ = بلا حد):',s.max_devices);if(n===null){draw();return}await api('update',{id:id,max_devices:n})}
+   else if(v==='ep')await api('update',{id:id,end_pause:1});
    else if(v==='rd'){if(!confirm('سيُمسح تسجيل الأجهزة ويقدر الكود يدخل من أجهزة جديدة. متأكد؟')){draw();return}await api('resetdev',{id:id})}
    else if(v==='wa'){var t='السلام عليكم '+s.name+'\nمرحبًا بك في منصة البوابة التعليمية\nالرابط: '+location.origin+'\nكودك: '+fmtC(s.code)+'\nاكتب الكود مرة واحدة عند أول دخول.';window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');draw();return}
    else if(v==='del'){if(!confirm('حذف الكود ونتائجه نهائيًا؟')){draw();return}await api('delete',{id:id})}
