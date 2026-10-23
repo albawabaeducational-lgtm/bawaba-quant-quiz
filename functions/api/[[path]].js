@@ -29,7 +29,13 @@ const ensureStaffSchema = DB => DB.batch([
   DB.prepare("CREATE INDEX IF NOT EXISTS staff_sessions_token ON staff_sessions(token_hash)"),
   DB.prepare("CREATE INDEX IF NOT EXISTS staff_sessions_expiry ON staff_sessions(expires_at)"),
   DB.prepare("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, actor_type TEXT NOT NULL, actor_id INTEGER, actor_name TEXT, action TEXT NOT NULL, target_type TEXT, target_id INTEGER, details TEXT, created_at TEXT NOT NULL)"),
-  DB.prepare("CREATE INDEX IF NOT EXISTS audit_log_created ON audit_log(created_at)")
+  DB.prepare("CREATE INDEX IF NOT EXISTS audit_log_created ON audit_log(created_at)"),
+  DB.prepare("CREATE TABLE IF NOT EXISTS student_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, description TEXT, status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL)"),
+  DB.prepare("CREATE TABLE IF NOT EXISTS group_members (group_id INTEGER NOT NULL, student_id INTEGER NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (group_id, student_id))"),
+  DB.prepare("CREATE TABLE IF NOT EXISTS group_pages (group_id INTEGER NOT NULL, page TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (group_id, page))"),
+  DB.prepare("CREATE INDEX IF NOT EXISTS group_members_student ON group_members(student_id)"),
+  DB.prepare("CREATE INDEX IF NOT EXISTS group_pages_page ON group_pages(page)"),
+  DB.prepare("CREATE TABLE IF NOT EXISTS staff_permissions (staff_id INTEGER PRIMARY KEY, can_manage_students INTEGER NOT NULL DEFAULT 0, can_manage_groups INTEGER NOT NULL DEFAULT 0, can_manage_content INTEGER NOT NULL DEFAULT 0, can_view_guests INTEGER NOT NULL DEFAULT 0, can_view_reports INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)")
 ]);
 
 
@@ -53,6 +59,17 @@ export async function onRequest({ request, env, params }) {
   };
   const loginHeaders = (c, dev) => { const h = new Headers({ 'content-type': 'application/json', 'cache-control': 'no-store' }); h.append('set-cookie', `bw_code=${c}; ${COOKIE}`); h.append('set-cookie', `bw_dev=${dev}; ${COOKIE}`); return h; };
 
+  if (p === 'guest-lead' && m === 'POST') {
+    await DB.batch([
+      DB.prepare("CREATE TABLE IF NOT EXISTS guest_leads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'website', interest TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL, last_contacted_at TEXT)"),
+      DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS guest_leads_phone ON guest_leads(phone)"),
+      DB.prepare("CREATE INDEX IF NOT EXISTS guest_leads_created ON guest_leads(created_at)")
+    ]);
+    const b = await body(), name = String(b.name || '').trim().slice(0,80), raw = String(b.phone || '').replace(/\D/g,''), leadPhone = raw.startsWith('00') ? raw.slice(2) : raw.startsWith('0') && raw.length === 10 ? '966' + raw.slice(1) : raw.slice(0,20), interest = String(b.interest || '').trim().slice(0,160), source = String(b.source || 'website').slice(0,40);
+    if (leadPhone.length < 9) return J({ error: 'اكتب رقم واتساب صحيحًا' }, 400);
+    await DB.prepare("INSERT INTO guest_leads (name,phone,source,interest,status,created_at) VALUES (?,?,?,?,?,?) ON CONFLICT(phone) DO UPDATE SET name=excluded.name,interest=excluded.interest,source=excluded.source,status='new'").bind(name || null, leadPhone, source, interest, 'new', iso).run();
+    return J({ ok: 1 });
+  }
   if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')) });
 
   if (p === 'login' && m === 'POST') {
@@ -120,13 +137,13 @@ export async function onRequest({ request, env, params }) {
   const actorOf = async () => {
     if (staffToken) {
       const th = await tok({ ADMIN_PASSWORD: 'staff|' + staffToken });
-      const row = await DB.prepare(`SELECT u.id,u.name,u.username,u.role,u.status,s.expires_at FROM staff_sessions s JOIN staff_users u ON u.id=s.staff_id WHERE s.token_hash=?`).bind(th).first();
+      const row = await DB.prepare(`SELECT u.id,u.name,u.username,u.role,u.status,s.expires_at,COALESCE(p.can_manage_students,0) can_manage_students,COALESCE(p.can_manage_groups,0) can_manage_groups,COALESCE(p.can_manage_content,0) can_manage_content,COALESCE(p.can_view_guests,0) can_view_guests,COALESCE(p.can_view_reports,0) can_view_reports FROM staff_sessions s JOIN staff_users u ON u.id=s.staff_id LEFT JOIN staff_permissions p ON p.staff_id=u.id WHERE s.token_hash=?`).bind(th).first();
       if (row && row.status === 'active' && row.expires_at > iso) {
         await DB.prepare('UPDATE staff_users SET last_seen=? WHERE id=?').bind(iso, row.id).run();
-        return { type: 'staff', id: row.id, name: row.name, username: row.username, role: row.role };
+        return { type: 'staff', id: row.id, name: row.name, username: row.username, role: row.role, perms: { manage_students: !!row.can_manage_students, manage_groups: !!row.can_manage_groups, manage_content: !!row.can_manage_content, view_guests: !!row.can_view_guests, view_reports: !!row.can_view_reports } };
       }
     }
-    if (env.ADMIN_PASSWORD && ck(request, 'bw_admin') === await tok(env)) return { type: 'legacy', id: 0, name: 'المدير العام', username: 'admin', role: 'super_admin' };
+    if (env.ADMIN_PASSWORD && ck(request, 'bw_admin') === await tok(env)) return { type: 'legacy', id: 0, name: 'المدير العام', username: 'admin', role: 'super_admin', perms: { manage_students: true, manage_groups: true, manage_content: true, view_guests: true, view_reports: true } };
     return null;
   };
   const auth = async roles => {
@@ -135,6 +152,8 @@ export async function onRequest({ request, env, params }) {
     if (roles && !roles.includes(a.role)) return { error: J({ error: 'ليس لديك صلاحية لهذه العملية' }, 403) };
     return { actor: a };
   };
+  const can = (a, k) => a.role === 'super_admin' || !!(a.perms && a.perms[k]);
+  const permsOf = (b, role) => { const d = role === 'teacher' ? { manage_students: false, manage_groups: false, manage_content: true, view_guests: false, view_reports: true } : role === 'content_manager' ? { manage_students: false, manage_groups: false, manage_content: true, view_guests: false, view_reports: true } : { manage_students: false, manage_groups: true, manage_content: false, view_guests: true, view_reports: true }; return Object.fromEntries(Object.keys(d).map(k => [k, b && b[k] !== undefined ? !!b[k] : d[k]])); };
   const audit = (a, action, targetType = null, targetId = null, details = '') => DB.prepare('INSERT INTO audit_log (actor_type,actor_id,actor_name,action,target_type,target_id,details,created_at) VALUES (?,?,?,?,?,?,?,?)').bind(a.type, a.id || null, a.name, action, targetType, targetId, details, iso);
 
   if (p === 'admin/login' && m === 'POST') {
@@ -157,15 +176,17 @@ export async function onRequest({ request, env, params }) {
 
   if (p === 'admin/staff' && m === 'GET') {
     if (A.role !== 'super_admin') return J({ error: 'ليس لديك صلاحية لهذه العملية' }, 403);
-    const staff = (await DB.prepare('SELECT id,name,username,role,status,created_at,last_seen FROM staff_users ORDER BY id DESC').all()).results;
+    const staff = (await DB.prepare('SELECT u.id,u.name,u.username,u.role,u.status,u.created_at,u.last_seen,COALESCE(p.can_manage_students,0) can_manage_students,COALESCE(p.can_manage_groups,0) can_manage_groups,COALESCE(p.can_manage_content,0) can_manage_content,COALESCE(p.can_view_guests,0) can_view_guests,COALESCE(p.can_view_reports,0) can_view_reports FROM staff_users u LEFT JOIN staff_permissions p ON p.staff_id=u.id ORDER BY u.id DESC').all()).results;
     return J({ staff, actor: A });
   }
   if (p === 'admin/staff/add' && m === 'POST') {
     if (A.role !== 'super_admin') return J({ error: 'ليس لديك صلاحية لهذه العملية' }, 403);
-    const b = await body(), name = String(b.name || '').trim().slice(0, 80), username = String(b.username || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 40), password = String(b.password || ''), role = ['content_manager','supervisor'].includes(b.role) ? b.role : 'supervisor';
+    const b = await body(), name = String(b.name || '').trim().slice(0, 80), username = String(b.username || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 40), password = String(b.password || ''), role = ['content_manager','supervisor','teacher'].includes(b.role) ? b.role : 'supervisor';
     if (name.length < 2 || username.length < 3 || password.length < 8) return J({ error: 'أدخل اسمًا واسم مستخدم وكلمة مرور لا تقل عن ٨ أحرف' }, 400);
     try {
       const r = await DB.prepare('INSERT INTO staff_users (name,username,password_hash,role,status,created_at) VALUES (?,?,?,?,?,?)').bind(name, username, await passwordHash(password), role, 'active', iso).run();
+      const pp = permsOf(b.permissions || {}, role);
+      await DB.prepare('INSERT INTO staff_permissions (staff_id,can_manage_students,can_manage_groups,can_manage_content,can_view_guests,can_view_reports,updated_at) VALUES (?,?,?,?,?,?,?)').bind(r.meta.last_row_id, pp.manage_students?1:0, pp.manage_groups?1:0, pp.manage_content?1:0, pp.view_guests?1:0, pp.view_reports?1:0, iso).run();
       await DB.prepare('INSERT INTO audit_log (actor_type,actor_id,actor_name,action,target_type,target_id,details,created_at) VALUES (?,?,?,?,?,?,?,?)').bind(A.type,A.id,A.name,'create','staff',r.meta.last_row_id,username,iso).run();
       return J({ ok: 1, id: r.meta.last_row_id });
     } catch (e) { return J({ error: 'اسم المستخدم مستخدم بالفعل' }, 409); }
@@ -178,6 +199,8 @@ export async function onRequest({ request, env, params }) {
     if (id === A.id && status === 'blocked') return J({ error: 'لا يمكنك إيقاف حسابك الحالي' }, 400);
     if (b.password) await DB.prepare('UPDATE staff_users SET name=?,role=?,status=?,password_hash=? WHERE id=?').bind(name,role,status,await passwordHash(String(b.password)),id).run();
     else await DB.prepare('UPDATE staff_users SET name=?,role=?,status=? WHERE id=?').bind(name,role,status,id).run();
+    const pp = permsOf(b.permissions || {}, role);
+    await DB.prepare('INSERT INTO staff_permissions (staff_id,can_manage_students,can_manage_groups,can_manage_content,can_view_guests,can_view_reports,updated_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(staff_id) DO UPDATE SET can_manage_students=excluded.can_manage_students,can_manage_groups=excluded.can_manage_groups,can_manage_content=excluded.can_manage_content,can_view_guests=excluded.can_view_guests,can_view_reports=excluded.can_view_reports,updated_at=excluded.updated_at').bind(id, pp.manage_students?1:0, pp.manage_groups?1:0, pp.manage_content?1:0, pp.view_guests?1:0, pp.view_reports?1:0, iso).run();
     await DB.prepare('INSERT INTO audit_log (actor_type,actor_id,actor_name,action,target_type,target_id,details,created_at) VALUES (?,?,?,?,?,?,?,?)').bind(A.type,A.id,A.name,'update','staff',id,role,iso).run();
     return J({ ok: 1 });
   }
@@ -193,6 +216,53 @@ export async function onRequest({ request, env, params }) {
     return J({ audit: (await DB.prepare('SELECT * FROM audit_log ORDER BY id DESC LIMIT 100').all()).results });
   }
 
+  if (p === 'admin/groups' && m === 'GET') {
+    if (!can(A, 'manage_groups')) return J({ error: 'ليس لديك صلاحية لإدارة المجموعات' }, 403);
+    const groups = (await DB.prepare(`SELECT g.id,g.name,g.description,g.status,g.created_at,COUNT(gm.student_id) members FROM student_groups g LEFT JOIN group_members gm ON gm.group_id=g.id GROUP BY g.id ORDER BY g.id DESC`).all()).results;
+    const members = (await DB.prepare('SELECT gm.group_id,gm.student_id,s.name,s.code FROM group_members gm JOIN students s ON s.id=gm.student_id ORDER BY s.name').all()).results;
+    const pages = (await DB.prepare('SELECT group_id,page FROM group_pages ORDER BY page').all()).results;
+    return J({ groups, members, pages });
+  }
+  if (p === 'admin/groups/add' && m === 'POST') {
+    if (!can(A, 'manage_groups')) return J({ error: 'ليس لديك صلاحية لإدارة المجموعات' }, 403);
+    const b = await body(), name = String(b.name || '').trim().slice(0, 80), description = String(b.description || '').trim().slice(0, 240);
+    if (name.length < 2) return J({ error: 'اكتب اسم المجموعة' }, 400);
+    try {
+      const r = await DB.prepare('INSERT INTO student_groups (name,description,created_at) VALUES (?,?,?)').bind(name,description,iso).run();
+      await DB.prepare('INSERT INTO audit_log (actor_type,actor_id,actor_name,action,target_type,target_id,details,created_at) VALUES (?,?,?,?,?,?,?,?)').bind(A.type,A.id,A.name,'create','group',r.meta.last_row_id,name,iso).run();
+      return J({ ok: 1, id: r.meta.last_row_id });
+    } catch (e) { return J({ error: 'اسم المجموعة مستخدم بالفعل' }, 409); }
+  }
+  if (p === 'admin/groups/update' && m === 'POST') {
+    if (!can(A, 'manage_groups')) return J({ error: 'ليس لديك صلاحية لإدارة المجموعات' }, 403);
+    const b = await body(), id = +b.id, name = String(b.name || '').trim().slice(0,80), description = String(b.description || '').trim().slice(0,240);
+    if (!id || name.length < 2) return J({ error: 'بيانات المجموعة غير صحيحة' }, 400);
+    await DB.prepare('UPDATE student_groups SET name=?,description=?,status=? WHERE id=?').bind(name,description,b.status==='blocked'?'blocked':'active',id).run();
+    await DB.prepare('INSERT INTO audit_log (actor_type,actor_id,actor_name,action,target_type,target_id,details,created_at) VALUES (?,?,?,?,?,?,?,?)').bind(A.type,A.id,A.name,'update','group',id,name,iso).run();
+    return J({ ok: 1 });
+  }
+  if (p === 'admin/groups/delete' && m === 'POST') {
+    if (A.role !== 'super_admin' && !can(A, 'manage_groups')) return J({ error: 'ليس لديك صلاحية لحذف المجموعات' }, 403);
+    const id = +((await body()).id);
+    await DB.batch([DB.prepare('DELETE FROM group_members WHERE group_id=?').bind(id),DB.prepare('DELETE FROM group_pages WHERE group_id=?').bind(id),DB.prepare('DELETE FROM student_groups WHERE id=?').bind(id),audit(A,'delete','group',id)]);
+    return J({ ok: 1 });
+  }
+  if (p === 'admin/groups/member' && m === 'POST') {
+    if (!['super_admin','supervisor'].includes(A.role)) return J({ error: 'ليس لديك صلاحية لهذه العملية' }, 403);
+    const b = await body(), gid = +b.group_id, sid = +b.student_id;
+    if (!gid || !sid) return J({ error: 'اختر المجموعة والطالب' }, 400);
+    if (b.action === 'remove') await DB.prepare('DELETE FROM group_members WHERE group_id=? AND student_id=?').bind(gid,sid).run();
+    else await DB.prepare('INSERT OR IGNORE INTO group_members (group_id,student_id,created_at) VALUES (?,?,?)').bind(gid,sid,iso).run();
+    return J({ ok: 1 });
+  }
+  if (p === 'admin/groups/page' && m === 'POST') {
+    if (!can(A, 'manage_content')) return J({ error: 'ليس لديك صلاحية لإدارة وصول المحتوى' }, 403);
+    const b = await body(), gid = +b.group_id, page = String(b.page || '').replace(/(\.html)+$/i,'').slice(0,120);
+    if (!gid || !page) return J({ error: 'بيانات المحتوى غير صحيحة' }, 400);
+    if (b.action === 'remove') await DB.prepare('DELETE FROM group_pages WHERE group_id=? AND page=?').bind(gid,page).run();
+    else await DB.prepare('INSERT OR IGNORE INTO group_pages (group_id,page,created_at) VALUES (?,?,?)').bind(gid,page,iso).run();
+    return J({ ok: 1 });
+  }
   if (p === 'admin/data') {
     const students = (await DB.prepare(`SELECT s.id,s.name,s.code,s.status,s.kind,s.max_devices,s.expires_at,s.last_seen,s.duration_minutes,s.pause_used,s.pause_until,
       (SELECT COUNT(*) FROM devices d WHERE d.student_id=s.id) devices,
@@ -205,8 +275,12 @@ export async function onRequest({ request, env, params }) {
     const feed = (await DB.prepare(`SELECT s.name,e.page,e.kind,e.sub,e.score,e.created_at FROM events e JOIN students s ON s.id=e.student_id ORDER BY e.id DESC LIMIT 15`).all()).results;
     const bans = (await DB.prepare('SELECT ip,until FROM ip_bans WHERE until>? ORDER BY until DESC').bind(iso).all()).results;
     const flagged = (await DB.prepare('SELECT COUNT(*) n FROM trials WHERE strikes>0').first()).n;
-    const staff = A.role === 'super_admin' ? (await DB.prepare('SELECT id,name,username,role,status,created_at,last_seen FROM staff_users ORDER BY id DESC').all()).results : [];
-    return J({ actor: A, staff, students, pages, feed, bans, flagged, plans: plansOf(await setting('plans')), settings: { require_login: await setting('require_login') === '1', trial_minutes: +(await setting('trial_minutes')) || 0, contact: await setting('contact'), trial_guard: await setting('trial_guard') !== '0' } });
+    const staff = A.role === 'super_admin' ? (await DB.prepare('SELECT u.id,u.name,u.username,u.role,u.status,u.created_at,u.last_seen,COALESCE(p.can_manage_students,0) can_manage_students,COALESCE(p.can_manage_groups,0) can_manage_groups,COALESCE(p.can_manage_content,0) can_manage_content,COALESCE(p.can_view_guests,0) can_view_guests,COALESCE(p.can_view_reports,0) can_view_reports FROM staff_users u LEFT JOIN staff_permissions p ON p.staff_id=u.id ORDER BY u.id DESC').all()).results : [];
+    const groups = can(A, 'manage_groups') ? (await DB.prepare('SELECT g.id,g.name,g.description,g.status,g.created_at,COUNT(gm.student_id) members FROM student_groups g LEFT JOIN group_members gm ON gm.group_id=g.id GROUP BY g.id ORDER BY g.id DESC').all()).results : [];
+    const groupMembers = can(A, 'manage_groups') ? (await DB.prepare('SELECT gm.group_id,gm.student_id FROM group_members gm').all()).results : [];
+    const guestStats = can(A, 'view_guests') ? { visitors: (await DB.prepare('SELECT COUNT(*) n FROM trials').first()).n, leads: (await DB.prepare('SELECT COUNT(*) n FROM guest_leads').first().catch(()=>({n:0}))).n } : { visitors: 0, leads: 0 };
+    const guestLeads = can(A, 'view_guests') ? (await DB.prepare('SELECT id,name,phone,source,interest,status,created_at,last_contacted_at FROM guest_leads ORDER BY id DESC LIMIT 100').all().catch(()=>({results:[]}))).results : [];
+    return J({ actor: A, staff, groups, groupMembers, guestStats, guestLeads, students, pages, feed, bans, flagged, plans: plansOf(await setting('plans')), settings: { require_login: await setting('require_login') === '1', trial_minutes: +(await setting('trial_minutes')) || 0, contact: await setting('contact'), trial_guard: await setting('trial_guard') !== '0' } });
   }
   if (p === 'admin/preview') {
     const h = new Headers({ location: '/' });
@@ -214,15 +288,15 @@ export async function onRequest({ request, env, params }) {
     return new Response(null, { status: 302, headers: h });
   }
   const b = await body();
-  if (A.role !== 'super_admin') return J({ error: 'هذه العملية متاحة للمدير العام فقط' }, 403);
-  if (p === 'admin/mode') {
+  const need = k => { if (!can(A, k)) return J({ error: 'صلاحيتك لا تسمح بهذه العملية' }, 403); return null; };
+  if (p === 'admin/mode') { const denied = need('manage_content'); if (denied) return denied;
     const mode = b.mode, tm = +b.trial_minutes;
     if (!['open', 'code', 'trial'].includes(mode) || (mode === 'trial' && !TRIALS.includes(tm))) return J({ error: 'قيمة غير مسموحة' }, 400);
     const put = (k, v) => DB.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(k, v);
     await DB.batch([put('require_login', mode === 'open' ? '0' : '1'), put('trial_minutes', mode === 'trial' ? String(tm) : '0')]);
     return J({ ok: 1 });
   }
-  if (p === 'admin/add') {
+  if (p === 'admin/add') { const denied = need('manage_students'); if (denied) return denied;
     const kind = b.kind === 'group' ? 'group' : 'single';
     let md = parseInt(b.max_devices); if (isNaN(md) || md < 0) md = kind === 'group' ? 30 : 2;
     const days = Math.max(0, parseInt(b.days) || 0), exp = days ? new Date(now + days * 864e5).toISOString() : null, out = [];
@@ -233,8 +307,8 @@ export async function onRequest({ request, env, params }) {
     }
     return J({ ok: 1, added: out });
   }
-  if (p === 'admin/status') { await DB.prepare('UPDATE students SET status=? WHERE id=?').bind(b.status === 'blocked' ? 'blocked' : 'active', +b.id).run(); return J({ ok: 1 }); }
-  if (p === 'admin/update') {
+  if (p === 'admin/status') { const denied = need('manage_students'); if (denied) return denied; await DB.prepare('UPDATE students SET status=? WHERE id=?').bind(b.status === 'blocked' ? 'blocked' : 'active', +b.id).run(); return J({ ok: 1 }); }
+  if (p === 'admin/update') { const denied = need('manage_students'); if (denied) return denied;
     const s = await DB.prepare('SELECT * FROM students WHERE id=?').bind(+b.id).first();
     if (!s) return J({ error: 'غير موجود' }, 404);
     if (b.max_devices !== undefined) await DB.prepare('UPDATE students SET max_devices=? WHERE id=?').bind(Math.max(0, parseInt(b.max_devices) || 0), s.id).run();
@@ -246,12 +320,12 @@ export async function onRequest({ request, env, params }) {
     if (b.end_pause) await endPause(s);
     return J({ ok: 1 });
   }
-  if (p === 'admin/resetdev') { await DB.prepare('DELETE FROM devices WHERE student_id=?').bind(+b.id).run(); return J({ ok: 1 }); }
-  if (p === 'admin/delete') {
+  if (p === 'admin/resetdev') { const denied = need('manage_students'); if (denied) return denied; await DB.prepare('DELETE FROM devices WHERE student_id=?').bind(+b.id).run(); return J({ ok: 1 }); }
+  if (p === 'admin/delete') { const denied = need('manage_students'); if (denied) return denied;
     await DB.batch(['events', 'usage', 'devices'].map(t => DB.prepare(`DELETE FROM ${t} WHERE student_id=?`).bind(+b.id)).concat(DB.prepare('DELETE FROM students WHERE id=?').bind(+b.id)));
     return J({ ok: 1 });
   }
-  if (p === 'admin/setting') {
+  if (p === 'admin/setting') { const denied = need('manage_content'); if (denied) return denied;
     let v;
     if (b.key === 'trial_guard') v = b.value ? '1' : '0';
     else if (b.key === 'contact') v = phone(b.value);
@@ -259,12 +333,12 @@ export async function onRequest({ request, env, params }) {
     await DB.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(b.key, v).run();
     return J({ ok: 1, value: v });
   }
-  if (p === 'admin/plans') {
+  if (p === 'admin/plans') { const denied = need('manage_content'); if (denied) return denied;
     const a = (Array.isArray(b.plans) ? b.plans : []).slice(0, 6).map(x => ({ name: String(x.name || '').trim().slice(0, 40), days: Math.max(1, Math.min(3650, parseInt(x.days) || 30)), price: Math.max(0, Math.min(99999, +x.price || 0)) })).filter(x => x.name);
     await DB.prepare("INSERT INTO settings (key,value) VALUES ('plans',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(a)).run();
     return J({ ok: 1 });
   }
-  if (p === 'admin/unban') { await DB.prepare('DELETE FROM ip_bans WHERE ip=?').bind(String(b.ip || '')).run(); return J({ ok: 1 }); }
-  if (p === 'admin/guardreset') { await DB.batch([DB.prepare('DELETE FROM trials'), DB.prepare('DELETE FROM ip_bans')]); return J({ ok: 1 }); }
+  if (p === 'admin/unban') { const denied = need('manage_students'); if (denied) return denied; await DB.prepare('DELETE FROM ip_bans WHERE ip=?').bind(String(b.ip || '')).run(); return J({ ok: 1 }); }
+  if (p === 'admin/guardreset') { const denied = need('manage_students'); if (denied) return denied; await DB.batch([DB.prepare('DELETE FROM trials'), DB.prepare('DELETE FROM ip_bans')]); return J({ ok: 1 }); }
   return J({ error: 'not found' }, 404);
 }

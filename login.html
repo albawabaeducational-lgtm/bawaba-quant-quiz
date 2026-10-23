@@ -24,7 +24,7 @@ else if(W[why]){n.textContent=W[why];n.className='n'+(why==='warn2'||why==='bann
 fetch('/api/public').then(function(r){return r.json()}).then(function(d){
  var wa=function(t){return 'https://wa.me/'+d.contact+'?text='+encodeURIComponent(t)};
  if(d.plans&&d.plans.length){var pl=document.getElementById('pl');pl.innerHTML=d.plans.map(function(p){var days=p.days>=30&&p.days%30===0?num(p.days/30)+' شهر':num(p.days)+' يوم';return '<a'+(d.contact?' target="_blank" rel="noopener" href="'+wa('السلام عليكم، أريد الاشتراك في ('+p.name+') بسعر '+p.price+' ريال')+'"':'')+'><span><b>'+p.name+'</b><small>'+days+' — اشترك عبر واتساب</small></span><span class="pr">'+num(p.price)+' ريال</span></a>'}).join('');pl.style.display='flex';document.getElementById('pw').style.display='block'}
- if(d.contact){var a=document.getElementById('wa');a.href=wa('السلام عليكم، أريد الاستفسار عن منصة البوابة التعليمية');document.getElementById('wn').textContent='0'+d.contact.replace(/^966/,'');a.style.display='flex';document.getElementById('sep').style.display='flex'}
+ if(d.contact){var a=document.getElementById('wa');a.href=wa('السلام عليكم ورحمة الله وبركاته\nكيف أقدر أنضم لمنصة الاختبارات في البوابة التعليمية');document.getElementById('wn').textContent='0'+d.contact.replace(/^966/,'');a.style.display='flex';document.getElementById('sep').style.display='flex'}
  if(location.hash==='#plans')document.getElementById('plans').scrollIntoView()}).catch(function(){});
 async function post(u,b){var r=await fetch(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});return[r.ok,await r.json().catch(function(){return{}})]}
 async function enter(){var code=document.getElementById('c').value,x=await post('/api/login',{code:code});

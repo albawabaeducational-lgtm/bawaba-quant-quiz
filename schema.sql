@@ -22,3 +22,17 @@ CREATE INDEX IF NOT EXISTS staff_sessions_expiry ON staff_sessions(expires_at);
 CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, actor_type TEXT NOT NULL, actor_id INTEGER, actor_name TEXT, action TEXT NOT NULL, target_type TEXT, target_id INTEGER, details TEXT, created_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS audit_log_created ON audit_log(created_at);
 CREATE INDEX IF NOT EXISTS audit_log_actor ON audit_log(actor_type, actor_id);
+
+
+-- مجموعات الطلاب
+CREATE TABLE IF NOT EXISTS student_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, description TEXT, status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS group_members (group_id INTEGER NOT NULL, student_id INTEGER NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (group_id, student_id), FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE CASCADE, FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS group_pages (group_id INTEGER NOT NULL, page TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (group_id, page), FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE CASCADE);
+CREATE INDEX IF NOT EXISTS group_members_student ON group_members(student_id);
+CREATE INDEX IF NOT EXISTS group_pages_page ON group_pages(page);
+
+CREATE TABLE IF NOT EXISTS staff_permissions (staff_id INTEGER PRIMARY KEY, can_manage_students INTEGER NOT NULL DEFAULT 0, can_manage_groups INTEGER NOT NULL DEFAULT 0, can_manage_content INTEGER NOT NULL DEFAULT 0, can_view_guests INTEGER NOT NULL DEFAULT 0, can_view_reports INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS guest_leads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'website', interest TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL, last_contacted_at TEXT);
+CREATE UNIQUE INDEX IF NOT EXISTS guest_leads_phone ON guest_leads(phone);
+CREATE INDEX IF NOT EXISTS guest_leads_created ON guest_leads(created_at);

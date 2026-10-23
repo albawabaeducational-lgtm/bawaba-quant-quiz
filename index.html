@@ -295,7 +295,7 @@
       .intro { padding: 20px 16px; }
       a.exam { min-height: 100px; padding: 16px; }
     }
-  </style>
+  .community{margin-top:24px;padding:24px;border:1px solid #dce8f1;border-radius:22px;background:linear-gradient(135deg,#f6fcff,#eef8fb);text-align:center}.community h2{margin:0 0 7px;color:var(--navy);font-size:22px}.community p{margin:0 auto 16px;color:var(--muted);font-size:13px;line-height:1.8}.community-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:17px}.community-actions a{padding:10px 16px;border-radius:12px;color:#fff;text-decoration:none;font-weight:700;font-size:13px}.wa-channel{background:#18a957}.tg-channel{background:#168bd0}.lead-form{display:grid;grid-template-columns:1fr 1fr 1.5fr auto;gap:8px;max-width:850px;margin:auto}.lead-form input{min-width:0;padding:10px;border:1px solid #cbdde8;border-radius:11px;font:inherit}.lead-form button{border:0;border-radius:11px;padding:10px 15px;background:var(--navy);color:#fff;font:700 13px Cairo,Tahoma,Arial,sans-serif;cursor:pointer}.lead-msg{min-height:20px;margin-top:9px;color:var(--blue);font-size:12px}@media(max-width:700px){.lead-form{grid-template-columns:1fr 1fr}.lead-form input:nth-child(3),.lead-form button{grid-column:1/-1}}</style>
 </head>
 <body>
   <header>
@@ -328,6 +328,13 @@
     </section>
   </main>
 
+  <section class="community" aria-label="التواصل مع المنصة">
+      <h2>كن قريبًا من البوابة التعليمية</h2>
+      <p>انضم إلى قنوات المنصة أو اترك رقم واتسابك لنرسل لك طريقة الاشتراك والتحديثات المهمة.</p>
+      <div class="community-actions"><a class="wa-channel" target="_blank" rel="noopener" href="https://whatsapp.com/channel/0029VbE2lzy1dAw6JnrESu2w">قناة واتساب المنصة</a><a class="tg-channel" target="_blank" rel="noopener" href="https://t.me/albawaba_edu">قناة تيليجرام المنصة</a></div>
+      <form class="lead-form" id="leadForm"><input id="leadName" placeholder="الاسم (اختياري)"><input id="leadPhone" inputmode="tel" placeholder="رقم واتسابك"><input id="leadInterest" placeholder="ما الذي تريد معرفته؟ (اختياري)"><button>أرسل لي التفاصيل</button></form><div class="lead-msg" id="leadMsg"></div>
+    </section>
   <footer>جميع حقوق النشر محفوظة لمنصة البوابة التعليمية 2026</footer>
+<script>(function(){var f=document.getElementById('leadForm'),m=document.getElementById('leadMsg');if(!f)return;f.onsubmit=async function(e){e.preventDefault();m.textContent='جارٍ حفظ طلبك...';try{var r=await fetch('/api/guest-lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:document.getElementById('leadName').value,phone:document.getElementById('leadPhone').value,interest:document.getElementById('leadInterest').value,source:'home'})});var d=await r.json();m.textContent=r.ok?'تم تسجيل طلبك، وسنتواصل معك قريبًا بإذن الله.':(d.error||'تعذر التسجيل');if(r.ok)f.reset()}catch(_){m.textContent='تعذر الاتصال، حاول مرة أخرى'}}})();</script>
 </body>
 </html>
