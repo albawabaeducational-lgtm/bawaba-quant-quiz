@@ -183,19 +183,24 @@ export async function onRequest({ request, env, params }) {
     if (A.role !== 'super_admin') return J({ error: 'ليس لديك صلاحية لهذه العملية' }, 403);
     const b = await body(), name = String(b.name || '').trim().slice(0, 80), username = String(b.username || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 40), password = String(b.password || ''), role = ['content_manager','supervisor','teacher'].includes(b.role) ? b.role : 'supervisor';
     if (name.length < 2 || username.length < 3 || password.length < 8) return J({ error: 'أدخل اسمًا واسم مستخدم وكلمة مرور لا تقل عن ٨ أحرف' }, 400);
+    const existing = await DB.prepare('SELECT id FROM staff_users WHERE username=?').bind(username).first();
+    if (existing) return J({ error: 'اسم المستخدم مستخدم بالفعل' }, 409);
     try {
       const r = await DB.prepare('INSERT INTO staff_users (name,username,password_hash,role,status,created_at) VALUES (?,?,?,?,?,?)').bind(name, username, await passwordHash(password), role, 'active', iso).run();
       const pp = permsOf(b.permissions || {}, role);
       await DB.prepare('INSERT INTO staff_permissions (staff_id,can_manage_students,can_manage_groups,can_manage_content,can_view_guests,can_view_reports,updated_at) VALUES (?,?,?,?,?,?,?)').bind(r.meta.last_row_id, pp.manage_students?1:0, pp.manage_groups?1:0, pp.manage_content?1:0, pp.view_guests?1:0, pp.view_reports?1:0, iso).run();
       await DB.prepare('INSERT INTO audit_log (actor_type,actor_id,actor_name,action,target_type,target_id,details,created_at) VALUES (?,?,?,?,?,?,?,?)').bind(A.type,A.id,A.name,'create','staff',r.meta.last_row_id,username,iso).run();
       return J({ ok: 1, id: r.meta.last_row_id });
-    } catch (e) { return J({ error: 'اسم المستخدم مستخدم بالفعل' }, 409); }
+    } catch (e) {
+      const text = String(e && e.message || e);
+      return J({ error: /unique|constraint/i.test(text) ? 'اسم المستخدم مستخدم بالفعل' : 'تعذر إنشاء الحساب: ' + text.slice(0, 120) }, /unique|constraint/i.test(text) ? 409 : 500);
+    }
   }
   if (p === 'admin/staff/update' && m === 'POST') {
     if (A.role !== 'super_admin') return J({ error: 'ليس لديك صلاحية لهذه العملية' }, 403);
     const b = await body(), id = +b.id, u = await DB.prepare('SELECT * FROM staff_users WHERE id=?').bind(id).first();
     if (!u) return J({ error: 'الحساب غير موجود' }, 404);
-    const role = ['super_admin','content_manager','supervisor'].includes(b.role) ? b.role : u.role, status = b.status === 'blocked' ? 'blocked' : 'active', name = String(b.name || u.name).trim().slice(0,80);
+    const role = ['super_admin','teacher','content_manager','supervisor'].includes(b.role) ? b.role : u.role, status = b.status === 'blocked' ? 'blocked' : 'active', name = String(b.name || u.name).trim().slice(0,80);
     if (id === A.id && status === 'blocked') return J({ error: 'لا يمكنك إيقاف حسابك الحالي' }, 400);
     if (b.password) await DB.prepare('UPDATE staff_users SET name=?,role=?,status=?,password_hash=? WHERE id=?').bind(name,role,status,await passwordHash(String(b.password)),id).run();
     else await DB.prepare('UPDATE staff_users SET name=?,role=?,status=? WHERE id=?').bind(name,role,status,id).run();
