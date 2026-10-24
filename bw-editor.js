@@ -32,7 +32,7 @@
   }
 
   // ---------- الواجهة العامة ----------
-  var fabCss = 'body.testing #bwe-fab,body.insim #bwe-fab{display:none}#bwe-fab{position:fixed;right:16px;bottom:16px;z-index:2147483100;background:linear-gradient(135deg,#12345a,#1769aa);color:#fff;border:0;border-radius:99px;padding:12px 18px;font:800 14px Cairo,Tahoma,Arial,sans-serif;box-shadow:0 8px 24px #12345a55;cursor:pointer;direction:rtl}#bwe-fab:hover{filter:brightness(1.1)}';
+  var fabCss = 'body.testing #bwe-fab,body.testing #bwe-bar{display:none}#bwe-bar{direction:rtl;font-family:Cairo,Tahoma,Arial,sans-serif;background:linear-gradient(90deg,#0f2a44,#165a8a);color:#fff;padding:9px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13.5px;line-height:1.6;position:relative;z-index:60;box-shadow:0 3px 10px #0002}#bwe-bar b{font-size:14.5px}#bwe-bar .sp{flex:1}#bwe-bar a,#bwe-bar button{font:700 13px Cairo,Tahoma,Arial,sans-serif;border:0;border-radius:99px;padding:6px 14px;text-decoration:none;cursor:pointer;background:#ffffff1f;color:#fff;white-space:nowrap}#bwe-bar .pri{background:#f0b429;color:#102a43}#bwe-bar .ck{background:#ffffff1a;border-radius:99px;padding:1px 9px;font-size:11.5px;margin-inline-start:3px}#bwe-bar.warn{background:linear-gradient(90deg,#6b4a00,#a87600)}#bwe-fab{position:fixed;left:16px;bottom:16px;z-index:2147483100;background:linear-gradient(135deg,#12345a,#1769aa);color:#fff;border:0;border-radius:99px;padding:12px 18px;font:800 14px Cairo,Tahoma,Arial,sans-serif;box-shadow:0 8px 24px #12345a55;cursor:pointer;direction:rtl}#bwe-fab:hover{filter:brightness(1.1)}';
   var css = ':host{position:fixed;inset:0;z-index:2147483200;background:#eef4f9;direction:rtl;font-family:Cairo,Tahoma,Arial,sans-serif;color:#172b4d;overflow:auto;font-size:14px;line-height:1.6}*{box-sizing:border-box}'
     + '.hd{position:sticky;top:0;z-index:5;background:#102a43;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 14px #0003}.hd b{font-size:16px}.hd .sp{flex:1}.chip{display:inline-block;border-radius:99px;padding:1px 9px;font-size:11.5px;font-weight:700;background:#ffffff1f;margin-inline-start:4px}.chip.on{background:#1fb47b}.chip.off{background:#ffffff14;color:#9fb6c8;text-decoration:line-through}'
     + '.wrap{max-width:1100px;margin:auto;padding:16px}.card{background:#fff;border:1px solid #dfeaf2;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 6px 18px #173a5a0a}h2{margin:0 0 10px;font-size:17px;color:#12345a}h3{margin:0 0 8px;font-size:15px;color:#12345a}'
@@ -51,7 +51,18 @@
     + '.note{background:#fff8e1;border:1px solid #f3dd9c;border-radius:12px;padding:10px 12px;margin-bottom:12px;color:#7a5800;font-size:13px}.pg{display:flex;gap:6px;justify-content:center;margin-top:10px}'
     + '@media(max-width:600px){.wrap{padding:10px}.hd b{font-size:14px}#bwe-fab{padding:10px 14px;font-size:13px}}';
   var st = document.createElement('style'); st.textContent = fabCss; document.head.appendChild(st);
-  var fab = document.createElement('button'); fab.id = 'bwe-fab'; fab.type = 'button'; fab.textContent = '✏ وضع التحرير'; fab.onclick = open;
+  // شريط «وضع المعلم» أعلى الصفحة: يوضح للمعلم أنه داخل بحسابه وما المسموح له في هذا المقرر
+  var anyLink = (C.links || []).some(function (l) { return l.rights; });
+  var canWork = M === 'linked' ? anyLink : !!C.rights;
+  var bar = document.createElement('div'); bar.id = 'bwe-bar';
+  var RL = function (r) { return r ? ['edit', 'add', 'delete'].filter(function (k) { return r[k]; }).map(function (k) { return '<span class="ck">' + { edit: 'تعديل', add: 'إضافة', delete: 'حذف' }[k] + '</span>'; }).join('') : ''; };
+  if (!canWork) { bar.className = 'warn'; bar.innerHTML = '<b>👨‍🏫 ' + esc(C.name) + '</b><span>هذا المقرر غير مسند لحسابك، لذلك تراه مثل الطالب. اطلب من الإدارة إسناده لك من «فريق العمل».</span><span class="sp"></span><a href="/admin">لوحة التحكم</a>'; }
+  else if (M === 'linked') bar.innerHTML = '<b>👨‍🏫 وضع المعلم · ' + esc(C.title) + '</b><span>يُبنى تلقائيًا من أقسام الكمي واللفظي — عدّل الأسئلة من مقررها:</span><span class="sp"></span>' + (C.links || []).filter(function (l) { return l.rights; }).map(function (l) { return '<a class="pri" href="' + esc(l.url) + '?edit=1">✏ ' + esc(l.title) + '</a>'; }).join('') + '<a href="/admin#courses:' + encodeURIComponent(C.course) + '">📊 تقارير المقرر</a><a href="/admin">لوحة التحكم</a>';
+  else bar.innerHTML = '<b>👨‍🏫 وضع المعلم · ' + esc(C.title) + '</b><span>أهلًا ' + esc(C.name) + ' — صلاحياتك هنا:' + RL(C.rights) + '</span><span class="sp"></span><button class="pri" type="button" id="bwe-open">✏ تحرير الأسئلة</button><a href="/admin#courses:' + encodeURIComponent(C.course) + '">📊 تقارير المقرر</a><a href="/admin">لوحة التحكم</a>';
+  document.body.insertBefore(bar, document.body.firstChild);
+  if (!canWork || M === 'linked') return;
+  bar.querySelector('#bwe-open').onclick = function () { open(); };
+  var fab = document.createElement('button'); fab.id = 'bwe-fab'; fab.type = 'button'; fab.textContent = '✏ تحرير الأسئلة'; fab.onclick = open;
   document.body.appendChild(fab);
   var root = null, host = null; // الواجهة داخل Shadow DOM حتى لا تتأثر بتنسيقات صفحة الاختبار
 

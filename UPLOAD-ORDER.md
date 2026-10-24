@@ -1,27 +1,21 @@
-ارفع هذه الملفات (تحديث 2.1 — المقررات ووضع التحرير) مع الحفاظ على المسارات:
+ارفع هذه الملفات (تحديث 2.2) مع الحفاظ على المسارات:
 
 functions/api/[[path]].js
 functions/_middleware.js
 admin.html
-bw-content.js              ← جديد
-bw-editor.js               ← جديد
-_routes.json
-aksam kamy.html
-aksam lafzi.html
+bw-content.js
+bw-editor.js
 muhaky mohawsab.html.html
-muhaky warky1.html
-muhaky warky2.html
-tasis lafzi.html.html
-schema.sql
-migrations/006_courses_content.sql   ← جديد
 CHANGELOG.md
 UPLOAD-ORDER.md
 
-لا تحتاج تشغيل SQL يدويًا؛ الجداول الجديدة تُنشأ تلقائيًا عند أول دخول للوحة التحكم.
+(لو لم ترفع تحديث 2.1 بعد، ارفع معها أيضًا: _routes.json، aksam kamy.html، aksam lafzi.html،
+muhaky warky1.html، muhaky warky2.html، tasis lafzi.html.html، schema.sql، migrations/006_courses_content.sql)
 
 بعد النشر:
-1. ادخل /admin بحساب الإدارة ← قسم «المقررات».
-2. أضف كل معلم للمقرر الخاص به وحدد: تعديل / إضافة / حذف.
-3. المعلم يدخل /admin بحسابه، ثم يفتح المقرر من «المقررات» ← «وضع التحرير».
+1. ادخل /admin بحساب الإدارة ← «فريق العمل والصلاحيات» ← «تعديل الحساب والمقررات» للمعلم.
+2. علّم «مسند له» للمقرر، واختر: تعديل / إضافة / حذف، ثم احفظ.
+3. المعلم يدخل /admin بحسابه ← «مقرراتي» ← «دخول المقرر كمعلم».
 
-ملاحظة: لو عدّلت ملف اختبار يدويًا ورفعته، تعديلات المعلمين تظل مطبّقة فوقه (حسب رقم السؤال).
+المحاكي المحوسب: أضف الأقسام الجديدة في «أقسام الكمي» أو «أقسام اللفظي» فقط (من وضع التحرير أو من الملف)،
+وستظهر في المحاكي تلقائيًا. لا تحتاج تعديل ملف المحاكي بعد الآن.

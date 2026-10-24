@@ -4,6 +4,21 @@
   'use strict';
   var X = window.__BWX || { p: [] }, P = X.p || [];
   function rows(kind) { return P.filter(function (r) { return r[0] === kind; }); }
+  // المحاكي المحوسب: يُبنى من «أقسام اللفظي» و«أقسام الكمي» (تُحمَّل من /api/exam/data) مع تعديلات المعلمين عليهما
+  window.__bwLinked = function (D0) {
+    try {
+      var W = window.__BWD || {}, L = W['aksam lafzi'], K = W['aksam kamy'], LK = X.linked || {};
+      if (!L || !L.qs || !K || !K.qs) return window.__bwApply('bank', D0);
+      var own = P;
+      P = LK['aksam lafzi'] || []; L = bank(L, true);
+      P = LK['aksam kamy'] || []; K = bank(K, true);
+      P = own;
+      var D = { v: D0.v, pw: D0.pw, secs: L.secs, ps: L.ps || [], qs: L.qs, qq: K.qs.map(function (a) { return [a[0], a[1], a[6]]; }), qh: {} }, src = {};
+      K.qs.forEach(function (a) { if (a[7]) D.qh[a[0]] = a[7]; var m = /\/api\/exam\/img\/\d+/.exec(a[4] || ''); if (m) src[a[0]] = m[0]; });
+      window.__bwQSrc = src;
+      return D;
+    } catch (e) { if (window.console) console.error('bw-linked', e); return D0; }
+  };
   window.__bwApply = function (model, data) {
     try {
       if (model === 'bank') return bank(data);
@@ -12,8 +27,8 @@
     } catch (e) { if (window.console) console.error('bw-content', e); }
     return data;
   };
-  function bank(D) {
-    window.__bwBase = { q: D.qs.map(function (a) { return a[0]; }), s: D.secs.map(function (s) { return s.id; }), p: (D.ps || []).length, qq: (D.qq || []).map(function (a) { return a[0]; }) };
+  function bank(D, linkedMode) {
+    if (!linkedMode) window.__bwBase = { q: D.qs.map(function (a) { return a[0]; }), s: D.secs.map(function (s) { return s.id; }), p: (D.ps || []).length, qq: (D.qq || []).map(function (a) { return a[0]; }) };
     if (!P.length) return D;
     rows('s').forEach(function (r) {
       var id = +r[1], i = D.secs.findIndex(function (s) { return s.id === id; });

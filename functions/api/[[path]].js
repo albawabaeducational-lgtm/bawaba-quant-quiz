@@ -52,8 +52,6 @@ const PERM_GROUPS = [
     ['settings.plans', 'باقات الاشتراك والأسعار'],
     ['settings.contact', 'رقم واتساب المنصة ورسالة المهتمين'],
     ['settings.guard', 'حماية التجربة المجانية ورفع الحظر']] },
-  { key: 'courses', title: 'المقررات والاختبارات', items: [
-    ['courses.manage', 'إسناد المعلمين للمقررات وتحديد صلاحياتهم داخلها']] },
   { key: 'audit', title: 'الرقابة', items: [
     ['audit.view', 'عرض سجل العمليات']] }
 ];
@@ -66,7 +64,7 @@ const PERM_NEEDS = {
 const ROLES = {
   super_admin: { label: 'الإدارة العامة', perms: ALL_PERMS },
   supervisor: { label: 'مشرف', perms: ['dashboard.view', 'reports.view', 'reports.export', 'students.view', 'students.codes', 'students.create', 'students.edit', 'students.block', 'students.message', 'groups.view', 'groups.manage', 'leads.view', 'leads.manage'] },
-  teacher: { label: 'معلم', perms: ['dashboard.view', 'reports.view', 'students.view', 'groups.view'] },
+  teacher: { label: 'معلم', perms: [] }, // المعلم يعمل داخل المقررات المسندة له فقط (تحرير الأسئلة + تقارير المقرر)
   content_manager: { label: 'مدير المحتوى', perms: ['dashboard.view', 'reports.view', 'settings.access', 'settings.plans'] }
 };
 const cleanPerms = list => {
@@ -103,13 +101,13 @@ const LEAD_STATUS = ['new', 'contacted', 'added', 'subscribed', 'not_interested'
 const COURSES = [
   { slug: 'aksam kamy', title: 'أقسام الكمي', file: '/aksam kamy.html', model: 'bank', img: true, hints: true },
   { slug: 'aksam lafzi', title: 'أقسام اللفظي', file: '/aksam lafzi.html', model: 'bank' },
-  { slug: 'muhaky mohawsab', title: 'المحاكي المحوسب', file: '/muhaky mohawsab.html.html', model: 'bank', hints: true, qq: true },
+  { slug: 'muhaky mohawsab', title: 'المحاكي المحوسب', file: '/muhaky mohawsab.html.html', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] }, // يُبنى تلقائيًا من الكمي واللفظي
   { slug: 'muhaky warky1', title: 'المحاكي الورقي – النموذج الأول', file: '/muhaky warky1.html', model: 'key' },
   { slug: 'muhaky warky2', title: 'المحاكي الورقي – النموذج الثاني', file: '/muhaky warky2.html', model: 'key' },
   { slug: 'tasis lafzi', title: 'تأسيس اللفظي', file: '/tasis lafzi.html.html', model: 'raw' }
 ];
 const COURSE = Object.fromEntries(COURSES.map(c => [c.slug, c]));
-const KINDS = { bank: ['q', 's', 'p', 'o', 'qq', 'qh'], raw: ['r'], key: ['k'] };
+const KINDS = { bank: ['q', 's', 'p', 'o'], raw: ['r'], key: ['k'], linked: [] };
 const LETTERS = ['أ', 'ب', 'ج', 'د'];
 const txt = (v, n) => String(v == null ? '' : v).replace(/\r/g, '').slice(0, n);
 const int = v => { const n = Math.trunc(+v); return Number.isFinite(n) ? n : NaN; };
@@ -129,6 +127,17 @@ const extractBase = (course, html) => {
 };
 
 let schemaReady = false, leadsReady = false;
+const fetchAsset = async (env, request, file) => {
+  if (!env.ASSETS) return null;
+  let url = new URL(file.split('/').map(encodeURIComponent).join('/'), request.url), res = null;
+  for (let i = 0; i < 4; i++) {
+    res = await env.ASSETS.fetch(new Request(url.toString(), { headers: { accept: 'text/html' } }));
+    const loc = res.headers.get('location');
+    if (res.status >= 300 && res.status < 400 && loc) { url = new URL(loc, url); continue; }
+    break;
+  }
+  return res && res.ok ? res : null;
+};
 const ensureLeadsSchema = async DB => {
   if (leadsReady) return;
   await DB.batch([
@@ -269,6 +278,23 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
 
+  // بيانات أسئلة «أقسام الكمي» و«أقسام اللفظي» يستخدمها المحاكي المحوسب مباشرة،
+  // فأي قسم أو سؤال يُضاف في ملف الأقسام يظهر في المحاكي تلقائيًا بدون رفع أي ملف آخر.
+  if (p === 'exam/data' && m === 'GET') {
+    const c = COURSE[new URL(request.url).searchParams.get('c')];
+    if (!c || c.model !== 'bank') return J({ error: 'not found' }, 404);
+    const res = await fetchAsset(env, request, c.file);
+    if (!res) return J({ error: 'not found' }, 404);
+    const raw = res.headers.get('etag') || res.headers.get('last-modified') || '';
+    const tag = raw ? '"d-' + (await tok({ ADMIN_PASSWORD: 'data|' + c.slug + '|' + raw })).slice(0, 24) + '"' : '';
+    const hdr = { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=0, must-revalidate' };
+    if (tag) hdr.etag = tag;
+    if (tag && request.headers.get('if-none-match') === tag) { try { await res.body.cancel(); } catch (e) { } return new Response(null, { status: 304, headers: hdr }); }
+    const html = await res.text(), a = html.indexOf('<script id="db" type="application/json">'), z = a < 0 ? -1 : html.indexOf('</script>', a);
+    if (a < 0 || z < 0) return J({ error: 'not found' }, 404);
+    return new Response('window.__BWD=window.__BWD||{};window.__BWD[' + JSON.stringify(c.slug) + ']=' + html.slice(a + 40, z) + ';', { headers: hdr });
+  }
+
   // صور الأسئلة التي رفعها المعلمون من وضع التحرير
   if (p.startsWith('exam/img/') && m === 'GET') {
     const id = int(p.slice(9));
@@ -340,15 +366,8 @@ export async function onRequest({ request, env, params }) {
     return r ? { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete } : null;
   };
   const baseOf = async c => {
-    if (!env.ASSETS) return null;
-    let url = new URL(c.file.split('/').map(encodeURIComponent).join('/'), request.url), res = null;
-    for (let i = 0; i < 4; i++) {
-      res = await env.ASSETS.fetch(new Request(url.toString(), { headers: { accept: 'text/html' } }));
-      const loc = res.headers.get('location');
-      if (res.status >= 300 && res.status < 400 && loc) { url = new URL(loc, url); continue; }
-      break;
-    }
-    if (!res || !res.ok) return null;
+    const res = await fetchAsset(env, request, c.file);
+    if (!res) return null;
     const tagRaw = res.headers.get('etag') || res.headers.get('last-modified') || '', etag = tagRaw ? 'v1|' + tagRaw : '';
     const row = await one('SELECT etag,data FROM exam_base WHERE course=?', c.slug);
     if (row && etag && row.etag === etag) { try { await res.body.cancel(); } catch (e) { } return JSON.parse(row.data); }
@@ -377,6 +396,21 @@ export async function onRequest({ request, env, params }) {
     if (kind === 'k') { if (!(int(key) > 0) || !LETTERS.includes(d)) bad(); return d; }
     bad();
   };
+  // تقارير مقرر واحد: يراها المعلم المسند للمقرر والإدارة فقط
+  if (p === 'admin/course/report' && m === 'GET') {
+    const c = COURSE[new URL(request.url).searchParams.get('course')], R = c && await courseRights(c.slug);
+    if (!R) return deny('هذا المقرر غير مسند لك');
+    const pg = c.slug, since = new Date(now - 14 * 864e5).toISOString();
+    const [sum, secs, students, subs, days, feed] = await Promise.all([
+      one("SELECT COUNT(DISTINCT student_id) students,SUM(kind='open') opens,SUM(kind='attempt') attempts,ROUND(AVG(CASE WHEN kind='attempt' THEN score END)) avg,MAX(score) best FROM events WHERE page=?", pg),
+      one('SELECT COALESCE(SUM(seconds),0) secs FROM usage WHERE page=?', pg),
+      all("SELECT s.id,s.name,SUM(e.kind='open') opens,SUM(e.kind='attempt') attempts,ROUND(AVG(CASE WHEN e.kind='attempt' THEN e.score END)) avg,MAX(e.score) best,MAX(e.created_at) last,(SELECT COALESCE(SUM(u.seconds),0) FROM usage u WHERE u.student_id=s.id AND u.page=?) secs FROM events e JOIN students s ON s.id=e.student_id WHERE e.page=? GROUP BY s.id ORDER BY last DESC LIMIT 500", pg, pg),
+      all("SELECT sub,COUNT(*) attempts,COUNT(DISTINCT student_id) students,ROUND(AVG(score)) avg,MAX(score) best FROM events WHERE page=? AND kind='attempt' GROUP BY sub ORDER BY attempts DESC LIMIT 60", pg),
+      all("SELECT substr(created_at,1,10) day,COUNT(*) events,COUNT(DISTINCT student_id) students FROM events WHERE page=? AND created_at>? GROUP BY day ORDER BY day DESC", pg, since),
+      all("SELECT s.name,e.kind,e.sub,e.score,e.created_at FROM events e JOIN students s ON s.id=e.student_id WHERE e.page=? ORDER BY e.id DESC LIMIT 30", pg)
+    ]);
+    return J({ course: { slug: c.slug, title: c.title }, summary: { ...sum, secs: secs.secs }, students, subs, days, feed });
+  }
   if (p === 'admin/exam/save' && m === 'POST') {
     const b = await body(), c = COURSE[b.course], R = c && await courseRights(c.slug);
     if (!R) return deny('ليس لديك صلاحية على هذا المقرر');
@@ -441,7 +475,7 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
   if (p === 'admin/courses/assign' && m === 'POST') {
-    if (!can('courses.manage')) return deny();
+    if (!isSuper) return deny('إسناد المقررات من صلاحيات الإدارة العامة فقط');
     const b = await body(), c = COURSE[b.course], sid = int(b.staff_id);
     const u = c && sid > 0 && await one('SELECT name,role FROM staff_users WHERE id=?', sid);
     if (!u) return J({ error: 'اختر المقرر والمعلم' }, 400);
@@ -450,7 +484,7 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
   if (p === 'admin/courses/remove' && m === 'POST') {
-    if (!can('courses.manage')) return deny();
+    if (!isSuper) return deny('إسناد المقررات من صلاحيات الإدارة العامة فقط');
     const b = await body(), c = COURSE[b.course], sid = int(b.staff_id);
     if (!c || !(sid > 0)) return J({ error: 'بيانات غير صحيحة' }, 400);
     await DB.batch([DB.prepare('DELETE FROM course_staff WHERE course=? AND staff_id=?').bind(c.slug, sid), audit(A, 'course_remove', 'staff', sid, c.title)]);
@@ -476,6 +510,7 @@ export async function onRequest({ request, env, params }) {
     const rows = await all('SELECT staff_id,perm FROM staff_perms');
     return users.map(u => ({ ...u, perms: u.role === 'super_admin' ? ALL_PERMS : cleanPerms(rows.filter(r => r.staff_id === u.id).map(r => r.perm)) }));
   };
+  const writeCourses = (id, list) => [DB.prepare('DELETE FROM course_staff WHERE staff_id=?').bind(id)].concat((Array.isArray(list) ? list : []).filter(x => x && COURSE[x.course]).map(x => DB.prepare('INSERT OR REPLACE INTO course_staff (course,staff_id,can_edit,can_add,can_delete,created_at) VALUES (?,?,?,?,?,?)').bind(x.course, id, x.can_edit ? 1 : 0, x.can_add ? 1 : 0, x.can_delete ? 1 : 0, iso)));
   const writePerms = (id, list) => [DB.prepare('DELETE FROM staff_perms WHERE staff_id=?').bind(id)].concat(cleanPerms(list).map(x => DB.prepare('INSERT INTO staff_perms (staff_id,perm) VALUES (?,?)').bind(id, x)));
   if (p === 'admin/staff' && m === 'GET') { if (!isSuper) return deny(); return J({ staff: await staffList() }); }
   if (p === 'admin/staff/add' && m === 'POST') {
@@ -486,7 +521,7 @@ export async function onRequest({ request, env, params }) {
     try {
       const r = await DB.prepare('INSERT INTO staff_users (name,username,password_hash,role,status,created_at) VALUES (?,?,?,?,?,?)').bind(name, username, await passwordHash(password), role, 'active', iso).run();
       const id = r.meta.last_row_id;
-      await DB.batch(writePerms(id, Array.isArray(b.perms) ? b.perms : ROLES[role].perms).concat(audit(A, 'create', 'staff', id, `${username} (${ROLES[role].label})`)));
+      await DB.batch(writePerms(id, Array.isArray(b.perms) ? b.perms : ROLES[role].perms).concat(Array.isArray(b.courses) ? writeCourses(id, b.courses) : [], audit(A, 'create', 'staff', id, `${username} (${ROLES[role].label})` + (Array.isArray(b.courses) && b.courses.length ? ' — ' + b.courses.map(x => (COURSE[x.course] || {}).title).filter(Boolean).join('، ') : ''))));
       return J({ ok: 1, id });
     } catch (e) {
       const text = String(e && e.message || e);
@@ -504,7 +539,8 @@ export async function onRequest({ request, env, params }) {
     if (b.password) st.push(DB.prepare('UPDATE staff_users SET password_hash=? WHERE id=?').bind(await passwordHash(String(b.password)), id));
     if (b.password || status === 'blocked') st.push(DB.prepare('DELETE FROM staff_sessions WHERE staff_id=?').bind(id));
     if (Array.isArray(b.perms)) st.push(...writePerms(id, b.perms));
-    const what = [u.role !== role ? 'الدور: ' + ROLES[role].label : '', u.status !== status ? (status === 'blocked' ? 'إيقاف' : 'تفعيل') : '', b.password ? 'كلمة مرور جديدة' : '', Array.isArray(b.perms) ? 'الصلاحيات: ' + cleanPerms(b.perms).length : ''].filter(Boolean).join('، ');
+    if (Array.isArray(b.courses)) st.push(...writeCourses(id, b.courses));
+    const what = [Array.isArray(b.courses) ? 'المقررات: ' + (b.courses.map(x => (COURSE[x.course] || {}).title).filter(Boolean).join('، ') || 'لا شيء') : '', u.role !== role ? 'الدور: ' + ROLES[role].label : '', u.status !== status ? (status === 'blocked' ? 'إيقاف' : 'تفعيل') : '', b.password ? 'كلمة مرور جديدة' : '', Array.isArray(b.perms) ? 'الصلاحيات: ' + cleanPerms(b.perms).length : ''].filter(Boolean).join('، ');
     st.push(audit(A, 'update', 'staff', id, `${u.username} — ${what || 'تعديل'}`));
     await DB.batch(st);
     return J({ ok: 1 });
@@ -571,8 +607,7 @@ export async function onRequest({ request, env, params }) {
     }
     if (isSuper) jobs.staff = staffList();
     jobs.cEdits = all('SELECT course,COUNT(*) n,MAX(updated_at) last FROM exam_patch GROUP BY course');
-    jobs.cStaff = can('courses.manage') ? all('SELECT cs.course,cs.staff_id,cs.can_edit,cs.can_add,cs.can_delete,u.name,u.username,u.role,u.status FROM course_staff cs JOIN staff_users u ON u.id=cs.staff_id ORDER BY u.name') : (A.type === 'staff' ? all('SELECT course,staff_id,can_edit,can_add,can_delete FROM course_staff WHERE staff_id=?', A.id) : Promise.resolve([]));
-    if (can('courses.manage') && !isSuper) jobs.staffPick = all("SELECT id,name,username,role,status FROM staff_users WHERE role<>'super_admin' ORDER BY name");
+    jobs.cStaff = isSuper ? all('SELECT cs.course,cs.staff_id,cs.can_edit,cs.can_add,cs.can_delete,u.name,u.username,u.role,u.status FROM course_staff cs JOIN staff_users u ON u.id=cs.staff_id ORDER BY u.name') : (A.type === 'staff' ? all('SELECT course,staff_id,can_edit,can_add,can_delete FROM course_staff WHERE staff_id=?', A.id) : Promise.resolve([]));
     const keys = Object.keys(jobs), vals = await Promise.all(keys.map(k => jobs[k])), R = Object.fromEntries(keys.map((k, i) => [k, vals[i]]));
     if (R.students) out.students = can('students.codes') ? R.students : R.students.map(s => ({ ...s, code: s.code.slice(0, 2) + '******' }));
     if (R.pages) { out.pages = R.pages; out.feed = R.feed; out.pageList = R.pageList.map(r => r.page); }
@@ -586,9 +621,8 @@ export async function onRequest({ request, env, params }) {
       if (A.type === 'staff') R.cStaff.filter(r => r.staff_id === A.id).forEach(r => mine[r.course] = r);
       out.courses = COURSES.map(c => {
         const r = isSuper ? { can_edit: 1, can_add: 1, can_delete: 1 } : mine[c.slug];
-        return { slug: c.slug, title: c.title, model: c.model, url: '/' + c.file.replace(/^\//, '').replace(/\.html$/, ''), edits: ed[c.slug] ? ed[c.slug].n : 0, last: ed[c.slug] ? ed[c.slug].last : null, rights: r ? { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete } : null, staff: can('courses.manage') ? R.cStaff.filter(x => x.course === c.slug) : undefined };
-      }).filter(c => c.rights || can('courses.manage'));
-      if (R.staffPick) out.staffPick = R.staffPick;
+        return { slug: c.slug, title: c.title, model: c.model, link: c.link, url: '/' + c.file.replace(/^\//, '').replace(/\.html$/, ''), edits: ed[c.slug] ? ed[c.slug].n : 0, last: ed[c.slug] ? ed[c.slug].last : null, rights: r ? { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete } : null, staff: isSuper ? R.cStaff.filter(x => x.course === c.slug) : undefined };
+      }).filter(c => c.rights);
     }
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;

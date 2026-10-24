@@ -8,9 +8,10 @@ const INAPP = /WhatsApp|FBAN|FBAV|FB_IAB|Instagram|Line\/|Snapchat|Telegram|Micr
 const DAY30 = 30 * 864e5;
 // نفس القائمة موجودة في functions/api/[[path]].js — أي مقرر جديد يُضاف في الملفين.
 const COURSES = {
-  'aksam kamy': { title: 'أقسام الكمي', model: 'bank', img: true, hints: true },
-  'aksam lafzi': { title: 'أقسام اللفظي', model: 'bank' },
-  'muhaky mohawsab': { title: 'المحاكي المحوسب', model: 'bank', hints: true, qq: true },
+  'aksam kamy': { title: 'أقسام الكمي', model: 'bank', img: true, hints: true, url: '/aksam kamy' },
+  'aksam lafzi': { title: 'أقسام اللفظي', model: 'bank', url: '/aksam lafzi' },
+  // المحاكي المحوسب يُبنى تلقائيًا من أقسام الكمي واللفظي (أي قسم جديد فيهما يظهر فيه مباشرة)
+  'muhaky mohawsab': { title: 'المحاكي المحوسب', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] },
   'muhaky warky1': { title: 'المحاكي الورقي – النموذج الأول', model: 'key' },
   'muhaky warky2': { title: 'المحاكي الورقي – النموذج الثاني', model: 'key' },
   'tasis lafzi': { title: 'تأسيس اللفظي', model: 'raw' }
@@ -68,10 +69,14 @@ export async function onRequest({ request, env, next }) {
     if (code) st = await env.DB.prepare('SELECT id,status,expires_at,kind,created_at,duration_minutes,pause_used,pause_until FROM students WHERE code=?').bind(code).first();
     if (cookie(request, 'bw_staff') || cookie(request, 'bw_admin')) staff = await staffOf(env, request, iso);
   } catch (e) { return next(); }
+  const links = course ? (COURSES[course].link || []) : [], linked = {};
   if (course) {
-    try { patches = (await env.DB.prepare('SELECT kind,key,data,deleted FROM exam_patch WHERE course=? ORDER BY created_at,rowid').bind(course).all()).results.map(r => [r.kind, r.key, r.deleted ? null : JSON.parse(r.data)]); } catch (e) { patches = []; }
+    try {
+      const want = [course].concat(links), rows = (await env.DB.prepare('SELECT course,kind,key,data,deleted FROM exam_patch WHERE course IN (' + want.map(() => '?').join(',') + ') ORDER BY created_at,rowid').bind(...want).all()).results;
+      for (const r of rows) { const x = [r.kind, r.key, r.deleted ? null : JSON.parse(r.data)]; if (r.course === course) patches.push(x); else (linked[r.course] = linked[r.course] || []).push(x); }
+    } catch (e) { patches = []; }
   }
-  const head = course ? `<script>window.__BWX=${safeJson({ c: course, p: patches })}</script><script src="/bw-content.js"></script>` : '';
+  const head = course ? `<script>window.__BWX=${safeJson({ c: course, p: patches, linked })}</script><script src="/bw-content.js"></script>` + links.map(l => `<script src="/api/exam/data?c=${encodeURIComponent(l)}"></script>`).join('') : '';
   const paused = !!st && (st.pause_until || 0) > now;
   const valid = !!st && st.status === 'active' && (!st.expires_at || st.expires_at > iso) && !paused;
   const contact = String(S.contact || '').replace(/\D/g, '');
@@ -110,12 +115,13 @@ export async function onRequest({ request, env, next }) {
 
   // العاملون في المنصة يدخلون كل الصفحات بدون كود، ويظهر لهم «وضع التحرير» في المقررات المسندة لهم
   if (staff) {
-    let rights = null;
-    if (course) {
-      if (staff.super) rights = { edit: true, add: true, delete: true };
-      else { try { const r = await env.DB.prepare('SELECT can_edit,can_add,can_delete FROM course_staff WHERE course=? AND staff_id=?').bind(course, staff.id).first(); if (r) rights = { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete }; } catch (e) { } }
-    }
-    const ed = rights ? `<script>window.__BWE=${safeJson({ course, title: COURSES[course].title, model: COURSES[course].model, img: !!COURSES[course].img, hints: !!COURSES[course].hints, qq: !!COURSES[course].qq, rights, name: staff.name })}</script><script src="/bw-editor.js"></script>` : '';
+    // المعلم يرى شريط «وضع المعلم» في كل مقرر؛ أدوات التحرير تظهر فقط في المقررات المسندة له
+    if (!course) return serve('');
+    const mine = {};
+    if (staff.super) [course].concat(links).forEach(c => mine[c] = { edit: true, add: true, delete: true });
+    else { try { for (const r of (await env.DB.prepare('SELECT course,can_edit,can_add,can_delete FROM course_staff WHERE staff_id=?').bind(staff.id).all()).results) mine[r.course] = { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete }; } catch (e) { } }
+    const C = COURSES[course];
+    const ed = `<script>window.__BWE=${safeJson({ course, title: C.title, model: C.model, img: !!C.img, hints: !!C.hints, rights: mine[course] || null, name: staff.name, super: staff.super, links: links.map(l => ({ slug: l, title: COURSES[l].title, url: COURSES[l].url, rights: mine[l] || null })) })}</script><script src="/bw-editor.js"></script>`;
     return serve(ed);
   }
 
