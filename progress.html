@@ -44,6 +44,15 @@
     .sims i { display: block; width: 100%; background: var(--bw-navy); border-radius: 8px 8px 0 0; min-height: 4px; }
     .sims div:last-child i { background: var(--bw-gold); }
     .empty { text-align: center; padding: 30px 10px; color: #5a6b80; }
+    .streak { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; background: #fff; border: 1px solid var(--bw-line); border-radius: 20px; padding: 16px 20px; margin-bottom: 22px; }
+    .streak b { display: block; color: var(--bw-navy); font-size: 17px; }
+    .streak span { color: #5a6b80; font-size: 14px; }
+    .streak .wk { display: flex; gap: 6px; }
+    .streak .wk i { width: 38px; height: 38px; border-radius: 12px; background: #eef3f8; display: grid; place-items: center; font-style: normal; }
+    .streak .wk i.on { background: var(--bw-gold); }
+    .streak .wk i.t { box-shadow: 0 0 0 2px var(--bw-navy); }
+    .streak .wk em { font-style: normal; font-size: 10.5px; color: #5a6b80; }
+    .streak .wk i.on em { color: var(--bw-night); font-weight: 600; }
     .note { color: #5a6b80; font-size: 13.5px; text-align: center; margin-top: 10px; }
     .resume { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--bw-gold-soft); border-radius: 16px; padding: 12px 16px; margin-bottom: 12px; color: #6b4a00; font-weight: 600; }
     @media (max-width: 860px) { .two { grid-template-columns: 1fr; } .kpis { grid-template-columns: 1fr 1fr; } .kpi:nth-child(3) { border-inline-start: 0; } .kpi:nth-child(n+3) { border-top: 1px solid var(--bw-line); } }
@@ -73,7 +82,7 @@
     var secs = Object.keys(S.s || {}).map(function (k) { var a = S.s[k]; return { id: +k, t: a.t, c: a.c, p: a.t ? a.c / a.t : 0 }; }).filter(function (x) { return x.id < 1000; });
     var h = (S.h || []), errs = Object.keys(E).map(function (k) { return E[k]; }).filter(function (x) { return x && x.id < 100000; });
     var n = 0, g = 0, wk = 0; h.forEach(function (x) { n += x.n || 0; g += x.g || 0; if (now - new Date(x.d) < 7 * DAY) wk += x.n || 0; });
-    return { secs: secs, h: h, errs: errs, n: n, g: g, wk: wk, due: errs.filter(function (x) { return now - new Date(x.date) >= DAY; }).length, run: get(SUBJ[sj].run, null) };
+    return { secs: secs, h: h, errs: errs, n: n, g: g, wk: wk, due: errs.filter(function (x) { return now - new Date(x.date) >= [1, 3, 7][x.ok || 0] * DAY; }).length, run: get(SUBJ[sj].run, null) };
   }
   var K = load('kamy'), V = load('lafzi');
   var sims = []; ['kamy', 'lafzi'].forEach(function (sj) { SUBJ[sj].sims.forEach(function (s) { (get(s[0], []) || []).forEach(function (x) { if (x && x.d != null) sims.push({ d: x.d, p: x.p, n: s[1] }); }); }); });
@@ -105,6 +114,16 @@
     if (K.n + V.n === 0) return { t: 'ابدأ أول تدريب لك', d: 'اختر قسمًا من الكمي أو اللفظي وحلّ ١١ سؤالًا. بعدها ستظهر هنا نقاط قوتك وضعفك.', b: 'اختر اختبارك', go: '/#tests' };
     var sj2 = K.n <= V.n ? 'kamy' : 'lafzi'; return { t: 'تدرّب على قسم جديد في ' + SUBJ[sj2].title, d: 'أداؤك جيد في ما حلّلته. جرّب أقسامًا لم تحلها بعد.', b: 'افتح ' + SUBJ[sj2].title, go: SUBJ[sj2].page };
   }
+  // أيام التدريب المتتالية (بدون ضغط: اليوم لا يُحسب ناقصًا قبل أن ينتهي)
+  function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function streak() {
+    var days = {}; K.h.concat(V.h).forEach(function (x) { if (x.d) days[dayKey(x.d)] = 1; }); sims.forEach(function (x) { days[dayKey(x.d)] = 1; });
+    (get('bw-place-v1', []) || []).forEach(function (x) { if (x && x.d) days[dayKey(x.d)] = 1; });
+    var n = 0, t = new Date(), today = !!days[dayKey(t)]; if (!today) t.setDate(t.getDate() - 1);
+    while (days[dayKey(t)]) { n++; t.setDate(t.getDate() - 1); }
+    var week = []; for (var i = 6; i >= 0; i--) { var d = new Date(); d.setDate(d.getDate() - i); week.push({ on: !!days[dayKey(d)], l: d.toLocaleDateString('ar-SA', { weekday: 'short' }), today: i === 0 }); }
+    return { n: n, today: today, week: week };
+  }
   function lv(p) { return p >= .8 ? 'g' : p >= .5 ? 'o' : 'r'; }
   function subjCard(sj, X) {
     var T = SUBJ[sj], h = '<div class="card"><h3>' + T.title + '</h3>';
@@ -125,6 +144,8 @@
     var n = K.n + V.n, g = K.g + V.g, step = nextStep(), h = '<h1>تقدمي</h1><p class="sub">ملخص تدريبك، والخطوة التالية المقترحة لك.</p>';
     if (place) h += '<div class="resume"><span>مستواك في اختبار تحديد المستوى: ' + esc(place.lvl) + ' (' + AR(place.p) + '٪ · لفظي ' + AR(place.v) + '٪ · كمي ' + AR(place.k) + '٪)</span><a class="btn btn-soft" href="/placement.html">' + (now - new Date(place.d) > 14 * DAY ? 'حان وقت إعادته' : 'أعد الاختبار') + '</a></div>';
     h += '<section class="next"><div><small>خطوتك التالية</small><h2>' + esc(step.t) + '</h2><p>' + esc(step.d) + '</p></div>' + (step.go ? '<a class="btn btn-gold" href="' + step.go + '">' + esc(step.b) + '</a>' : '<button class="btn btn-gold" id="stepBtn">' + esc(step.b) + '</button>') + '</section>';
+    var SK2 = streak();
+    h += '<div class="streak"><div><b>' + (SK2.n === 1 ? '🔥 يوم تدريب واحد' : SK2.n === 2 ? '🔥 يوما تدريب متتاليان' : SK2.n ? '🔥 ' + AR(SK2.n) + (SK2.n <= 10 ? ' أيام تدريب متتالية' : ' يومًا تدريبيًا متتاليًا') : 'ابدأ اليوم سلسلة أيام تدريبك') + '</b><span>' + (SK2.n && !SK2.today ? 'تدرّب اليوم ولو ١١ سؤالًا لتستمر السلسلة.' : SK2.today ? 'أحسنت، تدربت اليوم.' : 'قليل كل يوم أفضل من كثير مرة واحدة.') + '</span></div><div class="wk">' + SK2.week.map(function (d) { return '<i class="' + (d.on ? 'on' : '') + (d.today ? ' t' : '') + '" title="' + esc(d.l) + '"><em>' + esc(d.l) + '</em></i>'; }).join('') + '</div></div>';
     h += '<div class="kpis"><div class="kpi"><b>' + AR(n) + '</b><span>سؤالًا حللته</span></div><div class="kpi"><b>' + (n ? AR(Math.round(g / n * 100)) + '٪' : '—') + '</b><span>دقة إجاباتك</span></div><div class="kpi"><b>' + AR(K.wk + V.wk) + '</b><span>سؤالًا هذا الأسبوع</span></div><div class="kpi"><b>' + AR(K.errs.length + V.errs.length) + '</b><span>سؤالًا في مجلد الأخطاء</span></div></div>';
     h += '<div class="two">' + subjCard('kamy', K) + subjCard('lafzi', V) + '</div>';
     h += '<div class="two"><div class="card"><h3>نتائج المحاكاة</h3>';
@@ -151,5 +172,6 @@
   if (V.secs.length) loadNames('lafzi');
 })();
 </script>
+<script src="/bw-shell.js"></script>
 </body>
 </html>

@@ -118,3 +118,29 @@ body.testing #bw-shell .bws-report span { display: none; }
 .bw-whysum > b { color: var(--bw-navy); }
 .bw-whychips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .bw-whysum p { margin: 4px 0 0; color: #3b4b60; font-size: 14px; }
+
+/* ---------- رابط منصة الدورات وأدوات سهولة القراءة ---------- */
+#bw-shell .bws-lms, #bw-shell .bws-a11y { flex: none; background: #ffffff14; color: #fff; border: 0; border-radius: 10px; padding: 8px 12px; font: 600 13.5px "IBM Plex Sans Arabic", Tahoma, sans-serif; text-decoration: none; cursor: pointer; }
+#bw-shell .bws-lms:hover, #bw-shell .bws-a11y:hover { background: #ffffff26; }
+#bw-shell .bws-a11y { font-family: "Readex Pro", sans-serif; font-weight: 700; }
+@media (max-width: 900px) { #bw-shell .bws-lms span { display: none; } }
+body.testing #bw-shell .bws-lms { display: none; }
+.bws-a11yp { position: fixed; z-index: 2147483100; top: 72px; left: max(16px, calc((100% - 1180px) / 2)); width: min(300px, calc(100% - 32px)); background: #fff; color: #142338; border: 1px solid var(--bw-line); border-top: 4px solid var(--bw-gold); border-radius: 16px; padding: 14px; display: grid; gap: 8px; box-shadow: 0 16px 40px #0c244033; direction: rtl; font-family: "IBM Plex Sans Arabic", Tahoma, sans-serif; }
+.bws-a11yp[hidden] { display: none; }
+.bws-a11yp b { color: var(--bw-navy); }
+.bws-a11yp .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.bws-a11yp button { font: 600 14px "IBM Plex Sans Arabic", Tahoma, sans-serif; border: 1.5px solid var(--bw-line); background: #fff; color: #142338; border-radius: 10px; padding: 8px 10px; cursor: pointer; text-align: center; }
+.bws-a11yp button.on { background: var(--bw-navy); border-color: var(--bw-navy); color: #fff; }
+.bws-a11yp button.x { background: #e3ebf3; border-color: #e3ebf3; color: var(--bw-navy); }
+html.bwa-z1 body > :not(#bw-shell):not(.bws-a11yp):not(.bws-ov) { zoom: 1.12; }
+html.bwa-z2 body > :not(#bw-shell):not(.bws-a11yp):not(.bws-ov) { zoom: 1.25; }
+html.bwa-rf body, html.bwa-rf button, html.bwa-rf input, html.bwa-rf select, html.bwa-rf textarea { font-family: Tahoma, Arial, sans-serif !important; letter-spacing: .01em; word-spacing: .14em; }
+html.bwa-rf body p, html.bwa-rf body li, html.bwa-rf .stem, html.bwa-rf .opt { line-height: 2 !important; }
+html.bwa-hc body { color: #000 !important; background: #fff !important; }
+html.bwa-hc body p, html.bwa-hc body span, html.bwa-hc body li, html.bwa-hc body label, html.bwa-hc .sub, html.bwa-hc .m { color: #000 !important; }
+html.bwa-hc .card, html.bwa-hc .qcard, html.bwa-hc .opt, html.bwa-hc .panel, html.bwa-hc button { border-color: #2a3a50 !important; }
+html.bwa-hc a { text-decoration: underline; }
+html.bwa-hc #bw-shell, html.bwa-hc #bw-shell * { color: #fff !important; }
+html.bwa-nm *, html.bwa-nm *::before, html.bwa-nm *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+.bw-stage { margin-top: 8px; font-size: 13.5px; font-weight: 600; color: #17633f; background: #e4f3ea; border-radius: 10px; padding: 6px 12px; display: inline-block; }
+html.bwa-hc #bw-shell .timer, html.bwa-hc #bw-shell .timer * { color: var(--bw-night) !important; }

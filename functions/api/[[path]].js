@@ -719,6 +719,43 @@ export async function onRequest({ request, env, params }) {
     await DB.batch([DB.prepare('DELETE FROM staff_sessions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_perms WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_permissions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM course_staff WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_users WHERE id=?').bind(id), audit(A, 'delete', 'staff', id, u ? u.username : '')]);
     return J({ ok: 1 });
   }
+  // ---------- النسخ والتراجع (الإدارة العامة فقط) ----------
+  // يحتاج متغيرات البيئة: CF_API_TOKEN (صلاحية Cloudflare Pages: Edit) و CF_ACCOUNT_ID، و CF_PAGES_PROJECT (افتراضي bawaba-quant-quiz)
+  if (p.startsWith('admin/versions')) {
+    if (!isSuper) return deny('النسخ والتراجع من صلاحيات الإدارة العامة فقط');
+    const proj = env.CF_PAGES_PROJECT || 'bawaba-quant-quiz';
+    const configured = !!(env.CF_API_TOKEN && env.CF_ACCOUNT_ID);
+    const goodRow = await one("SELECT value FROM settings WHERE key='good_versions'");
+    let good = {}; try { good = JSON.parse(goodRow && goodRow.value || '{}') || {}; } catch (e) { good = {}; }
+    const cf = async (path, method = 'GET') => {
+      const r = await fetch('https://api.cloudflare.com/client/v4/accounts/' + encodeURIComponent(env.CF_ACCOUNT_ID) + '/pages/projects/' + encodeURIComponent(proj) + path, { method, headers: { authorization: 'Bearer ' + env.CF_API_TOKEN } });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(((d.errors || [])[0] || {}).message || ('Cloudflare ' + r.status));
+      return d.result;
+    };
+    const shape = x => { const md = (x.deployment_trigger && x.deployment_trigger.metadata) || {}; return { id: x.id, short: x.short_id, created: x.created_on, msg: txt(md.commit_message, 160), hash: txt(md.commit_hash, 12), branch: md.branch || '', status: (x.latest_stage && x.latest_stage.status) || '', url: x.url, good: good[x.id] || null }; };
+    if (p === 'admin/versions' && m === 'GET') {
+      if (!configured) return J({ configured: false, project: proj, good });
+      try {
+        const [info, list] = await Promise.all([cf(''), cf('/deployments?env=production&per_page=25')]);
+        return J({ configured: true, project: proj, current: info && info.canonical_deployment ? info.canonical_deployment.id : null, list: (list || []).map(shape) });
+      } catch (e) { return J({ configured: true, project: proj, error: 'تعذّر الاتصال بـ Cloudflare: ' + e.message, list: [] }); }
+    }
+    if (p === 'admin/versions/mark' && m === 'POST') {
+      const b = await body(), id = txt(b.id, 64); if (!/^[0-9a-f-]{8,64}$/i.test(id)) return J({ error: 'نسخة غير صحيحة' }, 400);
+      if (b.good) good[id] = { note: txt(b.note, 120), at: iso, by: A.name, short: txt(b.short, 16), msg: txt(b.msg, 160) }; else delete good[id];
+      await DB.batch([DB.prepare("INSERT INTO settings (key,value) VALUES ('good_versions',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(good)), audit(A, b.good ? 'version_good' : 'version_unmark', 'version', null, (b.short || id) + (b.note ? ' — ' + txt(b.note, 100) : ''))]);
+      return J({ ok: 1, good });
+    }
+    if (p === 'admin/versions/rollback' && m === 'POST') {
+      if (!configured) return J({ error: 'اربط حساب Cloudflare أولًا' }, 400);
+      const b = await body(), id = txt(b.id, 64); if (!/^[0-9a-f-]{8,64}$/i.test(id)) return J({ error: 'نسخة غير صحيحة' }, 400);
+      try { const r = await cf('/deployments/' + encodeURIComponent(id) + '/rollback', 'POST'); await audit(A, 'version_rollback', 'version', null, (r && r.short_id) || id).run(); return J({ ok: 1, id: r && r.id }); }
+      catch (e) { return J({ error: 'فشل التراجع: ' + e.message }, 502); }
+    }
+    return J({ error: 'not found' }, 404);
+  }
+
   if (p === 'admin/audit' && m === 'GET') {
     if (!can('audit.view')) return deny();
     return J({ audit: await all('SELECT * FROM audit_log ORDER BY id DESC LIMIT 300') });

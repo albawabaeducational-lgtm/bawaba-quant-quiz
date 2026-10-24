@@ -97,6 +97,20 @@
     .block-head p { margin: 6px 0 0; color: var(--muted); max-width: 38em; }
 
     /* قائمة الاختبارات بشكل صفوف */
+    .tfilter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .tfilter button { font: 600 14px var(--body, inherit); font-family: inherit; border: 0; background: #ffffff1f; color: #fff; border-radius: 99px; padding: 7px 16px; cursor: pointer; box-shadow: inset 0 0 0 1.5px #ffffff40; }
+    .tfilter button.on { background: var(--gold); color: var(--night); box-shadow: none; }
+    .exams.filtered { grid-template-columns: 1fr; }
+    .sample { display: grid; grid-template-columns: 1fr 1.1fr; gap: 32px; align-items: center; margin-top: 46px; }
+    .sample h3 { font-size: clamp(22px, 2.6vw, 28px); color: var(--navy); margin: 0 0 8px; }
+    .sample > div > p { color: var(--muted); margin: 0 0 14px; }
+    .sample-card { background: #fff; border: 1px solid var(--line); border-inline-start: 4px solid var(--gold); border-radius: 20px; padding: 20px 22px; position: relative; }
+    .sample-card .ex { position: absolute; top: 14px; left: 16px; font-size: 12px; font-weight: 600; color: #7a5300; background: var(--gold-soft); border-radius: 99px; padding: 1px 10px; }
+    .sample-card b.t { display: block; color: var(--navy); font-size: 17px; margin-bottom: 8px; }
+    .sample-card ul { margin: 0 0 10px; padding-inline-start: 20px; color: #3b4b60; font-size: 14.5px; line-height: 1.9; }
+    .sample-card .r { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+    .sample-card .r em { font-style: normal; background: #eaf2f9; color: var(--navy); font-weight: 600; font-size: 13px; border-radius: 10px; padding: 4px 10px; }
+    @media (max-width: 860px) { .sample { grid-template-columns: 1fr; } }
     .exams { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
     .exam-main { grid-row: span 2; display: flex; flex-direction: column; justify-content: space-between; background: var(--navy); color: #fff; border-radius: 22px; padding: 30px; text-decoration: none; min-height: 300px; position: relative; overflow: hidden; }
     .exam-main::before { content: "أ ب ج د"; position: absolute; left: -10px; bottom: -36px; font-family: var(--display); font-size: 120px; font-weight: 700; color: #ffffff0d; letter-spacing: 6px; white-space: nowrap; pointer-events: none; }
@@ -277,8 +291,9 @@
 
     <section class="tests-up" id="tests" aria-label="الاختبارات">
       <div class="wrap">
+        <div class="tfilter" role="group" aria-label="تصفية الاختبارات"><button type="button" class="on" data-f="">الكل</button><button type="button" data-f="kamy">كمي</button><button type="button" data-f="lafzi">لفظي</button><button type="button" data-f="mohawsab">محوسب</button><button type="button" data-f="waraqi">ورقي</button><button type="button" data-f="tasis">تأسيس</button></div>
         <div class="exams">
-          <a class="exam-main" href="/muhaky%20mohawsab.html">
+          <a class="exam-main" data-cat="mohawsab" href="/muhaky%20mohawsab.html">
             <div>
               <span class="tag">الأقرب للاختبار الحقيقي</span>
               <h3>محاكي اختبار القدرات المحوسب</h3>
@@ -287,12 +302,12 @@
             <span class="btn btn-gold go">ابدأ المحاكاة</span>
           </a>
           <div class="exam-list">
-            <a class="exam-row" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم الكمي</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
-            <a class="exam-row" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم اللفظي</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
+            <a class="exam-row" data-cat="kamy" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم الكمي</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
+            <a class="exam-row" data-cat="lafzi" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم اللفظي</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
           </div>
           <div class="exam-list">
-            <a class="exam-row" href="waraqi.html"><span class="ic" aria-hidden="true">✎</span><span><strong>محاكيات اختبار القدرات الورقي<em class="mode sm">محاكاة</em></strong><span class="d">النموذج الأول والنموذج الثاني</span></span><span class="cnt">١٢٠ سؤالًا لكل نموذج</span></a>
-            <a class="exam-row" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي<em class="mode tr">تدريب</em></strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
+            <a class="exam-row" data-cat="waraqi" href="waraqi.html"><span class="ic" aria-hidden="true">✎</span><span><strong>محاكيات اختبار القدرات الورقي<em class="mode sm">محاكاة</em></strong><span class="d">النموذج الأول والنموذج الثاني</span></span><span class="cnt">١٢٠ سؤالًا لكل نموذج</span></a>
+            <a class="exam-row" data-cat="tasis lafzi" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي<em class="mode tr">تدريب</em></strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
           </div>
         </div>
       </div>
@@ -323,6 +338,14 @@
           <li><b>راجع أخطاءك</b><p>كل سؤال أخطأت فيه يُحفظ في «الأسئلة الخاطئة»، وصفحة «تقدمي» تخبرك بما حان وقت مراجعته.</p></li>
           <li><b>قِس تحسّنك</b><p>ادخل المحاكي المحوسب أو الورقي، وأعد اختبار تحديد المستوى كل أسبوعين لترى الفرق.</p></li>
         </ol>
+        <div class="sample guest-only">
+          <div><h3>بعد كل اختبار: خطة، لا مجرد درجة</h3><p>تعرف أين أخطأت ولماذا، وما القسم الذي تعيده الآن، ومقارنة بمحاولتك السابقة. وصفحة «تقدمي» تجمع كل ذلك وتقترح خطوتك التالية.</p><a class="btn btn-navy" href="/placement.html">جرّبها باختبار تحديد المستوى</a></div>
+          <div class="sample-card" aria-label="مثال توضيحي لتقرير النتيجة"><span class="ex">مثال توضيحي</span><b class="t">خطة علاجك بعد هذا الاختبار</b>
+            <ul><li><b>مقارنة بمحاولتك السابقة: ٦٤٪ ← ٧٣٪ (تحسّن ٩ درجات).</b></li><li><b>تركت سؤالين بدون إجابة.</b> لا يوجد خصم للخطأ، فلا تترك سؤالًا فارغًا.</li></ul>
+            <div class="r"><span>إكمال الجمل</span><b>٢ / ٥</b><em>أعد التدريب على هذا القسم</em></div>
+            <div class="r"><span>الخطأ السياقي</span><b>٣ / ٦</b><em>أعد التدريب على هذا القسم</em></div>
+          </div>
+        </div>
         <div class="modes">
           <div><h3><em class="mode tr" style="margin:0">تدريب</em> هدفه التعلّم</h3><p>أقسام الكمي واللفظي والتأسيس: تختار الأقسام، وتضبط المؤقت أو توقفه، وترى الإرشاد والتصحيح، وتعيد الأسئلة الخاطئة.</p></div>
           <div><h3><em class="mode sm" style="margin:0">محاكاة</em> هدفها القياس</h3><p>المحاكي المحوسب والورقي: مؤقت وقواعد ثابتة مثل يوم الاختبار، والإجابات الصحيحة تظهر في التقرير النهائي فقط.</p></div>
@@ -407,6 +430,13 @@
   </footer>
 
 <script>
+// تصفية الاختبارات
+(function () { var F = document.querySelector('.tfilter'); if (!F) return; var ex = document.querySelector('.exams');
+  F.addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (!b) return; var f = b.getAttribute('data-f');
+    [].forEach.call(F.children, function (x) { x.classList.toggle('on', x === b); });
+    [].forEach.call(ex.querySelectorAll('[data-cat]'), function (a) { a.style.display = !f || a.getAttribute('data-cat').split(' ').indexOf(f) >= 0 ? '' : 'none'; });
+    [].forEach.call(ex.querySelectorAll('.exam-list'), function (l) { l.style.display = [].some.call(l.children, function (a) { return a.style.display !== 'none'; }) ? '' : 'none'; });
+    ex.classList.toggle('filtered', !!f); }); })();
 // تسجيل خروج الطالب
 (function () { var o = document.getElementById('bwOut'); if (o) o.onclick = function (e) { e.preventDefault(); fetch('/api/logout', { method: 'POST' }).catch(function () { }).then(function () { location.href = '/login'; }); }; })();
 // الطالب العائد: الزر الرئيسي يصبح «أكمل تدريبي»
