@@ -23,7 +23,7 @@
     #bw-shell .bws-back { color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 10px; padding: 8px 14px; box-shadow: inset 0 0 0 1.5px #ffffff4d; white-space: nowrap; }
     #timer { background: var(--bw-gold); color: var(--bw-night); }
     #timer.urgent { background: #fbe6e2; color: #c2412f; }
-    @media (max-width: 700px) { #bw-shell .bws-brand b, #bw-shell .bws-title { display: none; } }
+    @media (max-width: 700px) { #bw-shell .bws-brand b, #bw-shell .bws-title { display: none; } #bw-shell .bws-back { font-size: 0; padding: 7px 10px; line-height: 1; } #bw-shell .bws-back::before { content: "☰"; font-size: 18px; } }
     body.bwt-hub { color: #142338; line-height: 1.7; }
     .mw { width: min(1080px, calc(100% - 32px)); margin: 28px auto 70px; }
     .hidden { display: none !important; }
@@ -56,6 +56,14 @@
     .chip small { display: block; font-size: 12px; color: #5a6b80; font-weight: 500; }
     .chip.on { background: var(--bw-navy); border-color: var(--bw-navy); color: #fff; }
     .chip.on small { color: #c3d3e4; }
+    .build { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 14px; margin-top: 12px; }
+    .opt-g { background: var(--bw-paper); border: 1px solid var(--bw-line); border-radius: 16px; padding: 14px; }
+    .opt-g .lbl { margin-top: 0; }
+    .opt-g .chips { gap: 6px; }
+    .opt-g .chip { padding: 9px 12px; flex: 1 1 auto; }
+    .go-row { display: flex; gap: 14px; align-items: center; justify-content: space-between; margin-top: 14px; flex-wrap: wrap; }
+    .go-row .est { margin-top: 0; flex: 1 1 260px; }
+    @media (max-width: 900px) { .build { grid-template-columns: 1fr; } .go-row .btn { width: 100%; } }
     .est { margin-top: 16px; padding: 12px 14px; background: var(--bw-paper); border-radius: 14px; color: #3b4b60; font-size: 14.5px; }
     .resume { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--bw-gold-soft); color: #6b4a00; border-radius: 16px; padding: 12px 16px; margin-bottom: 16px; font-weight: 600; }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -192,10 +200,10 @@
     if (run && run.ids && !run.done) h += '<div class="resume"><span>عندك اختبار لم يكتمل (' + AR(Object.keys(run.ans || {}).length) + ' من ' + AR(run.ids.length) + ' مجاب).</span><span class="row"><button class="btn sm" data-a="resume">أكمل الاختبار</button><button class="btn ghost sm" data-a="drop">إلغاؤه</button></span></div>';
     h += '<section class="hero"><span class="tag">بنك واحد · ' + AR(N) + ' سؤالًا</span><h1>الأسئلة الأكثر تكرارًا – كمي</h1><p>كل اختبار يسحب أسئلة لم ترها من قبل، حتى تُنهي البنك كله.</p>'
       + '<div class="bank"><b>' + AR(Math.round(done / N * 100)) + '٪</b><div><div class="track"><i style="width:' + Math.max(1, done / N * 100) + '%"></i></div><small>' + (done ? 'حللت ' + AR(done) + ' من ' + AR(N) + ' سؤالًا في الدور ' + (['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس'][S.round - 1] || AR(S.round)) + ' · باقي ' + AR(N - done) : 'لم تبدأ بعد · ' + AR(N) + ' سؤالًا تنتظرك') + '</small></div></div></section>';
-    h += '<div class="card"><h2 style="font-size:22px;margin-bottom:4px">اصنع اختبارك</h2><p class="m" style="margin-bottom:6px">اختر عدد الأسئلة ونوع الاختبار والوقت، ثم ابدأ.</p><span class="lbl">١. عدد أسئلة الاختبار</span><div class="chips" id="sz">' + SIZES.map(function (n) { return '<button type="button" class="chip' + (pref.n === n ? ' on' : '') + '" data-n="' + n + '">' + AR(n) + '<small>سؤالًا</small></button>'; }).join('') + '</div>'
-      + '<span class="lbl">٢. نوع الاختبار</span><div class="chips" id="md"><button type="button" class="chip' + (pref.mode === 'sim' ? ' on' : '') + '" data-m="sim">محاكاة<small>الإجابات في النهاية</small></button><button type="button" class="chip' + (pref.mode === 'train' ? ' on' : '') + '" data-m="train">تدريب<small>تصحيح فوري</small></button></div>'
-      + '<span class="lbl">٣. وقت الاختبار</span><div class="chips" id="pr">' + [[60, 'دقيقة للسؤال'], [90, 'دقيقة ونصف'], [45, '٤٥ ثانية'], [0, 'بدون مؤقت']].map(function (p) { return '<button type="button" class="chip' + (pref.per === p[0] ? ' on' : '') + '" data-p="' + p[0] + '"' + (p[0] === 0 && pref.mode === 'sim' ? ' disabled style="opacity:.4"' : '') + '>' + p[1] + '</button>'; }).join('') + '</div>'
-      + '<div class="est" id="est"></div><div class="row" style="margin-top:16px"><button class="btn gold" data-a="start" style="font-size:17px;padding:13px 26px">ابدأ الاختبار</button></div></div>';
+    h += '<div class="card"><h2 style="font-size:22px;margin-bottom:4px">اصنع اختبارك</h2><p class="m" style="margin-bottom:6px">اختر عدد الأسئلة ونوع الاختبار والوقت، ثم ابدأ.</p><div class="build"><div class="opt-g"><span class="lbl">١. عدد أسئلة الاختبار</span><div class="chips" id="sz">' + SIZES.map(function (n) { return '<button type="button" class="chip' + (pref.n === n ? ' on' : '') + '" data-n="' + n + '">' + AR(n) + '<small>سؤالًا</small></button>'; }).join('') + '</div>'
+      + '</div><div class="opt-g"><span class="lbl">٢. نوع الاختبار</span><div class="chips" id="md"><button type="button" class="chip' + (pref.mode === 'sim' ? ' on' : '') + '" data-m="sim">محاكاة<small>الإجابات في النهاية</small></button><button type="button" class="chip' + (pref.mode === 'train' ? ' on' : '') + '" data-m="train">تدريب<small>تصحيح فوري</small></button></div>'
+      + '</div><div class="opt-g"><span class="lbl">٣. وقت الاختبار</span><div class="chips" id="pr">' + [[60, 'دقيقة للسؤال'], [90, 'دقيقة ونصف'], [45, '٤٥ ثانية'], [0, 'بدون مؤقت']].map(function (p) { return '<button type="button" class="chip' + (pref.per === p[0] ? ' on' : '') + '" data-p="' + p[0] + '"' + (p[0] === 0 && pref.mode === 'sim' ? ' disabled style="opacity:.4"' : '') + '>' + p[1] + '</button>'; }).join('') + '</div>'
+      + '</div></div><div class="go-row"><div class="est" id="est"></div><button class="btn gold" data-a="start" style="font-size:17px;padding:13px 30px">ابدأ الاختبار</button></div></div>';
     h += '<div class="two"><div class="card"><h2>مجلد الأخطاء</h2><p class="m">' + (errs ? cnt(errs, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالًا') + ' أخطأت فيها. يخرج السؤال من المجلد بعد أن تجيبه صحيحًا ٣ مرات.' : 'كل سؤال تخطئ فيه يُحفظ هنا لتعيد حله.') + '</p><div class="row" style="margin-top:12px"><button class="btn soft" data-a="errs"' + (errs ? '' : ' disabled') + '>افتح المجلد</button><button class="btn ghost" data-a="errtrain"' + (errs ? '' : ' disabled') + '>تدرّب عليها</button></div></div>'
       + '<div class="card"><h2>سجل محاولاتك</h2>' + histHtml(hist) + '</div></div>';
     h += '<div class="card"><h2>تعليمات</h2><ul class="advice"><li><b>المحاكاة:</b> مؤقت ثابت مثل يوم الاختبار، والإجابات الصحيحة تظهر في التقرير النهائي فقط. عند انتهاء الوقت يُسلَّم الاختبار تلقائيًا.</li><li><b>التدريب:</b> ترى التصحيح بعد كل إجابة، ويمكنك إيقاف المؤقت.</li><li>تنقّل بين الأسئلة بحرية من خريطة الأسئلة، وعلّم أي سؤال للمراجعة.</li><li>اضغط على صورة السؤال لتكبيرها. اختصارات لوحة المفاتيح: ١–٤ للإجابة، الأسهم للتنقل، F لتعليم السؤال.</li><li>يُحفظ اختبارك أولًا بأول؛ لو أغلقت الصفحة تكمله من حيث توقفت.</li>' + (done ? '<li><button class="btn ghost sm" data-a="reset">ابدأ البنك من جديد</button> <span class="m">(يعيد كل الأسئلة لقائمة «لم تُحل»)</span></li>' : '') + '</ul></div>';

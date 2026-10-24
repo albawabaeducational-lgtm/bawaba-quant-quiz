@@ -116,6 +116,11 @@
     .exam-main::before { content: "أ ب ج د"; position: absolute; left: -10px; bottom: -36px; font-family: var(--display); font-size: 120px; font-weight: 700; color: #ffffff0d; letter-spacing: 6px; white-space: nowrap; pointer-events: none; }
     .exam-main h3 { font-size: 28px; }
     .exam-main p { color: #c3d3e4; margin: 10px 0 0; max-width: 28em; }
+    .exam-main .copy { margin: 14px 0 0; color: #fff; font-family: var(--display); font-weight: 700; font-size: clamp(24px, 3vw, 32px); line-height: 1.4; max-width: none; }
+    .exam-main .copy mark, .exam-row .claim mark { background: var(--gold); color: var(--night); border-radius: 10px; padding: 0 12px; box-shadow: 0 0 0 4px #e3a92b40, 0 0 26px #e3a92b80; }
+    .exam-main .copy2 { margin: 8px 0 0; color: #fff; font-weight: 600; }
+    .exam-row .claim { display: block; margin-top: 6px; font-size: 13px; font-weight: 700; color: #7a5300; }
+    .exam-row .claim mark { padding: 0 8px; border-radius: 8px; box-shadow: 0 0 0 3px #e3a92b33; }
     .exam-main .go { align-self: flex-start; margin-top: 26px; }
     .exam-main .tag { display: inline-block; background: var(--gold); color: var(--night); font-weight: 600; font-size: 13px; border-radius: 99px; padding: 2px 12px; margin-bottom: 14px; }
     .exam-list { display: grid; gap: 0; background: var(--white); border-radius: 22px; border: 1px solid var(--line); overflow: hidden; }
@@ -297,18 +302,20 @@
             <div>
               <span class="tag">الأقرب للاختبار الحقيقي</span>
               <h3>محاكي اختبار القدرات المحوسب</h3>
+              <p class="copy"><mark>نسخ ولصق</mark> من الاختبار الحقيقي</p>
+              <p class="copy2">ما تراه هنا هو ما ستراه يوم الاختبار: نفس الأسئلة، ونفس الشكل، ونفس الوقت.</p>
               <p>خمسة أقسام، كل قسم يجمع أسئلة كمي ولفظي بمؤقت مستقل مثل يوم الاختبار، وتقرير نتيجة مفصل في النهاية.</p>
             </div>
             <span class="btn btn-gold go">ابدأ المحاكاة</span>
           </a>
           <div class="exam-list">
-            <a class="exam-row" data-cat="kamy" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم الكمي</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
-            <a class="exam-row" data-cat="lafzi" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم اللفظي</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
+            <a class="exam-row" data-cat="tasis lafzi" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي<em class="mode tr">تدريب</em></strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
+            <a class="exam-row" data-cat="kamy" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم الكمي</span><span class="claim"><mark>نسخ ولصق</mark> لن يخرج عنها الاختبار · تحدَّ نفسك</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
+            <a class="exam-row" data-cat="lafzi" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم اللفظي</span><span class="claim"><mark>نسخ ولصق</mark> لن يخرج عنها الاختبار · تحدَّ نفسك</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
             <a class="exam-row" data-cat="kamy" href="/aktar%20kamy.html"><span class="ic" aria-hidden="true">★</span><span><strong>الأسئلة الأكثر تكرارًا – كمي<em class="mode tr">تدريب</em><em class="mode sm">محاكاة</em></strong><span class="d">بنك واحد، اختبارات ١٠ إلى ٥٥ سؤالًا بدون تكرار</span></span><span class="cnt">+١٤٠٠ سؤال</span></a>
           </div>
           <div class="exam-list">
             <a class="exam-row" data-cat="waraqi" href="waraqi.html"><span class="ic" aria-hidden="true">✎</span><span><strong>محاكيات اختبار القدرات الورقي<em class="mode sm">محاكاة</em></strong><span class="d">النموذج الأول والنموذج الثاني</span></span><span class="cnt">١٢٠ سؤالًا لكل نموذج</span></a>
-            <a class="exam-row" data-cat="tasis lafzi" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي<em class="mode tr">تدريب</em></strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
           </div>
         </div>
       </div>
