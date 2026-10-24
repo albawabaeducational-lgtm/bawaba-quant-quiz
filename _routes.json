@@ -1,1 +1,32 @@
-{"version":1,"include":["/*"],"exclude":["/img/*","/icons/*","/*.webp","/*.jpg","/*.jpeg","/*.png","/*.svg","/*.json","/*.md","/sw.js","/bw-tracker.js","/bw-ui.js","/login","/login.html","/admin","/admin.html","/bw-content.js","/bw-editor.js","/bw-trial.js","/bw-theme.css","/bw-shell.js","/*.css","/bw-sync.js"]}
+{
+  "version": 1,
+  "include": [
+    "/*"
+  ],
+  "exclude": [
+    "/img/*",
+    "/icons/*",
+    "/*.webp",
+    "/*.jpg",
+    "/*.jpeg",
+    "/*.png",
+    "/*.svg",
+    "/*.json",
+    "/*.md",
+    "/sw.js",
+    "/bw-tracker.js",
+    "/bw-ui.js",
+    "/login",
+    "/login.html",
+    "/admin",
+    "/admin.html",
+    "/bw-content.js",
+    "/bw-editor.js",
+    "/bw-trial.js",
+    "/bw-theme.css",
+    "/bw-shell.js",
+    "/*.css",
+    "/bw-sync.js",
+    "/mt/*"
+  ]
+}
