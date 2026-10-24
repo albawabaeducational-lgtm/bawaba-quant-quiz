@@ -36,3 +36,6 @@ CREATE TABLE IF NOT EXISTS staff_permissions (staff_id INTEGER PRIMARY KEY, can_
 CREATE TABLE IF NOT EXISTS guest_leads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'website', interest TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL, last_contacted_at TEXT);
 CREATE UNIQUE INDEX IF NOT EXISTS guest_leads_phone ON guest_leads(phone);
 CREATE INDEX IF NOT EXISTS guest_leads_created ON guest_leads(created_at);
+
+-- الصلاحيات التفصيلية (تحل محل staff_permissions)
+CREATE TABLE IF NOT EXISTS staff_perms (staff_id INTEGER NOT NULL, perm TEXT NOT NULL, PRIMARY KEY (staff_id, perm));
