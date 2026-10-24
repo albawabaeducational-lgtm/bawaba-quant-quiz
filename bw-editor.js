@@ -97,12 +97,13 @@
   function header() {
     var ch = function (k, t) { return '<span class="chip ' + (R[k] ? 'on' : 'off') + '">' + t + '</span>'; };
     return '<div class="hd"><b>✏ وضع التحرير · ' + esc(C.title) + '</b><span>' + ch('edit', 'تعديل') + ch('add', 'إضافة') + ch('delete', 'حذف') + '</span><span class="sp"></span>'
-      + '<button data-a="hist">سجل التعديلات</button>' + (E.changed ? '<button class="hot" data-a="reload">↻ تطبيق التعديلات على الصفحة</button>' : '') + '<button data-a="close">✕ إغلاق</button></div>';
+      + '<button data-a="reps">⚑ بلاغات الطلاب</button><button data-a="hist">سجل التعديلات</button>' + (E.changed ? '<button class="hot" data-a="reload">↻ تطبيق التعديلات على الصفحة</button>' : '') + '<button data-a="close">✕ إغلاق</button></div>';
   }
   function draw() {
     var h = header() + '<div class="wrap">';
     if (E.changed) h += '<div class="note">تم حفظ تعديلاتك على الخادم وتظهر للطلاب عند فتحهم الصفحة. اضغط «تطبيق التعديلات على الصفحة» لتراها هنا أيضًا.</div>';
     if (E.view === 'hist') h += viewHist();
+    else if (E.view === 'reps') h += viewReps();
     else if (M === 'bank') h += E.view === 'q' ? viewQ() : E.view === 'sec' ? viewSec() : viewHome();
     else if (M === 'raw') h += E.view === 'q' ? viewRawQ() : viewRaw();
     else h += viewKey();
@@ -277,6 +278,17 @@
   }
   var KEY0 = null;
 
+  // ---------- بلاغات الطلاب ----------
+  var REPS = null, RN = { answer: 'الإجابة الصحيحة خطأ', text: 'خطأ في نص السؤال أو الاختيارات', image: 'الصورة غير واضحة', other: 'مشكلة أخرى' };
+  function viewReps() {
+    if (!REPS) { api('exam/reports?course=' + encodeURIComponent(C.course)).then(function (r) { REPS = r.reports; draw(); }).catch(function (e) { toast(e.message, 'err'); }); return '<div class="card"><p class="m">جارٍ التحميل…</p></div>'; }
+    return '<div class="row" style="margin-bottom:10px"><button class="g" data-a="home">→ رجوع</button><h2 style="margin:0">بلاغات الطلاب على هذا المقرر (' + REPS.length + ')</h2></div><div class="card">' + (REPS.length ? REPS.map(function (r) {
+      var lbl = M === 'raw' ? (RAWK.indexOf(r.qkey) >= 0 ? 'سؤال ' + (RAWK.indexOf(r.qkey) + 1) : '') : r.qkey ? 'سؤال رقم ' + r.qkey : 'بدون رقم سؤال';
+      var canOpen = r.qkey && ((M === 'bank' && D.qs.some(function (q) { return String(q[0]) === r.qkey; })) || (M === 'raw' && RAWK.indexOf(r.qkey) >= 0));
+      return '<div class="q"><div class="row"><span class="b mod">' + esc(RN[r.reason] || r.reason) + '</span><b>' + esc(lbl) + '</b><span class="m">' + esc(r.student || 'زائر') + ' · ' + ago(r.created_at) + '</span></div>' + (r.note ? '<p style="margin:6px 0">' + esc(r.note) + '</p>' : '') + '<div class="row">' + (canOpen && R.edit ? '<button class="sm" data-a="repopen" data-id="' + esc(r.qkey) + '">✏ افتح السؤال</button>' : '') + '<button class="o sm" data-a="repclose" data-id="' + r.id + '">✓ تمت المراجعة</button></div></div>';
+    }).join('') : '<p class="m">لا توجد بلاغات مفتوحة. 👍</p>') + '</div>';
+  }
+
   // ---------- سجل التعديلات ----------
   var HIST = null;
   function viewHist() {
@@ -299,6 +311,9 @@
     if (a === 'close') return close();
     if (a === 'reload') return reload();
     if (a === 'hist') { HIST = null; E.view = 'hist'; return draw(); }
+    if (a === 'reps') { REPS = null; E.view = 'reps'; return draw(); }
+    if (a === 'repclose') { try { await api('exam/report-close', { id: +id }); REPS = REPS.filter(function (r) { return r.id !== +id; }); toast('تم إغلاق البلاغ', 'ok'); draw(); } catch (err) { toast(err.message, 'err'); } return; }
+    if (a === 'repopen') { if (M === 'bank') { var rq = D.qs.filter(function (q) { return String(q[0]) === id; })[0]; E.sec = rq[1]; return startQ(rq[0]); } if (M === 'raw') { var ri = RAWK.indexOf(id); E.q = { a: clone(D[ri]), isNew: false, i: ri }; E.view = 'q'; return draw(); } return; }
     if (a === 'home') { E.view = 'home'; return draw(); }
     if (a === 'tab') { E.tab = t.dataset.v; return draw(); }
     if (a === 'backsec') { E.view = E.sec ? 'sec' : 'home'; return draw(); }

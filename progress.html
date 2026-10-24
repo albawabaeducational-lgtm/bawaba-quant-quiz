@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c2440">
+  <meta name="bw-hub" content="1">
+  <title>تقدمي | البوابة التعليمية</title>
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/bw-theme.css">
+  <style>
+    body.bwt-hub { color: #142338; line-height: 1.7; }
+    .pw { width: min(1080px, calc(100% - 32px)); margin: 40px auto 70px; }
+    .pw h1 { font-size: clamp(26px, 3.4vw, 36px); color: var(--bw-navy); margin: 0; }
+    .pw .sub { color: #5a6b80; margin: 4px 0 26px; }
+    .next { display: flex; gap: 18px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--bw-night); color: #fff; border-radius: 22px; padding: 24px 26px; margin-bottom: 22px; box-shadow: -8px 8px 0 var(--bw-gold); }
+    .next small { color: var(--bw-gold); font-weight: 600; font-size: 14px; }
+    .next h2 { margin: 2px 0 4px; font-size: clamp(20px, 2.6vw, 26px); }
+    .next p { margin: 0; color: #c3d3e4; max-width: 40em; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; font: 600 15px "IBM Plex Sans Arabic", Tahoma, sans-serif; text-decoration: none; border: 0; border-radius: 12px; padding: 11px 18px; cursor: pointer; white-space: nowrap; }
+    .btn-gold { background: var(--bw-gold); color: var(--bw-night); }
+    .btn-navy { background: var(--bw-navy); color: #fff; }
+    .btn-soft { background: #eaf2f9; color: var(--bw-navy); }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; background: #fff; border: 1px solid var(--bw-line); border-radius: 20px; margin-bottom: 22px; }
+    .kpi { padding: 18px 20px; border-inline-start: 1px solid var(--bw-line); }
+    .kpi:first-child { border-inline-start: 0; }
+    .kpi b { display: block; font-family: "Readex Pro", sans-serif; font-size: 30px; color: var(--bw-navy); line-height: 1.3; }
+    .kpi span { color: #5a6b80; font-size: 14px; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+    .card { background: #fff; border: 1px solid var(--bw-line); border-radius: 20px; padding: 22px; }
+    .card h3 { margin: 0 0 4px; font-size: 19px; color: var(--bw-navy); }
+    .card .m { color: #5a6b80; font-size: 14px; margin: 0 0 14px; }
+    .sk { display: grid; grid-template-columns: minmax(0, 1fr) 120px 44px; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid #eef3f8; font-size: 14.5px; }
+    .sk:last-of-type { border-bottom: 0; }
+    .sk .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar { height: 8px; background: #eaf1f5; border-radius: 99px; overflow: hidden; }
+    .bar i { display: block; height: 100%; border-radius: 99px; }
+    .lv-r i { background: #c2412f; } .lv-o i { background: var(--bw-gold); } .lv-g i { background: #1d8a58; }
+    .sk b { text-align: left; font-family: "Readex Pro", sans-serif; }
+    .grp { font-weight: 600; font-size: 13.5px; color: #5a6b80; margin: 14px 0 2px; }
+    .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .sims { display: flex; align-items: flex-end; gap: 8px; height: 150px; padding-top: 10px; border-bottom: 1px solid var(--bw-line); }
+    .sims div { flex: 1; max-width: 46px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; font-size: 12px; color: #5a6b80; }
+    .sims i { display: block; width: 100%; background: var(--bw-navy); border-radius: 8px 8px 0 0; min-height: 4px; }
+    .sims div:last-child i { background: var(--bw-gold); }
+    .empty { text-align: center; padding: 30px 10px; color: #5a6b80; }
+    .note { color: #5a6b80; font-size: 13.5px; text-align: center; margin-top: 10px; }
+    .resume { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--bw-gold-soft); border-radius: 16px; padding: 12px 16px; margin-bottom: 12px; color: #6b4a00; font-weight: 600; }
+    @media (max-width: 860px) { .two { grid-template-columns: 1fr; } .kpis { grid-template-columns: 1fr 1fr; } .kpi:nth-child(3) { border-inline-start: 0; } .kpi:nth-child(n+3) { border-top: 1px solid var(--bw-line); } }
+  </style>
+</head>
+<body class="bwt-hub">
+  <div id="bw-shell"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>منصة البوابة التعليمية</b></a><span class="bws-title">تقدمي</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
+  <main class="pw" id="app"><p class="empty">جارٍ تحليل تدريبك…</p></main>
+
+<script>
+(function () {
+  'use strict';
+  // كل البيانات هنا من تدريب الطالب المحفوظ على هذا الجهاز (نفس ما تستخدمه صفحات الاختبارات)
+  var app = document.getElementById('app');
+  var AR = function (n) { return String(n).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  function get(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  var DAY = 864e5, now = Date.now();
+  var SUBJ = {
+    kamy: { title: 'القسم الكمي', page: '/aksam%20kamy.html', slug: 'aksam kamy', stats: 'bw-stats-v1', errs: 'quant-quiz-errors-v1', sel: 'bw-sel-v1', run: 'bw-run', sims: [['bw-sim-v1', 'محاكي الكمي']], resume: 'bwq-resume' },
+    lafzi: { title: 'القسم اللفظي', page: '/aksam%20lafzi.html', slug: 'aksam lafzi', stats: 'bwv-stats-v1', errs: 'verbal-quiz-errors-v1', sel: 'bwv-sel-v1', run: 'bwv-run', sims: [['bwv-sim-v1', 'محاكي اللفظي'], ['bwm-sim-v1', 'المحاكي المحوسب']], resume: 'bwm-resume' }
+  };
+  var names = {};
+  function load(sj) {
+    var S = get(SUBJ[sj].stats, { s: {}, h: [] }) || { s: {}, h: [] }, E = get(SUBJ[sj].errs, {}) || {};
+    var secs = Object.keys(S.s || {}).map(function (k) { var a = S.s[k]; return { id: +k, t: a.t, c: a.c, p: a.t ? a.c / a.t : 0 }; }).filter(function (x) { return x.id < 1000; });
+    var h = (S.h || []), errs = Object.keys(E).map(function (k) { return E[k]; }).filter(function (x) { return x && x.id < 100000; });
+    var n = 0, g = 0, wk = 0; h.forEach(function (x) { n += x.n || 0; g += x.g || 0; if (now - new Date(x.d) < 7 * DAY) wk += x.n || 0; });
+    return { secs: secs, h: h, errs: errs, n: n, g: g, wk: wk, due: errs.filter(function (x) { return now - new Date(x.date) >= DAY; }).length, run: get(SUBJ[sj].run, null) };
+  }
+  var K = load('kamy'), V = load('lafzi');
+  var sims = []; ['kamy', 'lafzi'].forEach(function (sj) { SUBJ[sj].sims.forEach(function (s) { (get(s[0], []) || []).forEach(function (x) { if (x && x.d != null) sims.push({ d: x.d, p: x.p, n: s[1] }); }); }); });
+  sims.sort(function (a, b) { return new Date(a.d) - new Date(b.d); });
+  var tasis = get('tanazur.best', {}) || {}, tasisDone = Object.keys(tasis).length;
+
+  function secName(sj, id) { var n = names[sj] && names[sj][id]; return n ? n : 'القسم ' + AR(id); }
+  function practice(sj, ids) { try { localStorage.setItem(SUBJ[sj].sel, JSON.stringify(ids)); } catch (e) { } location.href = SUBJ[sj].page; }
+  window.bwPractice = practice;
+
+  // الخطوة التالية: قاعدة واحدة واضحة بدل قائمة طويلة
+  function nextStep() {
+    var dueAll = K.due + V.due;
+    if (K.run && K.run.ids && K.run.ids.length) return { t: 'أكمل اختبارك غير المكتمل', d: 'عندك اختبار بدأته في أقسام الكمي ولم تنهه.', b: 'أكمل في أقسام الكمي', go: SUBJ.kamy.page };
+    if (V.run && V.run.ids && V.run.ids.length) return { t: 'أكمل اختبارك غير المكتمل', d: 'عندك اختبار بدأته في أقسام اللفظي ولم تنهه.', b: 'أكمل في أقسام اللفظي', go: SUBJ.lafzi.page };
+    if (dueAll >= 5) { var sj = K.due >= V.due ? 'kamy' : 'lafzi'; return { t: 'راجع ' + AR(dueAll) + ' سؤالًا أخطأت فيها', d: 'مرّ عليها يوم أو أكثر، وهذا أنسب وقت لمراجعتها حتى تثبت.', b: 'راجع أخطاء ' + SUBJ[sj].title, go: SUBJ[sj].page + '#errors' }; }
+    var weak = K.secs.concat(V.secs.map(function (x) { return { id: x.id, t: x.t, c: x.c, p: x.p, sj: 'lafzi' }; })).map(function (x) { if (!x.sj) x.sj = 'kamy'; return x; }).filter(function (x) { return x.t >= 3 && x.p < .6; }).sort(function (a, b) { return a.p - b.p; });
+    if (weak.length) { var w = weak[0]; return { t: 'تدرّب على ' + secName(w.sj, w.id), d: 'دقتك فيه ' + AR(Math.round(w.p * 100)) + '٪ في آخر محاولاتك. جولة واحدة مركزة ستفرق.', b: 'ابدأ التدريب عليه', fn: function () { practice(w.sj, [w.id]); } }; }
+    var lastSim = sims[sims.length - 1];
+    if (K.n + V.n >= 40 && (!lastSim || now - new Date(lastSim.d) > 7 * DAY)) return { t: 'اختبر نفسك في المحاكي المحوسب', d: 'تدربت جيدًا هذا الأسبوع. جرّب اختبارًا كاملًا بالمؤقت لتعرف مستواك الحقيقي.', b: 'ادخل المحاكي', go: '/muhaky%20mohawsab.html' };
+    if (K.n + V.n === 0) return { t: 'ابدأ أول تدريب لك', d: 'اختر قسمًا من الكمي أو اللفظي وحلّ ١١ سؤالًا. بعدها ستظهر هنا نقاط قوتك وضعفك.', b: 'اختر اختبارك', go: '/#tests' };
+    var sj2 = K.n <= V.n ? 'kamy' : 'lafzi'; return { t: 'تدرّب على قسم جديد في ' + SUBJ[sj2].title, d: 'أداؤك جيد في ما حلّلته. جرّب أقسامًا لم تحلها بعد.', b: 'افتح ' + SUBJ[sj2].title, go: SUBJ[sj2].page };
+  }
+  function lv(p) { return p >= .8 ? 'g' : p >= .5 ? 'o' : 'r'; }
+  function subjCard(sj, X) {
+    var T = SUBJ[sj], h = '<div class="card"><h3>' + T.title + '</h3>';
+    if (!X.n) return h + '<p class="m">لم تحل أي اختبار هنا بعد.</p><a class="btn btn-navy" href="' + T.page + '">ابدأ ' + T.title + '</a></div>';
+    h += '<p class="m">' + AR(X.n) + ' سؤالًا محلولًا بدقة ' + AR(Math.round(X.g / X.n * 100)) + '٪ · ' + AR(X.errs.length) + ' سؤالًا في مجلد الأخطاء</p>';
+    var ranked = X.secs.filter(function (x) { return x.t >= 3; }).sort(function (a, b) { return a.p - b.p; });
+    var row = function (x) { return '<div class="sk lv-' + lv(x.p) + '"><span class="nm">' + esc(secName(sj, x.id)) + '</span><span class="bar"><i style="width:' + Math.max(4, Math.round(x.p * 100)) + '%"></i></span><b>' + AR(Math.round(x.p * 100)) + '٪</b></div>'; };
+    if (ranked.length) {
+      h += '<div class="grp">الأضعف</div>' + ranked.slice(0, 3).map(row).join('');
+      if (ranked.length > 3) h += '<div class="grp">الأقوى</div>' + ranked.slice(-3).reverse().map(row).join('');
+    } else h += '<p class="m">حلّ ٣ أسئلة على الأقل في القسم ليظهر مستواك فيه.</p>';
+    var weakIds = ranked.filter(function (x) { return x.p < .8; }).slice(0, 5).map(function (x) { return x.id; });
+    h += '<div class="acts">' + (weakIds.length ? '<button class="btn btn-navy" data-weak="' + sj + '" data-ids="' + weakIds.join(',') + '">تدرّب على أضعف ' + AR(weakIds.length) + ' أقسام</button>' : '') + (X.errs.length ? '<a class="btn btn-soft" href="' + T.page + '#errors">راجع أخطاءك (' + AR(X.errs.length) + ')' + (X.due ? ' · ' + AR(X.due) + ' جاهزة اليوم' : '') + '</a>' : '') + '</div>';
+    return h + '</div>';
+  }
+  function draw() {
+    var n = K.n + V.n, g = K.g + V.g, step = nextStep(), h = '<h1>تقدمي</h1><p class="sub">ملخص تدريبك على هذا الجهاز، والخطوة التالية المقترحة لك.</p>';
+    h += '<section class="next"><div><small>خطوتك التالية</small><h2>' + esc(step.t) + '</h2><p>' + esc(step.d) + '</p></div>' + (step.go ? '<a class="btn btn-gold" href="' + step.go + '">' + esc(step.b) + '</a>' : '<button class="btn btn-gold" id="stepBtn">' + esc(step.b) + '</button>') + '</section>';
+    h += '<div class="kpis"><div class="kpi"><b>' + AR(n) + '</b><span>سؤالًا حللته</span></div><div class="kpi"><b>' + (n ? AR(Math.round(g / n * 100)) + '٪' : '—') + '</b><span>دقة إجاباتك</span></div><div class="kpi"><b>' + AR(K.wk + V.wk) + '</b><span>سؤالًا هذا الأسبوع</span></div><div class="kpi"><b>' + AR(K.errs.length + V.errs.length) + '</b><span>سؤالًا في مجلد الأخطاء</span></div></div>';
+    h += '<div class="two">' + subjCard('kamy', K) + subjCard('lafzi', V) + '</div>';
+    h += '<div class="two"><div class="card"><h3>نتائج المحاكاة</h3>';
+    var last = sims.slice(-10);
+    if (last.length) {
+      h += '<p class="m">آخر ' + AR(last.length) + ' محاولات' + (last.length > 1 ? ' · ' + (last[last.length - 1].p >= last[last.length - 2].p ? 'تحسّنت أو ثبتت في آخر محاولة' : 'تراجعت قليلًا في آخر محاولة') : '') + '</p><div class="sims">' + last.map(function (x) { return '<div title="' + esc(x.n) + '"><span>' + AR(x.p) + '٪</span><i style="height:' + Math.max(3, x.p) + '%"></i></div>'; }).join('') + '</div>';
+    } else h += '<p class="m">لم تدخل أي اختبار محاكي بعد.</p><a class="btn btn-navy" href="/muhaky%20mohawsab.html">ادخل المحاكي المحوسب</a>';
+    h += '</div><div class="card"><h3>تأسيس اللفظي</h3>';
+    if (tasisDone) { var vals = Object.keys(tasis).map(function (k) { return +tasis[k]; }), avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length); h += '<p class="m">أنجزت ' + AR(tasisDone) + ' اختبارًا بمتوسط أفضل نتيجة ' + AR(avg) + '٪.</p><a class="btn btn-soft" href="/tasis%20lafzi.html.html">أكمل اختبارات التأسيس</a>'; }
+    else h += '<p class="m">لم تبدأ اختبارات التأسيس بعد.</p><a class="btn btn-soft" href="/tasis%20lafzi.html.html">ابدأ التأسيس</a>';
+    h += '</div></div><p class="note">التقدم محفوظ في متصفح هذا الجهاز. لو مسحت بيانات المتصفح أو غيّرت الجهاز يبدأ من جديد.</p>';
+    app.innerHTML = h;
+    var sb = document.getElementById('stepBtn'); if (sb) sb.onclick = step.fn;
+    app.querySelectorAll('[data-weak]').forEach(function (b) { b.onclick = function () { practice(b.dataset.weak, b.dataset.ids.split(',').map(Number)); }; });
+  }
+  draw();
+  // أسماء الأقسام من ملفات الأقسام نفسها (تُحمّل في الخلفية)
+  function loadNames(sj) {
+    fetch('/api/exam/secs?c=' + encodeURIComponent(SUBJ[sj].slug)).then(function (r) { return r.json(); }).then(function (d) { if (d.secs) { names[sj] = {}; d.secs.forEach(function (x) { names[sj][x.id] = x.name; }); draw(); } }).catch(function () { });
+  }
+  if (K.secs.length) loadNames('kamy');
+  if (V.secs.length) loadNames('lafzi');
+})();
+</script>
+</body>
+</html>

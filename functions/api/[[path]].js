@@ -126,7 +126,18 @@ const extractBase = (course, html) => {
   return { n: m ? [...m[1]].length : 0 };
 };
 
-let schemaReady = false, leadsReady = false;
+let schemaReady = false, leadsReady = false, moodleReady = false;
+const MOODLE_URL = 'https://albawaba-edu.com/e';
+const ensureMoodleSchema = async DB => {
+  if (moodleReady) return;
+  await DB.batch([
+    DB.prepare('CREATE TABLE IF NOT EXISTS moodle_links (moodle_id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, username TEXT, courses TEXT, created_at TEXT NOT NULL, checked_at TEXT)'),
+    DB.prepare('CREATE INDEX IF NOT EXISTS moodle_links_student ON moodle_links(student_id)'),
+    DB.prepare('CREATE TABLE IF NOT EXISTS question_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, course TEXT NOT NULL, qkey TEXT, reason TEXT, note TEXT, student_id INTEGER, status TEXT NOT NULL DEFAULT \'open\', created_at TEXT NOT NULL, handled_by TEXT, handled_at TEXT)'),
+    DB.prepare('CREATE INDEX IF NOT EXISTS question_reports_course ON question_reports(course,status)')
+  ]);
+  moodleReady = true;
+};
 const fetchAsset = async (env, request, file) => {
   if (!env.ASSETS) return null;
   let url = new URL(file.split('/').map(encodeURIComponent).join('/'), request.url), res = null;
@@ -205,6 +216,17 @@ export async function onRequest({ request, env, params }) {
         .bind(new Date(new Date(s.expires_at).getTime() - unused * 60000).toISOString(), unused, s.id).run();
     } else if (s.pause_until) await DB.prepare('UPDATE students SET pause_until=NULL,paused_at=NULL WHERE id=?').bind(s.id).run();
   };
+  const admit = async (s, c) => {
+    let dev = ck(request, 'bw_dev'); if (!/^[0-9a-f-]{36}$/.test(dev)) dev = crypto.randomUUID();
+    const has = await DB.prepare('SELECT 1 x FROM devices WHERE student_id=? AND device=?').bind(s.id, dev).first();
+    if (has) await DB.prepare('UPDATE devices SET last_seen=? WHERE student_id=? AND device=?').bind(iso, s.id, dev).run();
+    else {
+      const n = (await DB.prepare('SELECT COUNT(*) n FROM devices WHERE student_id=?').bind(s.id).first()).n;
+      if (s.max_devices > 0 && n >= s.max_devices) return J({ error: `وصل حسابك للحد الأقصى من الأجهزة (${s.max_devices}). تواصل مع المنصة.` }, 403);
+      await DB.prepare('INSERT INTO devices (student_id,device,first_seen,last_seen) VALUES (?,?,?,?)').bind(s.id, dev, iso, iso).run();
+    }
+    return new Response(JSON.stringify({ ok: 1, name: s.name }), { headers: loginHeaders(c, dev) });
+  };
   const loginHeaders = (c, dev) => { const h = new Headers({ 'content-type': 'application/json', 'cache-control': 'no-store' }); h.append('set-cookie', `bw_code=${c}; ${COOKIE}`); h.append('set-cookie', `bw_dev=${dev}; ${COOKIE}`); return h; };
 
   if (p === 'guest-lead' && m === 'POST') {
@@ -218,7 +240,7 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
   // الصفحة الرئيسية تعرض «تفاصيل الدورات» من نفس رسالة واتساب التي تُرسل للمهتمين (تُعدَّل من لوحة التحكم ← الإعدادات)
-  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG });
+  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0' });
 
   if (p === 'login' && m === 'POST') {
     if (await tooMany(ip)) return J({ error: 'محاولات خاطئة كثيرة. حاول بعد ربع ساعة.' }, 429);
@@ -227,15 +249,50 @@ export async function onRequest({ request, env, params }) {
     if (s.status !== 'active') return J({ error: 'تم إيقاف هذا الكود. تواصل مع المنصة.' }, 403);
     if (s.expires_at && s.expires_at < iso) return J({ error: 'انتهت صلاحية هذا الكود. تواصل مع المنصة للتجديد.' }, 403);
     if ((s.pause_until || 0) > now) return J({ error: 'حسابك في فترة استراحة حاليًا.', paused: true, until: s.pause_until }, 403);
-    let dev = ck(request, 'bw_dev'); if (!/^[0-9a-f-]{36}$/.test(dev)) dev = crypto.randomUUID();
-    const has = await DB.prepare('SELECT 1 x FROM devices WHERE student_id=? AND device=?').bind(s.id, dev).first();
-    if (has) await DB.prepare('UPDATE devices SET last_seen=? WHERE student_id=? AND device=?').bind(iso, s.id, dev).run();
-    else {
-      const n = (await DB.prepare('SELECT COUNT(*) n FROM devices WHERE student_id=?').bind(s.id).first()).n;
-      if (s.max_devices > 0 && n >= s.max_devices) return J({ error: `هذا الكود وصل للحد الأقصى من الأجهزة (${s.max_devices}). تواصل مع المنصة.` }, 403);
-      await DB.prepare('INSERT INTO devices (student_id,device,first_seen,last_seen) VALUES (?,?,?,?)').bind(s.id, dev, iso, iso).run();
+    return admit(s, c);
+  }
+
+  // ===================== الدخول بحساب منصة الدورات (Moodle) =====================
+  // يتحقق من اسم المستخدم وكلمة المرور عبر خدمة تطبيق مودل الرسمية، ثم من تسجيل الطالب في الدورات المسموح بها.
+  // كلمة المرور لا تُحفظ عندنا، ولا يُغيَّر أي شيء في مودل.
+  if (p === 'login/moodle' && m === 'POST') {
+    if (await setting('moodle_enabled') === '0') return J({ error: 'الدخول بحساب منصة الدورات غير مفعّل حاليًا' }, 403);
+    if (await tooMany('m|' + ip)) return J({ error: 'محاولات خاطئة كثيرة. حاول بعد ربع ساعة.' }, 429);
+    const b = await body(), username = String(b.username || '').trim().toLowerCase().slice(0, 100), password = String(b.password || '').slice(0, 200);
+    if (!username || !password) return J({ error: 'اكتب اسم المستخدم وكلمة المرور' }, 400);
+    const base = ((await setting('moodle_url')) || MOODLE_URL).replace(/\/+$/, '');
+    let tokRes;
+    try {
+      const r = await fetch(base + '/login/token.php', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ username, password, service: 'moodle_mobile_app' }) });
+      tokRes = await r.json();
+    } catch (e) { return J({ error: 'تعذّر الاتصال بمنصة الدورات الآن. حاول بعد قليل أو ادخل بالكود.' }, 502); }
+    if (!tokRes || !tokRes.token) { await addFail('m|' + ip); return J({ error: tokRes && tokRes.errorcode === 'invalidlogin' ? 'اسم المستخدم أو كلمة المرور غير صحيحة' : 'تعذّر الدخول بحساب منصة الدورات' + (tokRes && tokRes.error ? ': ' + String(tokRes.error).slice(0, 120) : '') }, 401); }
+    const ws = async (fn, params = {}) => { const r = await fetch(base + '/webservice/rest/server.php', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ wstoken: tokRes.token, wsfunction: fn, moodlewsrestformat: 'json', ...params }) }); return r.json(); };
+    let info, courses;
+    try { info = await ws('core_webservice_get_site_info'); courses = await ws('core_enrol_get_users_courses', { userid: String(info.userid) }); }
+    catch (e) { return J({ error: 'تعذّر قراءة بيانات حسابك من منصة الدورات' }, 502); }
+    if (!info || !info.userid) return J({ error: 'تعذّر قراءة بيانات حسابك من منصة الدورات' }, 502);
+    const allowed = String((await setting('moodle_courses')) || '').split(/[^0-9]+/).filter(Boolean).map(Number);
+    const mine = Array.isArray(courses) ? courses.map(x => +x.id) : [];
+    if (allowed.length ? !mine.some(id => allowed.includes(id)) : !mine.length) return J({ error: 'حسابك على منصة الدورات لا يشمل اشتراكًا في دورات الاختبارات. تواصل مع المنصة للاشتراك.', moodle: 1 }, 403);
+    await ensureMoodleSchema(DB);
+    const name = String(info.fullname || username).slice(0, 80), link = await DB.prepare('SELECT * FROM moodle_links WHERE moodle_id=?').bind(+info.userid).first();
+    let s = link ? await DB.prepare('SELECT * FROM students WHERE id=?').bind(link.student_id).first() : null;
+    const exp = new Date(now + 30 * 864e5).toISOString();
+    if (!s) {
+      let c = '', r = null;
+      for (let i = 0; i < 5 && !r; i++) { c = 'M' + newCode().slice(1); try { r = await DB.prepare('INSERT INTO students (name,code,created_at,kind,max_devices,expires_at) VALUES (?,?,?,?,?,?)').bind(name, c, iso, 'single', 3, exp).run(); } catch (e) { r = null; } }
+      if (!r) return J({ error: 'تعذّر إنشاء حسابك، حاول مرة أخرى' }, 500);
+      await DB.prepare('INSERT OR REPLACE INTO moodle_links (moodle_id,student_id,username,courses,created_at,checked_at) VALUES (?,?,?,?,?,?)').bind(+info.userid, r.meta.last_row_id, username, mine.join(','), iso, iso).run();
+      s = await DB.prepare('SELECT * FROM students WHERE id=?').bind(r.meta.last_row_id).first();
+    } else {
+      if (s.status !== 'active') return J({ error: 'تم إيقاف حسابك على منصة الاختبارات. تواصل مع المنصة.' }, 403);
+      // التسجيل في مودل ما زال ساريًا: نجدد الصلاحية ٣٠ يومًا من الآن (ما لم تكن دائمة)
+      await DB.batch([DB.prepare('UPDATE students SET name=?,expires_at=CASE WHEN expires_at IS NULL THEN NULL WHEN expires_at>? THEN expires_at ELSE ? END WHERE id=?').bind(name, exp, exp, s.id), DB.prepare('UPDATE moodle_links SET username=?,courses=?,checked_at=? WHERE moodle_id=?').bind(username, mine.join(','), iso, +info.userid)]);
+      s = await DB.prepare('SELECT * FROM students WHERE id=?').bind(s.id).first();
     }
-    return new Response(JSON.stringify({ ok: 1, name: s.name }), { headers: loginHeaders(c, dev) });
+    if ((s.pause_until || 0) > now) await endPause(s);
+    return admit(s, s.code);
   }
   if (p === 'logout') return J({ ok: 1 }, 200, { 'set-cookie': 'bw_code=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' });
 
@@ -294,6 +351,32 @@ export async function onRequest({ request, env, params }) {
     const html = await res.text(), a = html.indexOf('<script id="db" type="application/json">'), z = a < 0 ? -1 : html.indexOf('</script>', a);
     if (a < 0 || z < 0) return J({ error: 'not found' }, 404);
     return new Response('window.__BWD=window.__BWD||{};window.__BWD[' + JSON.stringify(c.slug) + ']=' + html.slice(a + 40, z) + ';', { headers: hdr });
+  }
+
+  // بلاغ من الطالب عن خطأ في سؤال: يظهر للمعلم في وضع التحرير
+  if (p === 'report' && m === 'POST') {
+    await ensureMoodleSchema(DB);
+    if (await tooMany('r|' + ip, 15)) return J({ error: 'أرسلت بلاغات كثيرة. حاول لاحقًا.' }, 429);
+    await addFail('r|' + ip);
+    const b = await body(), c = COURSE[b.course];
+    if (!c) return J({ error: 'المقرر غير معروف' }, 400);
+    const reason = ['answer', 'text', 'image', 'other'].includes(b.reason) ? b.reason : 'other', note = String(b.note || '').trim().slice(0, 600), qkey = String(b.qkey || '').slice(0, 40);
+    if (!qkey && !note) return J({ error: 'اكتب وصفًا للمشكلة ورقم السؤال' }, 400);
+    const st = await byCode(norm(ck(request, 'bw_code')));
+    await DB.prepare('INSERT INTO question_reports (course,qkey,reason,note,student_id,created_at) VALUES (?,?,?,?,?,?)').bind(c.slug, qkey, reason, note, st ? st.id : null, iso).run();
+    return J({ ok: 1 });
+  }
+
+  // أسماء الأقسام فقط (لصفحة «تقدمي») بدون تحميل بنك الأسئلة كاملًا
+  if (p === 'exam/secs' && m === 'GET') {
+    const c = COURSE[new URL(request.url).searchParams.get('c')];
+    if (!c || c.model !== 'bank') return J({ error: 'not found' }, 404);
+    const res = await fetchAsset(env, request, c.file);
+    if (!res) return J({ error: 'not found' }, 404);
+    const html = await res.text(), a = html.indexOf('"secs":'), z = a < 0 ? -1 : html.indexOf('}]', a);
+    let secs = []; try { secs = JSON.parse(html.slice(a + 7, z + 2)); } catch (e) { }
+    try { await ensureStaffSchema(DB); for (const r of await DB.prepare("SELECT key,data,deleted FROM exam_patch WHERE course=? AND kind='s'").bind(c.slug).all().then(x => x.results)) { const i = secs.findIndex(x => String(x.id) === r.key); if (r.deleted) { if (i >= 0) secs.splice(i, 1); } else { const d = JSON.parse(r.data); if (i >= 0) secs[i].name = d.name; else secs.push({ id: +r.key, name: d.name }); } } } catch (e) { }
+    return J({ secs }, 200, { 'cache-control': 'public, max-age=300' });
   }
 
   // صور الأسئلة التي رفعها المعلمون من وضع التحرير
@@ -451,6 +534,19 @@ export async function onRequest({ request, env, params }) {
     await DB.batch(st);
     return J({ ok: 1 });
   }
+  if (p === 'admin/exam/reports' && m === 'GET') {
+    await ensureMoodleSchema(DB);
+    const c = COURSE[new URL(request.url).searchParams.get('course')], R = c && await courseRights(c.slug);
+    if (!R) return deny('ليس لديك صلاحية على هذا المقرر');
+    return J({ reports: await all("SELECT r.id,r.qkey,r.reason,r.note,r.created_at,r.status,s.name student FROM question_reports r LEFT JOIN students s ON s.id=r.student_id WHERE r.course=? AND r.status='open' ORDER BY r.id DESC LIMIT 200", c.slug) });
+  }
+  if (p === 'admin/exam/report-close' && m === 'POST') {
+    await ensureMoodleSchema(DB);
+    const b = await body(), r = await one('SELECT course FROM question_reports WHERE id=?', int(b.id));
+    if (!r || !(await courseRights(r.course))) return deny();
+    await DB.prepare("UPDATE question_reports SET status='closed',handled_by=?,handled_at=? WHERE id=?").bind(A.name, iso, int(b.id)).run();
+    return J({ ok: 1 });
+  }
   if (p === 'admin/exam/upload' && m === 'POST') {
     const b = await body(), c = COURSE[b.course], R = c && await courseRights(c.slug);
     if (!R || !(R.edit || R.add)) return deny('ليس لديك صلاحية على هذا المقرر');
@@ -563,12 +659,13 @@ export async function onRequest({ request, env, params }) {
     const out = { actor: { type: A.type, id: A.id, name: A.name, username: A.username, role: A.role, roleLabel: (ROLES[A.role] || {}).label || A.role, perms: A.perms }, catalog: PERM_GROUPS, roles: Object.fromEntries(Object.entries(ROLES).map(([k, v]) => [k, { label: v.label, perms: v.perms }])), needs: PERM_NEEDS };
     const jobs = {};
     if (can('students.view')) {
-      jobs.students = all(`SELECT s.id,s.name,s.code,s.status,s.kind,s.max_devices,s.expires_at,s.created_at,s.last_seen,s.duration_minutes,s.pause_used,s.pause_until,
+      jobs.students = ensureMoodleSchema(DB).then(() => all(`SELECT s.id,s.name,s.code,s.status,s.kind,s.max_devices,s.expires_at,s.created_at,s.last_seen,s.duration_minutes,s.pause_used,s.pause_until,
         (SELECT COUNT(*) FROM devices d WHERE d.student_id=s.id) devices,
         (SELECT COUNT(*) FROM events e WHERE e.student_id=s.id AND e.kind='attempt') attempts,
         (SELECT ROUND(AVG(score)) FROM events e WHERE e.student_id=s.id AND e.kind='attempt') avg,
-        (SELECT COALESCE(SUM(seconds),0) FROM usage u WHERE u.student_id=s.id) secs
-        FROM students s ORDER BY s.name`);
+        (SELECT COALESCE(SUM(seconds),0) FROM usage u WHERE u.student_id=s.id) secs,
+        (SELECT username FROM moodle_links ml WHERE ml.student_id=s.id) moodle
+        FROM students s ORDER BY s.name`));
     }
     if (can('reports.view')) {
       jobs.pages = all(`SELECT student_id,page,SUM(kind='open') opens,SUM(kind='attempt') attempts,MAX(score) best,MAX(created_at) last FROM events GROUP BY student_id,page`);
@@ -608,6 +705,7 @@ export async function onRequest({ request, env, params }) {
     }
     if (isSuper) jobs.staff = staffList();
     jobs.cEdits = all('SELECT course,COUNT(*) n,MAX(updated_at) last FROM exam_patch GROUP BY course');
+    jobs.cReports = ensureMoodleSchema(DB).then(() => all("SELECT course,COUNT(*) n FROM question_reports WHERE status='open' GROUP BY course"));
     jobs.cStaff = isSuper ? all('SELECT cs.course,cs.staff_id,cs.can_edit,cs.can_add,cs.can_delete,u.name,u.username,u.role,u.status FROM course_staff cs JOIN staff_users u ON u.id=cs.staff_id ORDER BY u.name') : (A.type === 'staff' ? all('SELECT course,staff_id,can_edit,can_add,can_delete FROM course_staff WHERE staff_id=?', A.id) : Promise.resolve([]));
     const keys = Object.keys(jobs), vals = await Promise.all(keys.map(k => jobs[k])), R = Object.fromEntries(keys.map((k, i) => [k, vals[i]]));
     if (R.students) out.students = can('students.codes') ? R.students : R.students.map(s => ({ ...s, code: s.code.slice(0, 2) + '******' }));
@@ -618,17 +716,17 @@ export async function onRequest({ request, env, params }) {
     if (R.bans) { out.bans = R.bans; out.flagged = R.flagged.n; }
     if (R.staff) out.staff = R.staff;
     {
-      const ed = Object.fromEntries(R.cEdits.map(r => [r.course, r])), mine = {};
+      const ed = Object.fromEntries(R.cEdits.map(r => [r.course, r])), rep = Object.fromEntries(R.cReports.map(r => [r.course, r.n])), mine = {};
       if (A.type === 'staff') R.cStaff.filter(r => r.staff_id === A.id).forEach(r => mine[r.course] = r);
       out.courses = COURSES.map(c => {
         const r = isSuper ? { can_edit: 1, can_add: 1, can_delete: 1 } : mine[c.slug];
-        return { slug: c.slug, title: c.title, model: c.model, link: c.link, url: '/' + c.file.replace(/^\//, '').replace(/\.html$/, ''), edits: ed[c.slug] ? ed[c.slug].n : 0, last: ed[c.slug] ? ed[c.slug].last : null, rights: r ? { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete } : null, staff: isSuper ? R.cStaff.filter(x => x.course === c.slug) : undefined };
+        return { slug: c.slug, title: c.title, model: c.model, link: c.link, url: '/' + c.file.replace(/^\//, '').replace(/\.html$/, ''), edits: ed[c.slug] ? ed[c.slug].n : 0, reports: rep[c.slug] || 0, last: ed[c.slug] ? ed[c.slug].last : null, rights: r ? { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete } : null, staff: isSuper ? R.cStaff.filter(x => x.course === c.slug) : undefined };
       }).filter(c => c.rights);
     }
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;
     const settings = {};
-    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; }
+    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
     if (can('settings.contact') || can('leads.manage')) settings.lead_message = S.lead_message || DEFAULT_LEAD_MSG;
@@ -716,6 +814,9 @@ export async function onRequest({ request, env, params }) {
     let v;
     if (b.key === 'trial_guard') { if (!can('settings.guard')) return deny(); v = b.value ? '1' : '0'; }
     else if (b.key === 'contact') { if (!can('settings.contact')) return deny(); v = phone(b.value); }
+    else if (b.key === 'moodle_enabled') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
+    else if (b.key === 'moodle_courses') { if (!can('settings.access')) return deny(); v = String(b.value || '').split(/[^0-9]+/).filter(Boolean).slice(0, 50).join(','); }
+    else if (b.key === 'moodle_url') { if (!can('settings.access')) return deny(); v = String(b.value || '').trim().replace(/\/+$/, ''); if (!/^https:\/\/[^\s]+$/.test(v)) return J({ error: 'اكتب رابط منصة الدورات يبدأ بـ https://' }, 400); }
     else if (b.key === 'lead_message') { if (!can('settings.contact')) return deny(); v = String(b.value || '').slice(0, 3000); }
     else return J({ error: 'not found' }, 404);
     await DB.batch([putSetting(b.key, v), audit(A, 'setting', 'settings', null, b.key)]);
