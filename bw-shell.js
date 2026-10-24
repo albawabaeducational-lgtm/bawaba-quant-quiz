@@ -55,6 +55,48 @@
     }).observe(resEl, { childList: true });
   }
 
+  // مجلد الأخطاء: سبب كل خطأ (لم أفهم / تسرّعت / حساب أو قراءة / خمّنت / ضاق الوقت) + ملخص ونصيحة + تصفية حسب السبب
+  var errBox = document.getElementById('errors');
+  if (errBox) {
+    var WHY = [['u', 'لم أفهم الفكرة', 'راجع شرح المهارة أولًا، ثم أعد هذه الأسئلة بتصحيح فوري.'], ['r', 'تسرّعت', 'تمهّل: اقرأ السؤال وكل الخيارات قبل أن تختار.'], ['c', 'خطأ حساب أو قراءة', 'اكتب خطوات الحل على ورقة وراجعها قبل الاختيار.'], ['g', 'خمّنت', 'هذه مهارة لم تثبت بعد؛ تدرّب على قسمها بتصحيح فوري.'], ['t', 'ضاق الوقت', 'تدرّب بمؤقت أقصر تدريجيًا لتعتاد سرعة الاختبار.']];
+    var WN = {}; WHY.forEach(function (w) { WN[w[0]] = w; });
+    var WK = 'bw-why-v1', wf = '';
+    var wget = function () { try { return JSON.parse(localStorage.getItem(WK) || '{}') || {}; } catch (e) { return {}; } };
+    var wput = function (o) { try { localStorage.setItem(WK, JSON.stringify(o)); } catch (e) { } };
+    var decorate = function () {
+      var cards = errBox.querySelectorAll('article.qcard'); if (!cards.length) return;
+      var all = wget(), W = all[slug] || {}, cnt = {}, none = 0;
+      [].forEach.call(cards, function (c) {
+        var d = c.querySelector('[data-d]'); if (!d) return; var id = d.getAttribute('data-d'), r = W[id];
+        if (!c.querySelector('.bw-why')) {
+          var box = document.createElement('div'); box.className = 'bw-why noprint'; box.setAttribute('data-id', id);
+          box.innerHTML = '<span>لماذا أخطأت؟</span>' + WHY.map(function (w) { return '<button type="button" data-why="' + w[0] + '">' + w[1] + '</button>'; }).join('');
+          c.appendChild(box);
+        }
+        [].forEach.call(c.querySelectorAll('[data-why]'), function (b) { b.classList.toggle('on', b.getAttribute('data-why') === r); b.setAttribute('aria-pressed', b.getAttribute('data-why') === r ? 'true' : 'false'); });
+        if (r) cnt[r] = (cnt[r] || 0) + 1; else none++;
+        c.style.display = !wf || wf === (r || '-') ? '' : 'none';
+      });
+      var sum = errBox.querySelector('.bw-whysum');
+      if (!sum) { sum = document.createElement('div'); sum.className = 'bw-whysum noprint'; var first = errBox.querySelector('article.qcard'); first.parentNode.insertBefore(sum, first); }
+      var top = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0];
+      sum.innerHTML = '<b>أسباب أخطائك</b><div class="bw-whychips"><button type="button" data-wf=""' + (wf ? '' : ' class="on"') + '>الكل (' + cards.length + ')</button>' + WHY.filter(function (w) { return cnt[w[0]]; }).map(function (w) { return '<button type="button" data-wf="' + w[0] + '"' + (wf === w[0] ? ' class="on"' : '') + '>' + w[1] + ' (' + cnt[w[0]] + ')</button>'; }).join('') + (none ? '<button type="button" data-wf="-"' + (wf === '-' ? ' class="on"' : '') + '>بدون سبب (' + none + ')</button>' : '') + '</div>'
+        + '<p>' + (top ? 'أكثر سبب لأخطائك: <b>' + WN[top][1] + '</b> — ' + WN[top][2] : 'حدّد سبب كل خطأ تحت السؤال؛ ستعرف ما تحتاج تحسينه فعلًا: الفهم أم التركيز أم السرعة.') + '</p>';
+    };
+    errBox.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-why],[data-wf]'); if (!b) return;
+      e.stopPropagation();
+      if (b.hasAttribute('data-wf')) { wf = b.getAttribute('data-wf'); return decorate(); }
+      var id = b.closest('.bw-why').getAttribute('data-id'), r = b.getAttribute('data-why'), all = wget(), W = all[slug] || (all[slug] = {});
+      if (W[id] === r) delete W[id]; else W[id] = r; wput(all); decorate();
+    }, true);
+    new MutationObserver(function () {
+      // النص القديم «محفوظ على هذا المتصفح» لا يناسب الطالب المسجّل (تقدمه محفوظ في حسابه)
+      if (window.__bwSid) [].forEach.call(errBox.querySelectorAll('.sub'), function (p) { if (/المتصفح/.test(p.textContent)) p.textContent = p.textContent.replace(/محفوظًا على هذا (الجهاز و)?المتصفح\.?.*$/, 'محفوظًا في حسابك ويظهر على أي جهاز تدخل منه.'); });
+      if (errBox.querySelector('article.qcard') && !errBox.querySelector('.bw-whysum')) { wf = ''; decorate(); }
+    }).observe(errBox, { childList: true });
+  }
+
   // إعلان الوقت المتبقي لقارئ الشاشة ولمن لا ينتبه للون: «تبقى خمس دقائق» و«تبقى دقيقة واحدة»
   (function () {
     var live = document.createElement('div'); live.className = 'bws-live'; live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'assertive'); document.body.appendChild(live);

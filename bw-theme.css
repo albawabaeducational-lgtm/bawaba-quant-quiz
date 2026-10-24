@@ -108,3 +108,13 @@ body.testing #bw-shell .bws-report span { display: none; }
 .bws-live { position: fixed; z-index: 2147483000; top: 76px; left: 50%; transform: translate(-50%, -12px); opacity: 0; pointer-events: none; background: var(--bw-night); color: #fff; border: 2px solid var(--bw-gold); border-radius: 14px; padding: 10px 18px; font: 600 15px "IBM Plex Sans Arabic", Tahoma, sans-serif; transition: opacity .2s, transform .2s; direction: rtl; }
 .bws-live.on { opacity: 1; transform: translate(-50%, 0); }
 @media (prefers-reduced-motion: reduce) { .bws-live { transition: none; } }
+
+/* ---------- سبب الخطأ في مجلد الأخطاء ---------- */
+.bw-why { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--bw-line); font-size: 13.5px; }
+.bw-why span { color: #5a6b80; font-weight: 600; margin-inline-end: 4px; }
+.bw-why button, .bw-whychips button { font: 600 13px "IBM Plex Sans Arabic", Tahoma, sans-serif; border: 1.5px solid var(--bw-line); background: #fff; color: #142338; border-radius: 99px; padding: 4px 12px; cursor: pointer; }
+.bw-why button.on, .bw-whychips button.on { background: var(--bw-navy); border-color: var(--bw-navy); color: #fff; }
+.bw-whysum { background: #fff; border: 1px solid var(--bw-line); border-inline-start: 4px solid var(--bw-gold); border-radius: 16px; padding: 14px 16px; margin: 12px 0; }
+.bw-whysum > b { color: var(--bw-navy); }
+.bw-whychips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.bw-whysum p { margin: 4px 0 0; color: #3b4b60; font-size: 14px; }

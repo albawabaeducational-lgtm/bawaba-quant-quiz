@@ -237,6 +237,9 @@
     .btn-wa:hover { background: #22b85d; }
     @media (max-width: 960px) { .try { grid-template-columns: 1fr; gap: 28px; } .courses { grid-template-columns: 1fr; } }
     @media (max-width: 560px) { .hero .wrap.intro-hero { padding: 38px 0 104px; } .tests-up { margin-top: -78px; } }
+    /* الطالب المسجّل (بالكود أو بحساب منصة الدورات): لا تظهر له الباقات والاشتراك والتجربة */
+    html.bw-in .guest-only { display: none !important; }
+    html:not(.bw-in) .member-only { display: none !important; }
   </style>
 </head>
 <body>
@@ -247,11 +250,12 @@
         <a href="#tests">الاختبارات</a>
         <a href="/placement.html">تحديد المستوى</a>
         <a href="/progress.html">تقدمي</a>
-        <a href="#try">جرّب سؤالًا</a>
-        <a href="#courses">الدورات</a>
+        <a class="guest-only" href="#try">جرّب سؤالًا</a>
+        <a class="guest-only" href="#courses">الدورات</a>
         <a href="#join">تواصل معنا</a>
       </nav>
-      <a class="btn btn-gold" href="/login">دخول بالكود</a>
+      <a class="btn btn-gold guest-only" href="/login">دخول بالكود</a>
+      <a class="btn btn-line member-only" href="#" id="bwOut">تسجيل الخروج</a>
     </div>
   </header>
 
@@ -294,7 +298,7 @@
       </div>
     </section>
 
-    <section class="block" id="try" aria-labelledby="tryHead" style="padding-top:20px">
+    <section class="block guest-only" id="try" aria-labelledby="tryHead" style="padding-top:20px">
       <div class="wrap try">
         <div>
           <h2 id="tryHead">جرّب سؤالًا قبل أن تبدأ</h2>
@@ -330,13 +334,14 @@
       <div class="wrap">
         <div class="block-head">
           <div>
-            <h2 id="coursesTitle">باقات الدورات التعليمية</h2>
-            <p>شرح كامل مع معلمي البوابة. اختر باقتك وتواصل معنا على واتساب للاشتراك.</p>
+            <h2 id="coursesTitle" class="guest-only">باقات الدورات التعليمية</h2>
+            <h2 class="member-only">منصة الدورات</h2>
+            <p class="guest-only">شرح كامل مع معلمي البوابة. اختر باقتك وتواصل معنا على واتساب للاشتراك.</p>
           </div>
         </div>
-        <div class="courses" id="pkgs"></div>
+        <div class="courses guest-only" id="pkgs"></div>
         <div class="platform">
-          <div><b>مشترك في دورات البوابة؟</b><p>ادخل لمحاضراتك ودوراتك على منصة الدورات.</p></div>
+          <div><b class="guest-only">مشترك في دورات البوابة؟</b><b class="member-only">محاضراتك ودوراتك</b><p>ادخل لمحاضراتك ودوراتك على منصة الدورات.</p></div>
           <div class="links"><a class="btn btn-gold" href="https://albawaba-edu.com/e/login/index.php">دخول منصة الدورات</a></div>
         </div>
       </div>
@@ -351,7 +356,7 @@
           <details><summary>هل يُحفظ تقدمي لو دخلت من جهاز آخر؟</summary><p>نعم للمشتركين: عند الدخول بالكود أو بحساب منصة الدورات يُحفظ تقدمك وأخطاؤك في حسابك ويظهر على أي جهاز. في الفترة التجريبية يبقى التقدم على الجهاز نفسه.</p></details>
           <details><summary>كيف أراجع أخطائي؟</summary><p>كل سؤال تخطئ فيه يُحفظ في «الأسئلة الخاطئة» داخل صفحة الأقسام، وصفحة «تقدمي» تخبرك بعدد الأسئلة التي حان وقت مراجعتها اليوم.</p></details>
           <details><summary>ما الفرق بين التدريب والمحاكاة؟</summary><p>التدريب للتعلم: تختار الأقسام وترى التصحيح والإرشاد. المحاكاة للقياس: اختبار كامل بمؤقت وقواعد ثابتة، والنتيجة في التقرير النهائي.</p></details>
-          <details><summary>كيف أشترك وأحصل على كود الدخول؟</summary><p>اختر باقتك من «باقات الدورات التعليمية» وتواصل معنا على واتساب، أو ادخل بحساب منصة الدورات إن كنت مشتركًا فيها.</p></details>
+          <details class="guest-only"><summary>كيف أشترك وأحصل على كود الدخول؟</summary><p>اختر باقتك من «باقات الدورات التعليمية» وتواصل معنا على واتساب، أو ادخل بحساب منصة الدورات إن كنت مشتركًا فيها.</p></details>
         </div>
       </div>
     </section>
@@ -392,8 +397,8 @@
       <div>
         <h4>روابط سريعة</h4>
         <ul>
-          <li><a href="/login">دخول بالكود</a></li>
-          <li><a href="/login#plans">الباقات والأسعار</a></li>
+          <li class="guest-only"><a href="/login">دخول بالكود</a></li>
+          <li class="guest-only"><a href="/login#plans">الباقات والأسعار</a></li>
           <li><a href="https://albawaba-edu.com/e/login/index.php">منصة الدورات</a></li>
         </ul>
       </div>
@@ -402,6 +407,8 @@
   </footer>
 
 <script>
+// تسجيل خروج الطالب
+(function () { var o = document.getElementById('bwOut'); if (o) o.onclick = function (e) { e.preventDefault(); fetch('/api/logout', { method: 'POST' }).catch(function () { }).then(function () { location.href = '/login'; }); }; })();
 // الطالب العائد: الزر الرئيسي يصبح «أكمل تدريبي»
 (function () { try { var ls = localStorage, back = ['bw-stats-v1', 'bwv-stats-v1', 'bw-place-v1', 'bw-run', 'bwv-run'].some(function (k) { return ls.getItem(k); }); if (!back) return;
   var a = document.getElementById('heroMain'), b = document.getElementById('heroSec'); if (!a || !b) return;

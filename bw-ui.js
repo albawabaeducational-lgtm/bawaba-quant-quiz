@@ -4,7 +4,8 @@
   var C = window.__bw || {};
   var P = decodeURIComponent(location.pathname).replace(/^\//, '').replace(/(\.html)+$/, '');
   var hub = P === '' || P === 'index' || P === 'waraqi' || !!document.querySelector('meta[name="bw-hub"]');
-  var TRIAL = !!C.trialEnd, SUB = !!C.subEnd;
+  // المشترك المسجّل لا يرى شريط الاشتراك إلا في آخر ٣ أيام (تذكير بالتجديد)؛ شريط التجربة المجانية يظهر للزوار كما هو
+  var TRIAL = !!C.trialEnd, SUB = !!C.subEnd && C.subEnd - Date.now() < 3 * 864e5;
   var st = document.createElement('style');
   st.textContent = '.bwb{direction:rtl;font-family:Cairo,Tahoma,Arial,sans-serif;color:#fff;background:linear-gradient(90deg,#12345a,#1769aa);position:relative;z-index:50}.bwb.w{background:linear-gradient(90deg,#7a4b00,#c98a00)}.bwb.d{background:linear-gradient(90deg,#8e2b2b,#c0392b)}'
     + '.bwb .in{max-width:1100px;margin:auto;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.bwb .ic{font-size:26px}.bwb .tx{flex:1;min-width:200px;line-height:1.5}.bwb .tx b{display:block;font-size:15px}.bwb .tx span{font-size:13px;opacity:.95}'
@@ -26,6 +27,24 @@
   }
   function waLink(t) { return 'https://wa.me/' + C.contact + '?text=' + encodeURIComponent(t); }
   function modal(html) { var m = document.createElement('div'); m.className = 'bwm'; m.innerHTML = '<div>' + html + '</div>'; document.body.appendChild(m); return m; }
+
+  // الاستراحة: من شريط الاشتراك، أو من زر «استراحة» في صفحة «تقدمي» (window.bwPause)
+  function pauseDlg() {
+    var base = [360, 720, 1440, 2880, 4320, 7200, 10080, 14400, 20160, 43200], o = base.filter(function (x) { return x <= C.pauseMax; });
+    if (!o.length || o[o.length - 1] !== C.pauseMax) o.push(C.pauseMax);
+    var m = modal('<h3>⏸ استراحة من الدراسة</h3><p>خلال الاستراحة يتوقف العد العكسي ولا يمكنك الدخول، ثم تُضاف مدتها لاشتراكك. أقصى مدة متاحة لك: <b>' + fmt(C.pauseMax * 60000) + '</b> (١٠٪ من مدة اشتراكك).</p><select id="bwpm">'
+      + o.map(function (x) { return '<option value="' + x + '">' + fmt(x * 60000) + (x === C.pauseMax ? ' (الحد الأقصى)' : '') + '</option>'; }).join('')
+      + '</select><div class="e" id="bwpe"></div><div class="r"><button id="bwpok" type="button">تأكيد الاستراحة</button><button class="g" id="bwpno" type="button">إلغاء</button></div>');
+    m.querySelector('#bwpno').onclick = function () { m.remove(); };
+    m.querySelector('#bwpok').onclick = function () {
+      var btn = this; btn.disabled = true;
+      fetch('/api/pause', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ minutes: +m.querySelector('#bwpm').value }) })
+        .then(function (r) { return r.json().then(function (d) { return [r.ok, d]; }); })
+        .then(function (x) { if (x[0]) location.href = '/login?why=paused&until=' + x[1].until; else { m.querySelector('#bwpe').textContent = x[1].error || 'حدث خطأ'; btn.disabled = false; } })
+        .catch(function () { m.querySelector('#bwpe').textContent = 'تعذّر الاتصال'; btn.disabled = false; });
+    };
+  }
+  if (C.pauseMax >= 60) window.bwPause = pauseDlg;
 
   var bar = null, wa = null;
   if (TRIAL || SUB) {
@@ -57,21 +76,7 @@
     tick(); setInterval(tick, 30000);
 
     var pz = document.getElementById('bwpz');
-    if (pz) pz.onclick = function () {
-      var base = [360, 720, 1440, 2880, 4320, 7200, 10080, 14400, 20160, 43200], o = base.filter(function (x) { return x <= C.pauseMax; });
-      if (!o.length || o[o.length - 1] !== C.pauseMax) o.push(C.pauseMax);
-      var m = modal('<h3>⏸ استراحة من الدراسة</h3><p>خلال الاستراحة يتوقف العد العكسي ولا يمكنك الدخول، ثم تُضاف مدتها لاشتراكك. أقصى مدة متاحة لك: <b>' + fmt(C.pauseMax * 60000) + '</b> (١٠٪ من مدة اشتراكك).</p><select id="bwpm">'
-        + o.map(function (x) { return '<option value="' + x + '">' + fmt(x * 60000) + (x === C.pauseMax ? ' (الحد الأقصى)' : '') + '</option>'; }).join('')
-        + '</select><div class="e" id="bwpe"></div><div class="r"><button id="bwpok" type="button">تأكيد الاستراحة</button><button class="g" id="bwpno" type="button">إلغاء</button></div>');
-      m.querySelector('#bwpno').onclick = function () { m.remove(); };
-      m.querySelector('#bwpok').onclick = function () {
-        var btn = this; btn.disabled = true;
-        fetch('/api/pause', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ minutes: +m.querySelector('#bwpm').value }) })
-          .then(function (r) { return r.json().then(function (d) { return [r.ok, d]; }); })
-          .then(function (x) { if (x[0]) location.href = '/login?why=paused&until=' + x[1].until; else { m.querySelector('#bwpe').textContent = x[1].error || 'حدث خطأ'; btn.disabled = false; } })
-          .catch(function () { m.querySelector('#bwpe').textContent = 'تعذّر الاتصال'; btn.disabled = false; });
-      };
-    };
+    if (pz) pz.onclick = pauseDlg;
     if (C.warn && hub) {
       var key = 'bwWarn' + C.warn, seen = false; try { seen = sessionStorage.getItem(key); } catch (e) { }
       if (!seen) {

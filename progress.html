@@ -52,6 +52,7 @@
 <body class="bwt-hub">
   <div id="bw-shell"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>منصة البوابة التعليمية</b></a><span class="bws-title">تقدمي</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
   <main class="pw" id="app"><p class="empty">جارٍ تحليل تدريبك…</p></main>
+  <p class="note" id="pz" hidden><button class="btn btn-soft" type="button">⏸ تحتاج استراحة من المذاكرة؟ أوقف اشتراكك مؤقتًا</button></p>
 
 <script>
 (function () {
@@ -78,6 +79,12 @@
   var sims = []; ['kamy', 'lafzi'].forEach(function (sj) { SUBJ[sj].sims.forEach(function (s) { (get(s[0], []) || []).forEach(function (x) { if (x && x.d != null) sims.push({ d: x.d, p: x.p, n: s[1] }); }); }); });
   sims.sort(function (a, b) { return new Date(a.d) - new Date(b.d); });
   var place = (get('bw-place-v1', []) || []).slice(-1)[0] || null;
+  var WHYN = { u: 'لم أفهم الفكرة', r: 'تسرّعت', c: 'خطأ حساب أو قراءة', g: 'خمّنت', t: 'ضاق الوقت' }, WHYALL = get('bw-why-v1', {}) || {};
+  function whyLine(sj, X) {
+    var W = WHYALL[SUBJ[sj].slug] || {}, c = {}, n = 0; X.errs.forEach(function (e) { var r = W[e.id]; if (WHYN[r]) { c[r] = (c[r] || 0) + 1; n++; } });
+    if (!n) return '';
+    return '<p class="m">أسباب أخطائك: ' + Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }).map(function (k) { return WHYN[k] + ' (' + AR(c[k]) + ')'; }).join(' · ') + '</p>';
+  }
   var tasis = get('tanazur.best', {}) || {}, tasisDone = Object.keys(tasis).length;
 
   function secName(sj, id) { var n = names[sj] && names[sj][id]; return n ? n : 'القسم ' + AR(id); }
@@ -103,6 +110,7 @@
     var T = SUBJ[sj], h = '<div class="card"><h3>' + T.title + '</h3>';
     if (!X.n) return h + '<p class="m">لم تحل أي اختبار هنا بعد.</p><a class="btn btn-navy" href="' + T.page + '">ابدأ ' + T.title + '</a></div>';
     h += '<p class="m">' + AR(X.n) + ' سؤالًا محلولًا بدقة ' + AR(Math.round(X.g / X.n * 100)) + '٪ · ' + AR(X.errs.length) + ' سؤالًا في مجلد الأخطاء</p>';
+    h += whyLine(sj, X);
     var ranked = X.secs.filter(function (x) { return x.t >= 3; }).sort(function (a, b) { return a.p - b.p; });
     var row = function (x) { return '<div class="sk lv-' + lv(x.p) + '"><span class="nm">' + esc(secName(sj, x.id)) + '</span><span class="bar"><i style="width:' + Math.max(4, Math.round(x.p * 100)) + '%"></i></span><b>' + AR(Math.round(x.p * 100)) + '٪</b></div>'; };
     if (ranked.length) {
@@ -137,6 +145,8 @@
   function loadNames(sj) {
     fetch('/api/exam/secs?c=' + encodeURIComponent(SUBJ[sj].slug)).then(function (r) { return r.json(); }).then(function (d) { if (d.secs) { names[sj] = {}; d.secs.forEach(function (x) { names[sj][x.id] = x.name; }); draw(); } }).catch(function () { });
   }
+  // زر الاستراحة للمشترك (شريط الاشتراك لا يظهر للمسجّلين إلا قبل الانتهاء بـ٣ أيام)
+  addEventListener('load', function () { var z = document.getElementById('pz'); if (window.bwPause && z) { z.hidden = false; z.querySelector('button').onclick = window.bwPause; } });
   if (K.secs.length) loadNames('kamy');
   if (V.secs.length) loadNames('lafzi');
 })();

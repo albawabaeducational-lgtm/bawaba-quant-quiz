@@ -82,7 +82,8 @@ export async function onRequest({ request, env, next }) {
   const paused = !!st && (st.pause_until || 0) > now;
   const valid = !!st && st.status === 'active' && (!st.expires_at || st.expires_at > iso) && !paused;
   // الطالب المسجّل: يُسترجع تقدمه المحفوظ على الخادم قبل أن تقرأه الصفحة (يعمل على أي جهاز)
-  if (valid) head += '<script src="/api/progress/restore.js"></script>';
+  // bw-in: الطالب مسجّل الدخول (بالكود أو بمنصة الدورات) — تختفي عنه الباقات والاشتراك والتجربة
+  if (valid) head += '<script>document.documentElement.classList.add("bw-in")</script><script src="/api/progress/restore.js"></script>';
   const contact = String(S.contact || '').replace(/\D/g, '');
   const ui = o => `<script>window.__bw=${JSON.stringify({ contact, ...o })}</script><script src="/bw-ui.js"></script>`;
   const isHtml = r => (r.headers.get('content-type') || '').includes('text/html');
