@@ -1,0 +1,81 @@
+/* هوية موحّدة لكل صفحات الاختبارات (نفس ألوان وخطوط الصفحة الرئيسية).
+   تغيّر طريقة العرض فقط؛ الأسئلة ومنطق الاختبار داخل كل صفحة كما هي. */
+@import url("https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap");
+:root { --bw-night: #0c2440; --bw-navy: #12345a; --bw-sea: #1d5c8f; --bw-gold: #e3a92b; --bw-gold-soft: #fbefd2; --bw-paper: #f5f8fb; --bw-line: #dbe5ee; }
+body { font-family: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif !important; background: var(--bw-paper) !important; }
+h1, h2, h3 { font-family: "Readex Pro", "IBM Plex Sans Arabic", Tahoma, sans-serif; }
+
+/* ---------- الشريط العلوي الموحد ---------- */
+#bw-shell { position: sticky; top: 0; z-index: 30; height: 64px; background: var(--bw-night); color: #fff; display: flex; align-items: center; gap: 14px; padding: 0 max(16px, calc((100% - 1180px) / 2)); direction: rtl; font-family: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif; box-shadow: 0 2px 0 var(--bw-gold); }
+#bw-shell .bws-brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; flex: none; }
+#bw-shell .bws-brand img { width: 40px; height: 40px; border-radius: 11px; background: #fff; padding: 3px; object-fit: contain; }
+#bw-shell .bws-brand b { font-family: "Readex Pro", sans-serif; font-weight: 700; font-size: 16px; }
+#bw-shell .bws-title { color: var(--bw-gold); font-weight: 600; font-size: 15px; padding-inline-start: 14px; border-inline-start: 1px solid #ffffff2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#bw-shell .bws-tools { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
+#bw-shell .bws-back { flex: none; color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 10px; padding: 8px 14px; box-shadow: inset 0 0 0 1.5px #ffffff4d; }
+#bw-shell .bws-back:hover { box-shadow: inset 0 0 0 1.5px #fff; }
+#bw-shell .bws-tools .btn.ghost { background: #ffffff14 !important; color: #fff !important; border: 0 !important; }
+#bw-shell .bws-tools .timer { background: var(--bw-gold) !important; color: var(--bw-night) !important; }
+#bw-shell .bws-tools .timer.urgent { background: #fbe6e2 !important; color: #c2412f !important; }
+#bw-shell.static { position: relative; }
+@media (max-width: 700px) {
+  #bw-shell { gap: 8px; height: 58px; }
+  #bw-shell .bws-brand b, #bw-shell .bws-title { display: none; }
+  #bw-shell .bws-back { padding: 7px 10px; font-size: 13px; }
+}
+
+/* ---------- أقسام الكمي واللفظي والمحاكي المحوسب ---------- */
+body.bwt-bank { --navy: #12345a; --blue: #1d5c8f; --cy: #e3a92b; --bg: #f5f8fb; --line: #dbe5ee; --hh: 64px; }
+body.bwt-bank header.top { display: none !important; }
+body.bwt-bank .card { border-radius: 20px; box-shadow: none; }
+body.bwt-bank .hero { background: var(--bw-night) radial-gradient(circle at 1.5px 1.5px, #ffffff12 1.5px, transparent 0) 0 0 / 26px 26px !important; box-shadow: none !important; border-radius: 18px; text-align: right !important; }
+body.bwt-bank .hero h1 { font-family: "Readex Pro", sans-serif; font-weight: 700; }
+body.bwt-bank .hero .hy { background: var(--bw-gold) !important; color: var(--bw-night) !important; border: 0 !important; letter-spacing: 0; }
+body.bwt-bank .hero img { box-shadow: none !important; }
+body.bwt-bank .simtile { background: var(--bw-navy) !important; box-shadow: 0 0 0 2px var(--bw-gold) inset !important; border-radius: 18px; }
+body.bwt-bank .simtile:hover { transform: none; background: var(--bw-sea) !important; }
+body.bwt-bank .contact { display: none !important; }
+body.bwt-bank .btn { border-radius: 12px; }
+body.bwt-bank .btn:not(.ghost):not(.soft):not(.red) { background: var(--bw-navy); }
+body.bwt-bank .btn.soft { background: #eaf2f9; }
+body.bwt-bank .qcard { background: #fff; border-color: var(--bw-line); }
+body.bwt-bank .opt.on, body.bwt-bank .chip.on { background: var(--bw-navy); border-color: var(--bw-navy); }
+body.bwt-bank .mbox { border-top-color: var(--bw-gold); }
+@media (max-width: 700px) { body.bwt-bank { --hh: 58px; } }
+
+/* ---------- المحاكي الورقي ---------- */
+body.bwt-key header { background: var(--bw-navy) !important; box-shadow: none !important; }
+body.bwt-key header .brand { display: none !important; }
+body.bwt-key header .pill { background: #ffffff1f !important; box-shadow: none !important; }
+body.bwt-key .panel { border-radius: 20px; box-shadow: none; border: 1px solid var(--bw-line); border-top: 4px solid var(--bw-gold); }
+body.bwt-key .hero h2 { color: var(--bw-navy); font-family: "Readex Pro", sans-serif; }
+body.bwt-key .hero img.lg { display: none; }
+body.bwt-key .tagline { background: var(--bw-gold-soft) !important; color: #7a5300 !important; }
+body.bwt-key .chips span { background: #eaf2f9 !important; color: var(--bw-navy) !important; }
+body.bwt-key .contacts { display: none !important; }
+body.bwt-key .pri { background: var(--bw-navy) !important; box-shadow: none !important; border-radius: 12px; }
+body.bwt-key .pri:hover { background: var(--bw-sea) !important; }
+
+/* ---------- تأسيس اللفظي ---------- */
+body.bwt-raw { --accent: #12345a; --accent-soft: #eaf2f9; --bg: #f5f8fb; --line: #dbe5ee; --f-display: "Readex Pro", sans-serif; }
+body.bwt-raw .hero-identity, body.bwt-raw .bar .identity { display: none !important; }
+body.bwt-raw .card { border-radius: 16px; }
+body.bwt-raw .btn.primary { background: var(--bw-navy); border-color: var(--bw-navy); }
+
+@media print { #bw-shell { display: none !important; } }
+body.bwt-raw #bw-shell { margin: 0 -16px; }
+body.bwt-key #secName:empty { display: none; }
+
+/* ---------- صفحة اختيار النموذج الورقي ---------- */
+body.bwt-hub { margin: 0; color: #142338; }
+.bwh-wrap { width: min(980px, calc(100% - 32px)); margin: 56px auto 70px; }
+.bwh-wrap h1 { font-size: clamp(26px, 3.6vw, 38px); color: var(--bw-navy); margin: 0 0 8px; }
+.bwh-wrap > p { color: #5a6b80; margin: 0 0 30px; font-size: 17px; }
+.bwh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; }
+.bwh-card { display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--bw-line); border-radius: 22px; padding: 26px; text-decoration: none; color: inherit; position: relative; overflow: hidden; }
+.bwh-card:hover { border-color: var(--bw-navy); }
+.bwh-card .n { font-family: "Readex Pro", sans-serif; font-size: 56px; font-weight: 700; color: var(--bw-gold); line-height: 1; }
+.bwh-card b { font-family: "Readex Pro", sans-serif; font-size: 22px; color: var(--bw-navy); }
+.bwh-card span { color: #5a6b80; }
+.bwh-card .go { margin-top: 14px; align-self: flex-start; background: var(--bw-navy); color: #fff; font-weight: 600; border-radius: 12px; padding: 10px 18px; }
+.bwh-foot { text-align: center; color: #5a6b80; font-size: 13px; padding-bottom: 30px; }

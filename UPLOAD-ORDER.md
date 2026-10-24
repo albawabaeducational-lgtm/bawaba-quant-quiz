@@ -1,21 +1,22 @@
-ارفع هذه الملفات (تحديث 2.2) مع الحفاظ على المسارات:
+ارفع هذه الملفات (تحديث 2.4) مع الحفاظ على المسارات:
 
+index.html
+waraqi.html
+bw-theme.css          ← جديد
+bw-shell.js           ← جديد
+_routes.json
 functions/api/[[path]].js
-functions/_middleware.js
-admin.html
-bw-content.js
-bw-editor.js
+aksam kamy.html
+aksam lafzi.html
 muhaky mohawsab.html.html
+muhaky warky1.html
+muhaky warky2.html
+tasis lafzi.html.html
 CHANGELOG.md
 UPLOAD-ORDER.md
 
-(لو لم ترفع تحديث 2.1 بعد، ارفع معها أيضًا: _routes.json، aksam kamy.html، aksam lafzi.html،
-muhaky warky1.html، muhaky warky2.html، tasis lafzi.html.html، schema.sql، migrations/006_courses_content.sql)
+(ومعها ملفات التحديثات 2.1 و2.2 لو لم ترفعها بعد: functions/_middleware.js، admin.html، bw-content.js، bw-editor.js، icons/logo.jpg، schema.sql، migrations/)
 
-بعد النشر:
-1. ادخل /admin بحساب الإدارة ← «فريق العمل والصلاحيات» ← «تعديل الحساب والمقررات» للمعلم.
-2. علّم «مسند له» للمقرر، واختر: تعديل / إضافة / حذف، ثم احفظ.
-3. المعلم يدخل /admin بحسابه ← «مقرراتي» ← «دخول المقرر كمعلم».
-
-المحاكي المحوسب: أضف الأقسام الجديدة في «أقسام الكمي» أو «أقسام اللفظي» فقط (من وضع التحرير أو من الملف)،
-وستظهر في المحاكي تلقائيًا. لا تحتاج تعديل ملف المحاكي بعد الآن.
+قبل الرفع: اعمل Pull من GitHub أولًا، ثم Commit و Push.
+لتعديل «باقات الدورات» في الصفحة الرئيسية: لوحة التحكم ← إعدادات المنصة ← «رسالة واتساب الجاهزة للمهتمين».
+كل باقة تبدأ بسطر بين نجمتين مثل: *باقة القدرات الكمية، 200 ريال* ثم سطر الوصف، وبين الباقات سطر فارغ.

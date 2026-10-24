@@ -217,7 +217,8 @@ export async function onRequest({ request, env, params }) {
     await DB.prepare("INSERT INTO guest_leads (name,phone,source,interest,status,created_at) VALUES (?,?,?,?,?,?) ON CONFLICT(phone) DO UPDATE SET name=COALESCE(excluded.name,guest_leads.name),interest=excluded.interest,source=excluded.source").bind(name || null, leadPhone, source, interest, 'new', iso).run();
     return J({ ok: 1 });
   }
-  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')) });
+  // الصفحة الرئيسية تعرض «تفاصيل الدورات» من نفس رسالة واتساب التي تُرسل للمهتمين (تُعدَّل من لوحة التحكم ← الإعدادات)
+  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG });
 
   if (p === 'login' && m === 'POST') {
     if (await tooMany(ip)) return J({ error: 'محاولات خاطئة كثيرة. حاول بعد ربع ساعة.' }, 429);
