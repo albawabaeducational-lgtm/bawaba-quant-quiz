@@ -144,3 +144,19 @@ html.bwa-hc #bw-shell, html.bwa-hc #bw-shell * { color: #fff !important; }
 html.bwa-nm *, html.bwa-nm *::before, html.bwa-nm *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 .bw-stage { margin-top: 8px; font-size: 13.5px; font-weight: 600; color: #17633f; background: #e4f3ea; border-radius: 10px; padding: 6px 12px; display: inline-block; }
 html.bwa-hc #bw-shell .timer, html.bwa-hc #bw-shell .timer * { color: var(--bw-night) !important; }
+
+/* ---------- الموبايل: لا شيء يخرج عن عرض الشاشة ---------- */
+html { overflow-x: clip; }
+@media (max-width: 700px) {
+  #bw-shell { padding: 0 10px; gap: 6px; }
+  #bw-shell .bws-brand img { width: 36px; height: 36px; }
+  #bw-shell .bws-lms { display: none; }
+  #bw-shell .bws-back { font-size: 0; padding: 7px 10px; line-height: 1; }
+  #bw-shell .bws-back::before { content: "☰"; font-size: 18px; }
+  #bw-shell .bws-tools { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; justify-content: flex-end; margin-inline-start: 0; }
+  #bw-shell .bws-tools::-webkit-scrollbar { display: none; }
+  #bw-shell .bws-tools > * { flex: none; white-space: nowrap; }
+  #bw-shell .bws-tools .btn { padding: 6px 9px !important; font-size: 12.5px !important; }
+  #bw-shell .bws-a11y, #bw-shell .bws-report { padding: 7px 9px; }
+  .bws-a11yp { top: 64px; }
+}

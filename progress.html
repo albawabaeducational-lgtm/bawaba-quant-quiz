@@ -47,8 +47,8 @@
     .streak { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; background: #fff; border: 1px solid var(--bw-line); border-radius: 20px; padding: 16px 20px; margin-bottom: 22px; }
     .streak b { display: block; color: var(--bw-navy); font-size: 17px; }
     .streak span { color: #5a6b80; font-size: 14px; }
-    .streak .wk { display: flex; gap: 6px; }
-    .streak .wk i { width: 38px; height: 38px; border-radius: 12px; background: #eef3f8; display: grid; place-items: center; font-style: normal; }
+    .streak .wk { display: flex; gap: 6px; max-width: 100%; }
+    .streak .wk i { flex: 1 1 38px; min-width: 0; max-width: 38px; height: 38px; border-radius: 12px; background: #eef3f8; display: grid; place-items: center; font-style: normal; }
     .streak .wk i.on { background: var(--bw-gold); }
     .streak .wk i.t { box-shadow: 0 0 0 2px var(--bw-navy); }
     .streak .wk em { font-style: normal; font-size: 10.5px; color: #5a6b80; }
