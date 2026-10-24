@@ -1,1 +1,1 @@
-{"version":1,"include":["/*"],"exclude":["/img/*","/icons/*","/*.webp","/*.jpg","/*.jpeg","/*.png","/*.svg","/*.json","/*.md","/sw.js","/bw-tracker.js","/bw-ui.js","/login","/login.html","/admin","/admin.html"]}
+{"version":1,"include":["/*"],"exclude":["/img/*","/icons/*","/*.webp","/*.jpg","/*.jpeg","/*.png","/*.svg","/*.json","/*.md","/sw.js","/bw-tracker.js","/bw-ui.js","/login","/login.html","/admin","/admin.html","/bw-content.js","/bw-editor.js","/bw-trial.js"]}

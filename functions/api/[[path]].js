@@ -52,6 +52,8 @@ const PERM_GROUPS = [
     ['settings.plans', 'باقات الاشتراك والأسعار'],
     ['settings.contact', 'رقم واتساب المنصة ورسالة المهتمين'],
     ['settings.guard', 'حماية التجربة المجانية ورفع الحظر']] },
+  { key: 'courses', title: 'المقررات والاختبارات', items: [
+    ['courses.manage', 'إسناد المعلمين للمقررات وتحديد صلاحياتهم داخلها']] },
   { key: 'audit', title: 'الرقابة', items: [
     ['audit.view', 'عرض سجل العمليات']] }
 ];
@@ -95,6 +97,37 @@ const DEFAULT_LEAD_MSG = `باقات الدورات التعليمية
 تشمل 48 حصة مباشرة، بواقع أربعة أيام أسبوعيًا، مع التأسيس في القسمين، وحل تجميعات السنوات الخمس الماضية، والمراجعة المكثفة خلال أيام الاختبارات، وباقة الاختبارات المحاكية للقدرات الورقي.`;
 const LEAD_STATUS = ['new', 'contacted', 'added', 'subscribed', 'not_interested'];
 
+// ===================== المقررات (الاختبارات) =====================
+// model: bank = بنك أسئلة بأقسام (JSON داخل الصفحة) · raw = مصفوفة أسئلة نصية · key = مفتاح إجابات لاختبار ورقي مصوّر
+// نفس القائمة موجودة في functions/_middleware.js — أي مقرر جديد يُضاف في الملفين.
+const COURSES = [
+  { slug: 'aksam kamy', title: 'أقسام الكمي', file: '/aksam kamy.html', model: 'bank', img: true, hints: true },
+  { slug: 'aksam lafzi', title: 'أقسام اللفظي', file: '/aksam lafzi.html', model: 'bank' },
+  { slug: 'muhaky mohawsab', title: 'المحاكي المحوسب', file: '/muhaky mohawsab.html.html', model: 'bank', hints: true, qq: true },
+  { slug: 'muhaky warky1', title: 'المحاكي الورقي – النموذج الأول', file: '/muhaky warky1.html', model: 'key' },
+  { slug: 'muhaky warky2', title: 'المحاكي الورقي – النموذج الثاني', file: '/muhaky warky2.html', model: 'key' },
+  { slug: 'tasis lafzi', title: 'تأسيس اللفظي', file: '/tasis lafzi.html.html', model: 'raw' }
+];
+const COURSE = Object.fromEntries(COURSES.map(c => [c.slug, c]));
+const KINDS = { bank: ['q', 's', 'p', 'o', 'qq', 'qh'], raw: ['r'], key: ['k'] };
+const LETTERS = ['أ', 'ب', 'ج', 'د'];
+const txt = (v, n) => String(v == null ? '' : v).replace(/\r/g, '').slice(0, n);
+const int = v => { const n = Math.trunc(+v); return Number.isFinite(n) ? n : NaN; };
+// يستخرج من الملف الأصلي المرفوع على الموقع أرقام الأسئلة الموجودة (للتحقق من نوع العملية: تعديل أم إضافة)
+const extractBase = (course, html) => {
+  if (course.model === 'bank') {
+    const a = html.indexOf('<script id="db" type="application/json">'), b = html.indexOf('</script>', a);
+    const d = JSON.parse(html.slice(a + 40, b));
+    return { q: d.qs.map(x => x[0]), s: d.secs.map(x => x.id), p: (d.ps || []).length, qq: (d.qq || []).map(x => x[0]) };
+  }
+  if (course.model === 'raw') {
+    const a = html.indexOf('const RAW = '), b = html.indexOf('\n', a);
+    return { n: JSON.parse(html.slice(a + 12, b).trim().replace(/;$/, '')).length };
+  }
+  const i = html.indexOf('KEY='), m = i >= 0 ? /"([^"]*)"/.exec(html.slice(i, i + 2000)) : null;
+  return { n: m ? [...m[1]].length : 0 };
+};
+
 let schemaReady = false, leadsReady = false;
 const ensureLeadsSchema = async DB => {
   if (leadsReady) return;
@@ -120,7 +153,12 @@ const ensureStaffSchema = async DB => {
     DB.prepare("CREATE INDEX IF NOT EXISTS group_members_student ON group_members(student_id)"),
     DB.prepare("CREATE INDEX IF NOT EXISTS group_pages_page ON group_pages(page)"),
     DB.prepare("CREATE TABLE IF NOT EXISTS staff_permissions (staff_id INTEGER PRIMARY KEY, can_manage_students INTEGER NOT NULL DEFAULT 0, can_manage_groups INTEGER NOT NULL DEFAULT 0, can_manage_content INTEGER NOT NULL DEFAULT 0, can_view_guests INTEGER NOT NULL DEFAULT 0, can_view_reports INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)"),
-    DB.prepare("CREATE TABLE IF NOT EXISTS staff_perms (staff_id INTEGER NOT NULL, perm TEXT NOT NULL, PRIMARY KEY (staff_id, perm))")
+    DB.prepare("CREATE TABLE IF NOT EXISTS staff_perms (staff_id INTEGER NOT NULL, perm TEXT NOT NULL, PRIMARY KEY (staff_id, perm))"),
+    DB.prepare("CREATE TABLE IF NOT EXISTS course_staff (course TEXT NOT NULL, staff_id INTEGER NOT NULL, can_edit INTEGER NOT NULL DEFAULT 1, can_add INTEGER NOT NULL DEFAULT 0, can_delete INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, PRIMARY KEY (course, staff_id))"),
+    DB.prepare("CREATE INDEX IF NOT EXISTS course_staff_staff ON course_staff(staff_id)"),
+    DB.prepare("CREATE TABLE IF NOT EXISTS exam_patch (course TEXT NOT NULL, kind TEXT NOT NULL, key TEXT NOT NULL, data TEXT, deleted INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, updated_by TEXT, PRIMARY KEY (course, kind, key))"),
+    DB.prepare("CREATE TABLE IF NOT EXISTS exam_images (id INTEGER PRIMARY KEY AUTOINCREMENT, course TEXT NOT NULL, mime TEXT NOT NULL, data BLOB NOT NULL, created_at TEXT NOT NULL, created_by TEXT)"),
+    DB.prepare("CREATE TABLE IF NOT EXISTS exam_base (course TEXT PRIMARY KEY, etag TEXT, data TEXT NOT NULL, updated_at TEXT NOT NULL)")
   ]);
   // ترحيل لمرة واحدة: الصلاحيات القديمة => الصلاحيات التفصيلية
   const done = await DB.prepare("SELECT value FROM settings WHERE key='perms_v2'").first();
@@ -231,6 +269,16 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
 
+  // صور الأسئلة التي رفعها المعلمون من وضع التحرير
+  if (p.startsWith('exam/img/') && m === 'GET') {
+    const id = int(p.slice(9));
+    if (!(id > 0)) return J({ error: 'not found' }, 404);
+    await ensureStaffSchema(DB);
+    const r = await DB.prepare('SELECT mime,data FROM exam_images WHERE id=?').bind(id).first();
+    if (!r) return J({ error: 'not found' }, 404);
+    return new Response(r.data instanceof ArrayBuffer ? r.data : new Uint8Array(r.data), { headers: { 'content-type': r.mime, 'cache-control': 'public, max-age=31536000, immutable' } });
+  }
+
   // ===================== لوحة التحكم =====================
   if (!p.startsWith('admin/')) return J({ error: 'not found' }, 404);
   await ensureStaffSchema(DB);
@@ -282,6 +330,132 @@ export async function onRequest({ request, env, params }) {
   const can = k => A.role === 'super_admin' || A.perms.includes(k);
   const deny = (msg = 'ليس لديك صلاحية لهذه العملية') => J({ error: msg }, 403);
   const isSuper = A.role === 'super_admin';
+
+  // ---------- المقررات: صلاحيات المعلم داخل كل مقرر ----------
+  const courseRights = async slug => {
+    if (!COURSE[slug]) return null;
+    if (isSuper) return { edit: true, add: true, delete: true, all: true };
+    if (A.type !== 'staff') return null;
+    const r = await one('SELECT can_edit,can_add,can_delete FROM course_staff WHERE course=? AND staff_id=?', slug, A.id);
+    return r ? { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete } : null;
+  };
+  const baseOf = async c => {
+    if (!env.ASSETS) return null;
+    let url = new URL(c.file.split('/').map(encodeURIComponent).join('/'), request.url), res = null;
+    for (let i = 0; i < 4; i++) {
+      res = await env.ASSETS.fetch(new Request(url.toString(), { headers: { accept: 'text/html' } }));
+      const loc = res.headers.get('location');
+      if (res.status >= 300 && res.status < 400 && loc) { url = new URL(loc, url); continue; }
+      break;
+    }
+    if (!res || !res.ok) return null;
+    const tagRaw = res.headers.get('etag') || res.headers.get('last-modified') || '', etag = tagRaw ? 'v1|' + tagRaw : '';
+    const row = await one('SELECT etag,data FROM exam_base WHERE course=?', c.slug);
+    if (row && etag && row.etag === etag) { try { await res.body.cancel(); } catch (e) { } return JSON.parse(row.data); }
+    const b = extractBase(c, await res.text());
+    await DB.prepare('INSERT INTO exam_base (course,etag,data,updated_at) VALUES (?,?,?,?) ON CONFLICT(course) DO UPDATE SET etag=excluded.etag,data=excluded.data,updated_at=excluded.updated_at').bind(c.slug, etag, JSON.stringify(b), iso).run();
+    return b;
+  };
+  const cleanOp = (c, kind, key, d) => {
+    const bad = m => { throw new Error(m || 'بيانات غير صالحة'); };
+    if (kind === 'q') {
+      const id = int(key); if (!(id > 0) || !Array.isArray(d) || int(d[0]) !== id) bad();
+      const sec = int(d[1]); if (!(sec > 0)) bad('اختر القسم');
+      let t = int(d[2]) || 0, pi = int(d[3]), stem = txt(d[4], 6000), opts = (Array.isArray(d[5]) ? d[5] : []).slice(0, 5).map(x => txt(x, 800)), cor = int(d[6]);
+      const hint = c.hints ? txt(d[7], 2000).trim() : '';
+      if (c.img) { const mm = /\/api\/exam\/img\/(\d+)/.exec(stem); stem = '<p><img src="' + (mm ? '/api/exam/img/' + mm[1] : 'img/' + id + '.webp') + '" alt="صورة السؤال"></p>'; opts = LETTERS.slice(); t = 0; pi = -1; }
+      else { if (!stem.trim()) bad('اكتب نص السؤال'); if (opts.length < 2 || opts.some(o => !o.trim())) bad('اكتب كل الاختيارات'); if (!(t >= 0 && t < 20)) t = 0; if (!(pi >= -1)) pi = -1; }
+      if (!(cor >= 0 && cor < opts.length)) bad('اختر الإجابة الصحيحة');
+      return hint ? [id, sec, t, pi, stem, opts, cor, hint] : [id, sec, t, pi, stem, opts, cor];
+    }
+    if (kind === 's') { if (!(int(key) > 0)) bad(); const name = txt(d && d.name, 120).trim(); if (!name) bad('اكتب اسم القسم'); return { name }; }
+    if (kind === 'p') { if (!(int(key) >= 0)) bad(); const t = txt(d, 20000).trim(); if (!t) bad('اكتب نص القطعة'); return t; }
+    if (kind === 'o') { if (!(int(key) > 0) || !Array.isArray(d)) bad(); return d.slice(0, 5000).map(int).filter(x => x > 0); }
+    if (kind === 'qq') { const n = int(key), cor = int(d && d[2]); if (!(n > 0) || !(cor >= 0 && cor < 4)) bad(); return [n, int(d[1]) || 0, cor]; }
+    if (kind === 'qh') return txt(d, 2000).trim();
+    if (kind === 'r') { if (!Array.isArray(d)) bad(); const stem = txt(d[0], 2000).trim(), o = [1, 2, 3, 4].map(i => txt(d[i], 600).trim()), cor = int(d[5]); if (!stem) bad('اكتب نص السؤال'); if (o.some(x => !x)) bad('اكتب الاختيارات الأربعة'); if (!(cor >= 0 && cor < 4)) bad('اختر الإجابة الصحيحة'); return [stem, ...o, cor]; }
+    if (kind === 'k') { if (!(int(key) > 0) || !LETTERS.includes(d)) bad(); return d; }
+    bad();
+  };
+  if (p === 'admin/exam/save' && m === 'POST') {
+    const b = await body(), c = COURSE[b.course], R = c && await courseRights(c.slug);
+    if (!R) return deny('ليس لديك صلاحية على هذا المقرر');
+    const ops = (Array.isArray(b.ops) ? b.ops : []).slice(0, 400);
+    if (!ops.length) return J({ error: 'لا توجد تغييرات' }, 400);
+    let base = null; try { base = await baseOf(c); } catch (e) { base = null; }
+    const rows = {}; for (const r of await all('SELECT kind,key,deleted FROM exam_patch WHERE course=?', c.slug)) rows[r.kind + '|' + r.key] = r;
+    const inBase = (kind, key) => {
+      if (!base) return undefined;
+      if (kind === 'q') return base.q.includes(int(key));
+      if (kind === 's') return base.s.includes(int(key));
+      if (kind === 'p') return int(key) < base.p;
+      if (kind === 'qq') return base.qq.includes(int(key));
+      if (kind === 'r') return /^\d+$/.test(key) && int(key) < base.n;
+      if (kind === 'k') return int(key) >= 1 && int(key) <= base.n;
+      return true;
+    };
+    const exists = (kind, key) => { const r = rows[kind + '|' + key]; if (r) return !r.deleted; return inBase(kind, key); };
+    const st = [], count = { edit: 0, add: 0, delete: 0 }, NAMES = { edit: 'التعديل', add: 'الإضافة', delete: 'الحذف' };
+    try {
+      for (const o of ops) {
+        const kind = String(o.kind || ''), key = txt(o.key, 40);
+        if (!KINDS[c.model].includes(kind) || !key) return J({ error: 'عملية غير صالحة' }, 400);
+        let act = (o.data === null || o.act === 'delete') ? 'delete' : o.act === 'add' ? 'add' : 'edit';
+        if (['o', 'qh', 'k'].includes(kind) && act !== 'edit') act = 'edit';
+        if (kind === 'qq' && act === 'add') return J({ error: 'لا يمكن إضافة أسئلة لهذا الجزء' }, 400);
+        const ex = exists(kind, key);
+        if (act === 'add' && ex === true) return J({ error: 'الرقم ' + key + ' مستخدم بالفعل. حدّث الصفحة وحاول مرة أخرى.' }, 409);
+        if (act !== 'add' && ex === false) return J({ error: 'العنصر ' + key + ' غير موجود (ربما حُذف). حدّث الصفحة.' }, 404);
+        if (!R[act]) return deny('صلاحيتك في هذا المقرر لا تشمل ' + NAMES[act]);
+        const data = act === 'delete' ? null : JSON.stringify(cleanOp(c, kind, key, o.data));
+        count[act]++;
+        st.push(DB.prepare('INSERT INTO exam_patch (course,kind,key,data,deleted,created_at,updated_at,updated_by) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(course,kind,key) DO UPDATE SET data=excluded.data,deleted=excluded.deleted,updated_at=excluded.updated_at,updated_by=excluded.updated_by').bind(c.slug, kind, key, data, act === 'delete' ? 1 : 0, iso, iso, A.name));
+      }
+    } catch (e) { return J({ error: e.message || 'بيانات غير صالحة' }, 400); }
+    st.push(audit(A, 'content', 'course', null, c.title + ' — ' + [count.edit ? 'تعديل ' + count.edit : '', count.add ? 'إضافة ' + count.add : '', count.delete ? 'حذف ' + count.delete : ''].filter(Boolean).join('، ')));
+    await DB.batch(st);
+    return J({ ok: 1 });
+  }
+  if (p === 'admin/exam/upload' && m === 'POST') {
+    const b = await body(), c = COURSE[b.course], R = c && await courseRights(c.slug);
+    if (!R || !(R.edit || R.add)) return deny('ليس لديك صلاحية على هذا المقرر');
+    const mm = /^data:(image\/(?:webp|jpeg|png));base64,([A-Za-z0-9+/=]+)$/.exec(String(b.data || ''));
+    if (!mm) return J({ error: 'الصورة غير صالحة' }, 400);
+    const bin = atob(mm[2]); if (bin.length > 1500000) return J({ error: 'حجم الصورة كبير، الحد الأقصى ١٫٥ ميجابايت' }, 400);
+    const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const r = await DB.prepare('INSERT INTO exam_images (course,mime,data,created_at,created_by) VALUES (?,?,?,?,?)').bind(c.slug, mm[1], bytes.buffer, iso, A.name).run();
+    return J({ ok: 1, id: r.meta.last_row_id, src: '/api/exam/img/' + r.meta.last_row_id });
+  }
+  if (p === 'admin/exam/history' && m === 'GET') {
+    const c = COURSE[new URL(request.url).searchParams.get('course')], R = c && await courseRights(c.slug);
+    if (!R) return deny('ليس لديك صلاحية على هذا المقرر');
+    return J({ history: await all('SELECT kind,key,deleted,updated_at,updated_by FROM exam_patch WHERE course=? ORDER BY updated_at DESC LIMIT 300', c.slug) });
+  }
+  if (p === 'admin/exam/revert' && m === 'POST') {
+    const b = await body(), c = COURSE[b.course], R = c && await courseRights(c.slug), kind = String(b.kind || ''), key = txt(b.key, 40);
+    if (!R) return deny('ليس لديك صلاحية على هذا المقرر');
+    let base = null; try { base = await baseOf(c); } catch (e) { }
+    const added = base && ((kind === 'q' && !base.q.includes(int(key))) || (kind === 's' && !base.s.includes(int(key))) || (kind === 'r' && !(/^\d+$/.test(key) && int(key) < base.n)));
+    if (added ? !R.delete : !R.edit) return deny(added ? 'الرجوع هنا يحذف عنصرًا مضافًا، ويحتاج صلاحية الحذف' : 'ليس لديك صلاحية التعديل في هذا المقرر');
+    await DB.batch([DB.prepare('DELETE FROM exam_patch WHERE course=? AND kind=? AND key=?').bind(c.slug, kind, key), audit(A, 'revert', 'course', null, c.title + ' — ' + kind + ' ' + key)]);
+    return J({ ok: 1 });
+  }
+  if (p === 'admin/courses/assign' && m === 'POST') {
+    if (!can('courses.manage')) return deny();
+    const b = await body(), c = COURSE[b.course], sid = int(b.staff_id);
+    const u = c && sid > 0 && await one('SELECT name,role FROM staff_users WHERE id=?', sid);
+    if (!u) return J({ error: 'اختر المقرر والمعلم' }, 400);
+    await DB.batch([DB.prepare('INSERT INTO course_staff (course,staff_id,can_edit,can_add,can_delete,created_at) VALUES (?,?,?,?,?,?) ON CONFLICT(course,staff_id) DO UPDATE SET can_edit=excluded.can_edit,can_add=excluded.can_add,can_delete=excluded.can_delete').bind(c.slug, sid, b.can_edit ? 1 : 0, b.can_add ? 1 : 0, b.can_delete ? 1 : 0, iso),
+      audit(A, 'course_assign', 'staff', sid, c.title + ' — ' + u.name + ' (' + [b.can_edit ? 'تعديل' : '', b.can_add ? 'إضافة' : '', b.can_delete ? 'حذف' : ''].filter(Boolean).join('، ') + ')')]);
+    return J({ ok: 1 });
+  }
+  if (p === 'admin/courses/remove' && m === 'POST') {
+    if (!can('courses.manage')) return deny();
+    const b = await body(), c = COURSE[b.course], sid = int(b.staff_id);
+    if (!c || !(sid > 0)) return J({ error: 'بيانات غير صحيحة' }, 400);
+    await DB.batch([DB.prepare('DELETE FROM course_staff WHERE course=? AND staff_id=?').bind(c.slug, sid), audit(A, 'course_remove', 'staff', sid, c.title)]);
+    return J({ ok: 1 });
+  }
 
   // ---------- حسابي ----------
   if (p === 'admin/me/password' && m === 'POST') {
@@ -339,7 +513,7 @@ export async function onRequest({ request, env, params }) {
     if (!isSuper) return deny();
     const id = +((await body()).id), u = await one('SELECT username FROM staff_users WHERE id=?', id);
     if (!id || (A.type === 'staff' && id === A.id)) return J({ error: 'لا يمكن حذف الحساب الحالي' }, 400);
-    await DB.batch([DB.prepare('DELETE FROM staff_sessions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_perms WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_permissions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_users WHERE id=?').bind(id), audit(A, 'delete', 'staff', id, u ? u.username : '')]);
+    await DB.batch([DB.prepare('DELETE FROM staff_sessions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_perms WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_permissions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM course_staff WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_users WHERE id=?').bind(id), audit(A, 'delete', 'staff', id, u ? u.username : '')]);
     return J({ ok: 1 });
   }
   if (p === 'admin/audit' && m === 'GET') {
@@ -396,6 +570,9 @@ export async function onRequest({ request, env, params }) {
       jobs.flagged = one('SELECT COUNT(*) n FROM trials WHERE strikes>0');
     }
     if (isSuper) jobs.staff = staffList();
+    jobs.cEdits = all('SELECT course,COUNT(*) n,MAX(updated_at) last FROM exam_patch GROUP BY course');
+    jobs.cStaff = can('courses.manage') ? all('SELECT cs.course,cs.staff_id,cs.can_edit,cs.can_add,cs.can_delete,u.name,u.username,u.role,u.status FROM course_staff cs JOIN staff_users u ON u.id=cs.staff_id ORDER BY u.name') : (A.type === 'staff' ? all('SELECT course,staff_id,can_edit,can_add,can_delete FROM course_staff WHERE staff_id=?', A.id) : Promise.resolve([]));
+    if (can('courses.manage') && !isSuper) jobs.staffPick = all("SELECT id,name,username,role,status FROM staff_users WHERE role<>'super_admin' ORDER BY name");
     const keys = Object.keys(jobs), vals = await Promise.all(keys.map(k => jobs[k])), R = Object.fromEntries(keys.map((k, i) => [k, vals[i]]));
     if (R.students) out.students = can('students.codes') ? R.students : R.students.map(s => ({ ...s, code: s.code.slice(0, 2) + '******' }));
     if (R.pages) { out.pages = R.pages; out.feed = R.feed; out.pageList = R.pageList.map(r => r.page); }
@@ -404,6 +581,15 @@ export async function onRequest({ request, env, params }) {
     if (R.leads) { out.leads = R.leads; out.leadStats = { leads: R.leadCount.n, visitors: R.visitors.n }; }
     if (R.bans) { out.bans = R.bans; out.flagged = R.flagged.n; }
     if (R.staff) out.staff = R.staff;
+    {
+      const ed = Object.fromEntries(R.cEdits.map(r => [r.course, r])), mine = {};
+      if (A.type === 'staff') R.cStaff.filter(r => r.staff_id === A.id).forEach(r => mine[r.course] = r);
+      out.courses = COURSES.map(c => {
+        const r = isSuper ? { can_edit: 1, can_add: 1, can_delete: 1 } : mine[c.slug];
+        return { slug: c.slug, title: c.title, model: c.model, url: '/' + c.file.replace(/^\//, '').replace(/\.html$/, ''), edits: ed[c.slug] ? ed[c.slug].n : 0, last: ed[c.slug] ? ed[c.slug].last : null, rights: r ? { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete } : null, staff: can('courses.manage') ? R.cStaff.filter(x => x.course === c.slug) : undefined };
+      }).filter(c => c.rights || can('courses.manage'));
+      if (R.staffPick) out.staffPick = R.staffPick;
+    }
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;
     const settings = {};
