@@ -55,6 +55,24 @@
     }).observe(resEl, { childList: true });
   }
 
+  // إعلان الوقت المتبقي لقارئ الشاشة ولمن لا ينتبه للون: «تبقى خمس دقائق» و«تبقى دقيقة واحدة»
+  (function () {
+    var live = document.createElement('div'); live.className = 'bws-live'; live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'assertive'); document.body.appendChild(live);
+    var secs = function (t) { var m = String(t || '').replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }).match(/(?:(\d+):)?(\d+):(\d{2})/); return m ? (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + (+m[3]) : -1; };
+    var prev = {}, said = {};
+    var say = function (msg) { live.textContent = ''; setTimeout(function () { live.textContent = msg; }, 50); live.classList.add('on'); clearTimeout(live._t); live._t = setTimeout(function () { live.classList.remove('on'); }, 4000); };
+    setInterval(function () {
+      document.querySelectorAll('#timer, .timer').forEach(function (el, i) {
+        if (!el.offsetParent) return;
+        var v = secs(el.textContent), k = el.id || ('t' + i), p = prev[k]; prev[k] = v; if (v < 0 || p === undefined || p < 0) return;
+        if (v > p) { said[k] = {}; return; } // مؤقت جديد أو تصاعدي
+        var S = said[k] || (said[k] = {});
+        if (p > 300 && v <= 300 && v > 240 && !S[5]) { S[5] = 1; say('تبقى خمس دقائق'); }
+        if (p > 60 && v <= 60 && v > 30 && !S[1]) { S[1] = 1; say('تبقى دقيقة واحدة'); }
+      });
+    }, 1000);
+  })();
+
   var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'bws-report'; btn.title = 'إبلاغ عن خطأ في السؤال'; btn.innerHTML = '⚑<span> إبلاغ عن خطأ</span>';
   sh.insertBefore(btn, sh.querySelector('.bws-back'));
   btn.onclick = function () {

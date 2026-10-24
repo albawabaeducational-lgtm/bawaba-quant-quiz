@@ -103,3 +103,8 @@ body.testing #bw-shell .bws-report span { display: none; }
 .bw-plan-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--bw-line); font-size: 14.5px; }
 .bw-plan-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 560px) { .bw-plan-row { grid-template-columns: 1fr auto; } .bw-plan-row button { grid-column: 1 / -1; } }
+
+/* ---------- إعلان الوقت المتبقي ---------- */
+.bws-live { position: fixed; z-index: 2147483000; top: 76px; left: 50%; transform: translate(-50%, -12px); opacity: 0; pointer-events: none; background: var(--bw-night); color: #fff; border: 2px solid var(--bw-gold); border-radius: 14px; padding: 10px 18px; font: 600 15px "IBM Plex Sans Arabic", Tahoma, sans-serif; transition: opacity .2s, transform .2s; direction: rtl; }
+.bws-live.on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .bws-live { transition: none; } }

@@ -1,11 +1,13 @@
-// Service Worker — الاختبار المحوسب (الإصدار 1.3.0)
-const V='1.3.0',SHELL='bw-shell-'+V,IMG='bw-img-v1';
+// Service Worker — الاختبار المحوسب (الإصدار 1.3.1)
+const V='1.3.1',SHELL='bw-shell-'+V,IMG='bw-img-v1';
 const CORE=['./','index.html','manifest.json','icons/icon-192.png','icons/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('bw-shell-')&&k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{
   const r=e.request;if(r.method!=='GET')return;
   const u=new URL(r.url);if(u.origin!==location.origin)return;
+  // طلبات الخادم (التقدم، الأسئلة، الدخول) لا تُخزَّن أبدًا
+  if(u.pathname.startsWith('/api/'))return;
   // الصور: من الذاكرة أولًا (الصور لا تتغير بعد نشرها)
   if(u.pathname.indexOf('/img/')>-1){
     e.respondWith(caches.open(IMG).then(async c=>{

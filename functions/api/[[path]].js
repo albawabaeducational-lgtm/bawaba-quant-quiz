@@ -129,7 +129,7 @@ const extractBase = (course, html) => {
 let schemaReady = false, leadsReady = false, moodleReady = false;
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
-const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2'];
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1'];
 let progressReady = false;
 const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
@@ -530,7 +530,40 @@ export async function onRequest({ request, env, params }) {
       all("SELECT substr(created_at,1,10) day,COUNT(*) events,COUNT(DISTINCT student_id) students FROM events WHERE page=? AND created_at>? GROUP BY day ORDER BY day DESC", pg, since),
       all("SELECT s.name,e.kind,e.sub,e.score,e.created_at FROM events e JOIN students s ON s.id=e.student_id WHERE e.page=? ORDER BY e.id DESC LIMIT 30", pg)
     ]);
-    return J({ course: { slug: c.slug, title: c.title }, summary: { ...sum, secs: secs.secs }, students, subs, days, feed });
+    // تعلّم الطلاب من تقدمهم المحفوظ على الخادم: الأقسام الأصعب، الأسئلة الأكثر خطأ، ودقة كل طالب
+    let learn = null;
+    const LK = { 'aksam kamy': { st: 'bw-stats-v1', er: 'quant-quiz-errors-v1', pl: 'k' }, 'aksam lafzi': { st: 'bwv-stats-v1', er: 'verbal-quiz-errors-v1', pl: 'v' } }[c.slug];
+    if (LK) {
+      try {
+        await ensureProgressSchema(DB);
+        const rows = await all('SELECT p.student_id sid,s.name,p.key,p.data,p.ts FROM student_progress p JOIN students s ON s.id=p.student_id WHERE p.key IN (?,?,?) LIMIT 6000', LK.st, LK.er, 'bw-place-v1');
+        const per = {}, sec = {}, miss = {};
+        const P = (sid, name) => per[sid] || (per[sid] = { id: sid, name, n: 0, g: 0, wk: 0, last: 0, errs: 0, weak: null, place: null });
+        for (const r of rows) {
+          let d; try { d = JSON.parse(r.data); } catch (e) { continue; }
+          const x = P(r.sid, r.name); x.last = Math.max(x.last, r.ts || 0);
+          if (r.key === LK.st) {
+            for (const h of (Array.isArray(d.h) ? d.h : [])) { x.n += +h.n || 0; x.g += +h.g || 0; if (now - new Date(h.d).getTime() < 7 * 864e5) x.wk += +h.n || 0; }
+            let wp = 2;
+            for (const [k, v] of Object.entries(d.s || {})) {
+              const t = +v.t || 0, cc = +v.c || 0; if (!t || +k >= 1000) continue;
+              const S2 = sec[k] || (sec[k] = { id: +k, t: 0, c: 0, students: 0 }); S2.t += t; S2.c += cc; S2.students++;
+              if (t >= 5 && cc / t < wp) { wp = cc / t; x.weak = { id: +k, p: Math.round(cc / t * 100) }; }
+            }
+          } else if (r.key === LK.er) {
+            for (const e of Object.values(d || {})) { if (!e || !(e.id < 100000)) continue; x.errs++; const M = miss[e.id] || (miss[e.id] = { id: e.id, sectionId: e.sectionId, students: 0 }); M.students++; }
+          } else if (Array.isArray(d) && d.length) { const L2 = d[d.length - 1]; x.place = { lvl: txt(L2.lvl, 30), p: +L2[LK.pl] || 0, d: L2.d }; }
+        }
+        const list = Object.values(per).filter(x => x.n || x.errs || x.place).sort((a2, b2) => b2.last - a2.last).slice(0, 500);
+        learn = {
+          students: list.map(x => ({ ...x, acc: x.n ? Math.round(x.g / x.n * 100) : null })),
+          hardest: Object.values(sec).filter(x => x.t >= 10).map(x => ({ ...x, p: Math.round(x.c / x.t * 100) })).sort((a2, b2) => a2.p - b2.p).slice(0, 12),
+          missed: Object.values(miss).filter(x => x.students >= 2).sort((a2, b2) => b2.students - a2.students).slice(0, 15),
+          active7: list.filter(x => x.wk > 0).length
+        };
+      } catch (e) { learn = null; }
+    }
+    return J({ course: { slug: c.slug, title: c.title }, summary: { ...sum, secs: secs.secs }, students, subs, days, feed, learn });
   }
   if (p === 'admin/exam/save' && m === 'POST') {
     const b = await body(), c = COURSE[b.course], R = c && await courseRights(c.slug);

@@ -380,7 +380,8 @@
   });
   addEventListener('beforeunload', function (e) { if (root && host.style.display !== 'none' && E.view === 'q') { e.preventDefault(); e.returnValue = ''; } });
   if (/[?&](edit|admin)\b/.test(location.search)) {
-    var u = new URL(location.href); u.searchParams.delete('edit'); u.searchParams.delete('admin'); history.replaceState(null, '', u.toString());
-    setTimeout(open, 0);
+    var u = new URL(location.href), oq = u.searchParams.get('q'); u.searchParams.delete('edit'); u.searchParams.delete('admin'); u.searchParams.delete('q'); history.replaceState(null, '', u.toString());
+    // ?edit=1&q=رقم يفتح السؤال مباشرة (من تقارير المقرر: «الأسئلة الأكثر خطأ»)
+    setTimeout(function () { open(); if (oq && D && M === 'bank' && R.edit) { var rq = D.qs.filter(function (q) { return String(q[0]) === oq; })[0]; if (rq) { E.sec = rq[1]; startQ(rq[0]); } } }, 0);
   }
 })();

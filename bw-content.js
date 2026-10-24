@@ -19,6 +19,12 @@
       return D;
     } catch (e) { if (window.console) console.error('bw-linked', e); return D0; }
   };
+  // بنك مقرر آخر محمَّل من /api/exam/data مع تعديلات المعلمين عليه (لاختبار تحديد المستوى)
+  window.__bwBank = function (slug) {
+    var D = (window.__BWD || {})[slug]; if (!D || !D.qs) return null;
+    var own = P; P = (X.linked || {})[slug] || [];
+    try { return bank(D, true); } catch (e) { if (window.console) console.error('bw-bank', e); return D; } finally { P = own; }
+  };
   window.__bwApply = function (model, data) {
     try {
       if (model === 'bank') return bank(data);

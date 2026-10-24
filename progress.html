@@ -77,6 +77,7 @@
   var K = load('kamy'), V = load('lafzi');
   var sims = []; ['kamy', 'lafzi'].forEach(function (sj) { SUBJ[sj].sims.forEach(function (s) { (get(s[0], []) || []).forEach(function (x) { if (x && x.d != null) sims.push({ d: x.d, p: x.p, n: s[1] }); }); }); });
   sims.sort(function (a, b) { return new Date(a.d) - new Date(b.d); });
+  var place = (get('bw-place-v1', []) || []).slice(-1)[0] || null;
   var tasis = get('tanazur.best', {}) || {}, tasisDone = Object.keys(tasis).length;
 
   function secName(sj, id) { var n = names[sj] && names[sj][id]; return n ? n : 'القسم ' + AR(id); }
@@ -93,6 +94,7 @@
     if (weak.length) { var w = weak[0]; return { t: 'تدرّب على ' + secName(w.sj, w.id), d: 'دقتك فيه ' + AR(Math.round(w.p * 100)) + '٪ في آخر محاولاتك. جولة واحدة مركزة ستفرق.', b: 'ابدأ التدريب عليه', fn: function () { practice(w.sj, [w.id]); } }; }
     var lastSim = sims[sims.length - 1];
     if (K.n + V.n >= 40 && (!lastSim || now - new Date(lastSim.d) > 7 * DAY)) return { t: 'اختبر نفسك في المحاكي المحوسب', d: 'تدربت جيدًا هذا الأسبوع. جرّب اختبارًا كاملًا بالمؤقت لتعرف مستواك الحقيقي.', b: 'ادخل المحاكي', go: '/muhaky%20mohawsab.html' };
+    if (K.n + V.n === 0 && !place) return { t: 'ابدأ باختبار تحديد المستوى', d: '٢٠ سؤالًا من الكمي واللفظي تعرف بها مستواك ومن أين تبدأ، وتحصل على خطة مرتبة.', b: 'حدّد مستواك الآن', go: '/placement.html' };
     if (K.n + V.n === 0) return { t: 'ابدأ أول تدريب لك', d: 'اختر قسمًا من الكمي أو اللفظي وحلّ ١١ سؤالًا. بعدها ستظهر هنا نقاط قوتك وضعفك.', b: 'اختر اختبارك', go: '/#tests' };
     var sj2 = K.n <= V.n ? 'kamy' : 'lafzi'; return { t: 'تدرّب على قسم جديد في ' + SUBJ[sj2].title, d: 'أداؤك جيد في ما حلّلته. جرّب أقسامًا لم تحلها بعد.', b: 'افتح ' + SUBJ[sj2].title, go: SUBJ[sj2].page };
   }
@@ -113,6 +115,7 @@
   }
   function draw() {
     var n = K.n + V.n, g = K.g + V.g, step = nextStep(), h = '<h1>تقدمي</h1><p class="sub">ملخص تدريبك، والخطوة التالية المقترحة لك.</p>';
+    if (place) h += '<div class="resume"><span>مستواك في اختبار تحديد المستوى: ' + esc(place.lvl) + ' (' + AR(place.p) + '٪ · لفظي ' + AR(place.v) + '٪ · كمي ' + AR(place.k) + '٪)</span><a class="btn btn-soft" href="/placement.html">' + (now - new Date(place.d) > 14 * DAY ? 'حان وقت إعادته' : 'أعد الاختبار') + '</a></div>';
     h += '<section class="next"><div><small>خطوتك التالية</small><h2>' + esc(step.t) + '</h2><p>' + esc(step.d) + '</p></div>' + (step.go ? '<a class="btn btn-gold" href="' + step.go + '">' + esc(step.b) + '</a>' : '<button class="btn btn-gold" id="stepBtn">' + esc(step.b) + '</button>') + '</section>';
     h += '<div class="kpis"><div class="kpi"><b>' + AR(n) + '</b><span>سؤالًا حللته</span></div><div class="kpi"><b>' + (n ? AR(Math.round(g / n * 100)) + '٪' : '—') + '</b><span>دقة إجاباتك</span></div><div class="kpi"><b>' + AR(K.wk + V.wk) + '</b><span>سؤالًا هذا الأسبوع</span></div><div class="kpi"><b>' + AR(K.errs.length + V.errs.length) + '</b><span>سؤالًا في مجلد الأخطاء</span></div></div>';
     h += '<div class="two">' + subjCard('kamy', K) + subjCard('lafzi', V) + '</div>';

@@ -16,6 +16,8 @@ const COURSES = {
   'muhaky warky2': { title: 'المحاكي الورقي – النموذج الثاني', model: 'key' },
   'tasis lafzi': { title: 'تأسيس اللفظي', model: 'raw' }
 };
+// صفحات ليست مقررات لكنها تقرأ أسئلة المقررات (مع تعديلات المعلمين): اختبار تحديد المستوى
+const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'] };
 const safeJson = o => JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
 // حماية التجربة: نفس الجهاز/الشبكة يعيد التجربة بمسح المتصفح => يرجع له وقته الأصلي (لا يربح شيئًا)،
@@ -69,14 +71,14 @@ export async function onRequest({ request, env, next }) {
     if (code) st = await env.DB.prepare('SELECT id,status,expires_at,kind,created_at,duration_minutes,pause_used,pause_until FROM students WHERE code=?').bind(code).first();
     if (cookie(request, 'bw_staff') || cookie(request, 'bw_admin')) staff = await staffOf(env, request, iso);
   } catch (e) { return next(); }
-  const links = course ? (COURSES[course].link || []) : [], linked = {};
-  if (course) {
+  const links = course ? (COURSES[course].link || []) : (VIRTUAL[slug] || []), linked = {};
+  if (course || links.length) {
     try {
-      const want = [course].concat(links), rows = (await env.DB.prepare('SELECT course,kind,key,data,deleted FROM exam_patch WHERE course IN (' + want.map(() => '?').join(',') + ') ORDER BY created_at,rowid').bind(...want).all()).results;
+      const want = (course ? [course] : []).concat(links), rows = (await env.DB.prepare('SELECT course,kind,key,data,deleted FROM exam_patch WHERE course IN (' + want.map(() => '?').join(',') + ') ORDER BY created_at,rowid').bind(...want).all()).results;
       for (const r of rows) { const x = [r.kind, r.key, r.deleted ? null : JSON.parse(r.data)]; if (r.course === course) patches.push(x); else (linked[r.course] = linked[r.course] || []).push(x); }
     } catch (e) { patches = []; }
   }
-  let head = course ? `<script>window.__BWX=${safeJson({ c: course, p: patches, linked })}</script><script src="/bw-content.js"></script>` + links.map(l => `<script src="/api/exam/data?c=${encodeURIComponent(l)}"></script>`).join('') : '';
+  let head = (course || links.length) ? `<script>window.__BWX=${safeJson({ c: course || slug, p: patches, linked })}</script><script src="/bw-content.js"></script>` + links.map(l => `<script src="/api/exam/data?c=${encodeURIComponent(l)}"></script>`).join('') : '';
   const paused = !!st && (st.pause_until || 0) > now;
   const valid = !!st && st.status === 'active' && (!st.expires_at || st.expires_at > iso) && !paused;
   // الطالب المسجّل: يُسترجع تقدمه المحفوظ على الخادم قبل أن تقرأه الصفحة (يعمل على أي جهاز)

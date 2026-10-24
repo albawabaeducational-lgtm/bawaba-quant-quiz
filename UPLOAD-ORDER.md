@@ -1,16 +1,19 @@
-ارفع هذه الملفات (تحديث 2.7) مع الحفاظ على المسارات:
+ارفع هذه الملفات (تحديث 2.8) مع الحفاظ على المسارات:
 
-bw-sync.js             ← جديد
-bw-shell.js
-bw-theme.css
+placement.html         ← جديد (اختبار تحديد المستوى)
+index.html
 progress.html
-_routes.json
+admin.html
+bw-content.js
+bw-editor.js
+bw-shell.js
+bw-sync.js
+bw-theme.css
 functions/api/[[path]].js
 functions/_middleware.js
-schema.sql
-migrations/008_student_progress.sql   ← جديد (اختياري، الجدول يُنشأ تلقائيًا)
+sw.js
 CHANGELOG.md
 UPLOAD-ORDER.md
 
-(ومعها ملفات التحديثات السابقة 2.1–2.6 لو لم ترفعها بعد.)
+(ومعها ملفات التحديثات السابقة 2.1–2.7 لو لم ترفعها بعد.)
 قبل الرفع: Pull ثم Commit ثم Push.

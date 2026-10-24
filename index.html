@@ -111,6 +111,21 @@
     .exam-row .ic { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--gold-soft); color: #9a6a00; font-family: var(--display); font-size: 22px; font-weight: 700; }
     .exam-row strong { display: block; font-family: var(--display); color: var(--navy); font-size: 17.5px; font-weight: 600; }
     .exam-row span.d { display: block; color: var(--muted); font-size: 14px; }
+    .mode { display: inline-block; vertical-align: middle; margin-inline-start: 8px; font-style: normal; font-size: 12px; font-weight: 600; border-radius: 99px; padding: 1px 10px; }
+    .mode.tr { background: #e4f3ea; color: #17633f; }
+    .mode.sm { background: #fbefd2; color: #7a5300; }
+    .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 34px; }
+    .modes > div { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px; }
+    .modes h3 { margin: 0 0 6px; color: var(--navy); font-size: 19px; display: flex; align-items: center; gap: 8px; }
+    .modes p { margin: 0; color: var(--muted); }
+    .faq { display: grid; gap: 10px; }
+    .faq details { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 4px 20px; }
+    .faq summary { cursor: pointer; font-weight: 600; color: var(--navy); padding: 14px 0; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary::after { content: "+"; color: var(--gold); font-size: 22px; line-height: 1; }
+    .faq details[open] summary::after { content: "−"; }
+    .faq details p { margin: 0 0 16px; color: var(--muted); }
+    @media (max-width: 760px) { .modes { grid-template-columns: 1fr; } }
     .exam-row .cnt { color: var(--sea); font-weight: 600; font-size: 13.5px; white-space: nowrap; }
 
     /* (أُزيل قسم الشرح مؤقتًا) */
@@ -230,6 +245,7 @@
       <a class="brand" href="/"><img src="/icons/logo.jpg" alt="" width="42" height="42"><b>منصة البوابة التعليمية</b></a>
       <nav aria-label="أقسام الصفحة">
         <a href="#tests">الاختبارات</a>
+        <a href="/placement.html">تحديد المستوى</a>
         <a href="/progress.html">تقدمي</a>
         <a href="#try">جرّب سؤالًا</a>
         <a href="#courses">الدورات</a>
@@ -251,7 +267,7 @@
           <li><b>+٢٦٠</b>قسمًا للتدريب</li>
           <li><b>٢</b>نموذج ورقي كامل</li>
         </ul>
-        <p style="margin:22px 0 0"><a class="btn btn-line" href="/progress.html">تقدمي وخطوتي التالية</a></p>
+        <p style="margin:22px 0 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><a class="btn btn-gold" id="heroMain" href="/placement.html">ابدأ اختبار تحديد المستوى</a><a class="btn btn-line" id="heroSec" href="/progress.html">تقدمي وخطوتي التالية</a></p>
       </div>
     </section>
 
@@ -267,12 +283,12 @@
             <span class="btn btn-gold go">ابدأ المحاكاة</span>
           </a>
           <div class="exam-list">
-            <a class="exam-row" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026</strong><span class="d">تدريبات واختبارات القسم الكمي</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
-            <a class="exam-row" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026</strong><span class="d">تدريبات واختبارات القسم اللفظي</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
+            <a class="exam-row" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم الكمي</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
+            <a class="exam-row" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم اللفظي</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
           </div>
           <div class="exam-list">
-            <a class="exam-row" href="waraqi.html"><span class="ic" aria-hidden="true">✎</span><span><strong>محاكيات اختبار القدرات الورقي</strong><span class="d">النموذج الأول والنموذج الثاني</span></span><span class="cnt">١٢٠ سؤالًا لكل نموذج</span></a>
-            <a class="exam-row" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي</strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
+            <a class="exam-row" href="waraqi.html"><span class="ic" aria-hidden="true">✎</span><span><strong>محاكيات اختبار القدرات الورقي<em class="mode sm">محاكاة</em></strong><span class="d">النموذج الأول والنموذج الثاني</span></span><span class="cnt">١٢٠ سؤالًا لكل نموذج</span></a>
+            <a class="exam-row" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي<em class="mode tr">تدريب</em></strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
           </div>
         </div>
       </div>
@@ -298,11 +314,15 @@
       <div class="wrap">
         <div class="block-head"><div><h2 id="howTitle">كيف تتدرب معنا</h2></div></div>
         <ol class="steps">
-          <li><b>اختر القسم</b><p>ابدأ بالكمي أو اللفظي، وحدد الأقسام التي تريد التدرب عليها.</p></li>
-          <li><b>حلّ بالمؤقت</b><p>اضبط الوقت لكل سؤال لتعتاد على سرعة الاختبار الحقيقي.</p></li>
-          <li><b>راجع أخطاءك</b><p>كل سؤال أخطأت فيه يُحفظ في «الأسئلة الخاطئة» لتعيده حتى تتقنه.</p></li>
-          <li><b>اختبر نفسك كاملًا</b><p>ادخل المحاكي المحوسب أو الورقي، واقرأ تقرير نتيجتك قسمًا قسمًا.</p></li>
+          <li><b>حدّد مستواك</b><p>٢٠ سؤالًا من الكمي واللفظي تعطيك مستواك الحالي وخطة تبدأ بها. <a href="/placement.html">ابدأ الآن</a></p></li>
+          <li><b>تدرّب على نقاط ضعفك</b><p>بعد كل اختبار تظهر لك الأقسام الأضعف وزر يعيد التدريب عليها مباشرة.</p></li>
+          <li><b>راجع أخطاءك</b><p>كل سؤال أخطأت فيه يُحفظ في «الأسئلة الخاطئة»، وصفحة «تقدمي» تخبرك بما حان وقت مراجعته.</p></li>
+          <li><b>قِس تحسّنك</b><p>ادخل المحاكي المحوسب أو الورقي، وأعد اختبار تحديد المستوى كل أسبوعين لترى الفرق.</p></li>
         </ol>
+        <div class="modes">
+          <div><h3><em class="mode tr" style="margin:0">تدريب</em> هدفه التعلّم</h3><p>أقسام الكمي واللفظي والتأسيس: تختار الأقسام، وتضبط المؤقت أو توقفه، وترى الإرشاد والتصحيح، وتعيد الأسئلة الخاطئة.</p></div>
+          <div><h3><em class="mode sm" style="margin:0">محاكاة</em> هدفها القياس</h3><p>المحاكي المحوسب والورقي: مؤقت وقواعد ثابتة مثل يوم الاختبار، والإجابات الصحيحة تظهر في التقرير النهائي فقط.</p></div>
+        </div>
       </div>
     </section>
 
@@ -318,6 +338,20 @@
         <div class="platform">
           <div><b>مشترك في دورات البوابة؟</b><p>ادخل لمحاضراتك ودوراتك على منصة الدورات.</p></div>
           <div class="links"><a class="btn btn-gold" href="https://albawaba-edu.com/e/login/index.php">دخول منصة الدورات</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="faq" aria-labelledby="faqTitle" style="padding-top:0">
+      <div class="wrap">
+        <div class="block-head"><div><h2 id="faqTitle">أسئلة شائعة</h2></div></div>
+        <div class="faq">
+          <details><summary>هل أستطيع التدريب من الهاتف؟</summary><p>نعم، كل الاختبارات تعمل على الجوال والجهاز اللوحي والكمبيوتر من المتصفح مباشرة، بدون تثبيت أي تطبيق.</p></details>
+          <details><summary>ماذا يحدث لو انقطع الإنترنت أو أغلقت الصفحة أثناء الاختبار؟</summary><p>إجاباتك تُحفظ على جهازك أولًا بأول. عند فتح الصفحة مرة أخرى يظهر لك زر لإكمال الاختبار من حيث توقفت.</p></details>
+          <details><summary>هل يُحفظ تقدمي لو دخلت من جهاز آخر؟</summary><p>نعم للمشتركين: عند الدخول بالكود أو بحساب منصة الدورات يُحفظ تقدمك وأخطاؤك في حسابك ويظهر على أي جهاز. في الفترة التجريبية يبقى التقدم على الجهاز نفسه.</p></details>
+          <details><summary>كيف أراجع أخطائي؟</summary><p>كل سؤال تخطئ فيه يُحفظ في «الأسئلة الخاطئة» داخل صفحة الأقسام، وصفحة «تقدمي» تخبرك بعدد الأسئلة التي حان وقت مراجعتها اليوم.</p></details>
+          <details><summary>ما الفرق بين التدريب والمحاكاة؟</summary><p>التدريب للتعلم: تختار الأقسام وترى التصحيح والإرشاد. المحاكاة للقياس: اختبار كامل بمؤقت وقواعد ثابتة، والنتيجة في التقرير النهائي.</p></details>
+          <details><summary>كيف أشترك وأحصل على كود الدخول؟</summary><p>اختر باقتك من «باقات الدورات التعليمية» وتواصل معنا على واتساب، أو ادخل بحساب منصة الدورات إن كنت مشتركًا فيها.</p></details>
         </div>
       </div>
     </section>
@@ -367,6 +401,12 @@
     </div>
   </footer>
 
+<script>
+// الطالب العائد: الزر الرئيسي يصبح «أكمل تدريبي»
+(function () { try { var ls = localStorage, back = ['bw-stats-v1', 'bwv-stats-v1', 'bw-place-v1', 'bw-run', 'bwv-run'].some(function (k) { return ls.getItem(k); }); if (!back) return;
+  var a = document.getElementById('heroMain'), b = document.getElementById('heroSec'); if (!a || !b) return;
+  a.textContent = 'أكمل تدريبي'; a.href = '/progress.html'; b.textContent = 'اختبار تحديد المستوى'; b.href = '/placement.html'; } catch (e) { } })();
+</script>
 <script>
 // تفاصيل الدورات = نفس رسالة واتساب للمهتمين في لوحة التحكم (الإعدادات ← رسالة واتساب الجاهزة للمهتمين)
 (function () {

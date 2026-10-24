@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   if (!window.__bwSid) return;
-  var K = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2'];
+  var K = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1'];
   var L = window.localStorage, srv = window.__bwSrv || {}, dirty = {}, timer = null;
   var orig = Storage.prototype.setItem, origGet = Storage.prototype.getItem;
   function meta() { try { var m = JSON.parse(origGet.call(L, 'bw-sync-meta') || '{}') || {}; m.t = m.t || {}; m.sid = window.__bwSid; return m; } catch (e) { return { sid: window.__bwSid, t: {} }; } }
