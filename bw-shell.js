@@ -27,6 +27,34 @@
     } catch (e) { }
     return { course: linked ? '' : slug, qkey: '' };
   }
+  // خطة علاج بعد كل اختبار في صفحات الأقسام: ماذا تراجع الآن، وما الخطوة التالية
+  var resEl = document.getElementById('result');
+  if (resEl && g('run') !== undefined && g('ans') !== undefined) {
+    var AR = function (n) { return String(n).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
+    var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    new MutationObserver(function () {
+      if (!resEl.firstElementChild || resEl.querySelector('.bw-plan')) return;
+      try {
+        var run = g('run'), ans = g('ans'), t0 = g('study') ? 0 : g('t0'), DBx = g('DB'), SN = {}; ((DBx && DBx.secs) || []).forEach(function (s) { SN[s.id] = s.name; }); if (!run || !run.length) return;
+        var by = {}, na = 0, ok = 0;
+        run.forEach(function (q) { var b = by[q.sectionId] || (by[q.sectionId] = { t: 0, c: 0 }); b.t++; if (ans[q.id] === q.correct) { b.c++; ok++; } if (ans[q.id] === undefined) na++; });
+        var weak = Object.keys(by).map(function (k) { return { id: +k, t: by[k].t, c: by[k].c, p: by[k].c / by[k].t }; }).filter(function (x) { return x.p < .7; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 4);
+        var avg = t0 ? Math.round((Date.now() - t0) / 1000 / run.length) : 0, items = [];
+        if (ok < run.length) items.push('<li><b>راجع أخطاءك الآن وهي حاضرة في ذهنك.</b> أفضل وقت لمراجعة الخطأ مباشرة بعد الاختبار، ثم بعد يوم، ثم بعد أسبوع.</li>');
+        if (na) items.push('<li><b>تركت ' + (na === 1 ? 'سؤالًا واحدًا' : na === 2 ? 'سؤالين' : AR(na) + (na <= 10 ? ' أسئلة' : ' سؤالًا')) + ' بدون إجابة.</b> في الاختبار الحقيقي لا يوجد خصم للخطأ، فلا تترك سؤالًا فارغًا.</li>');
+        if (avg > 80) items.push('<li><b>متوسط وقتك ' + AR(avg) + ' ثانية للسؤال.</b> زمن الاختبار الحقيقي قريب من دقيقة للسؤال؛ درّب نفسك بمؤقت أقصر.</li>');
+        else if (avg && avg < 25 && ok / run.length < .6) items.push('<li><b>إجاباتك سريعة جدًا (' + AR(avg) + ' ثانية) ودقتك منخفضة.</b> تمهّل واقرأ السؤال كاملًا قبل الاختيار.</li>');
+        if (!items.length) items.push('<li><b>أداء ممتاز في هذا الاختبار.</b> انتقل لأقسام جديدة أو اختبر نفسك في المحاكي المحوسب.</li>');
+        var card = document.createElement('div'); card.className = 'card bw-plan noprint';
+        card.innerHTML = '<h3>خطة علاجك بعد هذا الاختبار</h3><ul class="bw-plan-list">' + items.join('') + '</ul>'
+          + (weak.length ? '<div class="bw-plan-weak">' + weak.map(function (w) { return '<div class="bw-plan-row"><span>' + esc(SN[w.id] || 'القسم ' + w.id) + '</span><b>' + AR(w.c) + ' / ' + AR(w.t) + '</b><button class="btn soft sm" type="button" data-bwre="' + w.id + '">أعد التدريب على هذا القسم</button></div>'; }).join('') + '</div>' : '')
+          + '<div class="row" style="margin-top:10px"><a class="btn ghost sm" href="/progress.html">شوف تقدمك وخطوتك التالية</a></div>';
+        resEl.insertBefore(card, resEl.children[1] || null);
+        card.addEventListener('click', function (e) { var b = e.target.closest('[data-bwre]'); if (!b) return; try { var sc = g('setChosen'), st = g('start'); if (sc) sc([+b.dataset.bwre]); if (st) st(); } catch (err) { } });
+      } catch (e) { }
+    }).observe(resEl, { childList: true });
+  }
+
   var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'bws-report'; btn.title = 'إبلاغ عن خطأ في السؤال'; btn.innerHTML = '⚑<span> إبلاغ عن خطأ</span>';
   sh.insertBefore(btn, sh.querySelector('.bws-back'));
   btn.onclick = function () {

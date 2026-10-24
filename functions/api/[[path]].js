@@ -128,6 +128,10 @@ const extractBase = (course, html) => {
 
 let schemaReady = false, leadsReady = false, moodleReady = false;
 const MOODLE_URL = 'https://albawaba-edu.com/e';
+// مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2'];
+let progressReady = false;
+const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
   if (moodleReady) return;
   await DB.batch([
@@ -313,6 +317,39 @@ export async function onRequest({ request, env, params }) {
     const s = await byCode(norm((await body()).code));
     if (!s) { await addFail(ip); return J({ error: 'الكود غير صحيح' }, 401); }
     await endPause(s);
+    return J({ ok: 1 });
+  }
+
+  // ===================== حفظ التقدم على الخادم =====================
+  if (p === 'progress/restore.js' && m === 'GET') {
+    const s = await byCode(norm(ck(request, 'bw_code')));
+    const hdr = { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'private, no-cache' };
+    if (!s) return new Response('', { headers: hdr });
+    await ensureProgressSchema(DB);
+    const rows = (await DB.prepare('SELECT key,data,ts FROM student_progress WHERE student_id=?').bind(s.id).all()).results || [];
+    const tag = '"p-' + s.id + '-' + rows.length + '-' + rows.reduce((a, r) => Math.max(a, r.ts), 0) + '"';
+    hdr.etag = tag;
+    if (request.headers.get('if-none-match') === tag) return new Response(null, { status: 304, headers: hdr });
+    const S = {}; rows.forEach(r => { S[r.key] = { v: r.data, t: r.ts }; });
+    const js = '(function(){try{var S=' + JSON.stringify(S).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029') + ',sid=' + s.id + ',K=' + JSON.stringify(SYNC_KEYS) + ',L=localStorage,M={};try{M=JSON.parse(L.getItem("bw-sync-meta")||"{}")||{}}catch(e){}'
+      + 'if(M.sid!==sid){if(M.sid)K.forEach(function(k){L.removeItem(k)});M={sid:sid,t:{}}}M.t=M.t||{};'
+      + 'for(var k in S){if(!M.t[k]||M.t[k]<S[k].t){L.setItem(k,S[k].v);M.t[k]=S[k].t}}'
+      + 'L.setItem("bw-sync-meta",JSON.stringify(M));window.__bwSrv={};for(var k2 in S)window.__bwSrv[k2]=S[k2].t;window.__bwSid=sid}catch(e){}})();';
+    return new Response(js, { headers: hdr });
+  }
+  if (p === 'progress' && m === 'POST') {
+    const s = await byCode(norm(ck(request, 'bw_code')));
+    if (!s || s.status !== 'active') return J({ ok: 0 }, 401);
+    await ensureProgressSchema(DB);
+    const b = await body(), items = b && typeof b.items === 'object' ? b.items : {}, st = [];
+    let total = 0;
+    for (const k of Object.keys(items).slice(0, SYNC_KEYS.length)) {
+      if (!SYNC_KEYS.includes(k)) continue;
+      const v = String(items[k] && items[k].v || ''), t = Math.min(now, Math.max(0, Math.trunc(+(items[k] && items[k].t) || now)));
+      total += v.length; if (v.length > 600000 || total > 1500000) return J({ error: 'too large' }, 413);
+      st.push(DB.prepare('INSERT INTO student_progress (student_id,key,data,ts) VALUES (?,?,?,?) ON CONFLICT(student_id,key) DO UPDATE SET data=excluded.data,ts=excluded.ts WHERE excluded.ts>student_progress.ts').bind(s.id, k, v, t));
+    }
+    if (st.length) await DB.batch(st);
     return J({ ok: 1 });
   }
 
@@ -879,7 +916,8 @@ export async function onRequest({ request, env, params }) {
   }
   if (p === 'admin/delete') {
     if (!can('students.delete')) return deny();
-    await DB.batch(['events', 'usage', 'devices', 'group_members'].map(t => DB.prepare(`DELETE FROM ${t} WHERE student_id=?`).bind(sid)).concat(DB.prepare('DELETE FROM students WHERE id=?').bind(sid), audit(A, 'delete', 'student', sid, student.name)));
+    await ensureProgressSchema(DB); await ensureMoodleSchema(DB);
+    await DB.batch(['events', 'usage', 'devices', 'group_members', 'student_progress', 'moodle_links'].map(t => DB.prepare(`DELETE FROM ${t} WHERE student_id=?`).bind(sid)).concat(DB.prepare('DELETE FROM students WHERE id=?').bind(sid), audit(A, 'delete', 'student', sid, student.name)));
     return J({ ok: 1 });
   }
   return J({ error: 'not found' }, 404);

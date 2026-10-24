@@ -76,9 +76,11 @@ export async function onRequest({ request, env, next }) {
       for (const r of rows) { const x = [r.kind, r.key, r.deleted ? null : JSON.parse(r.data)]; if (r.course === course) patches.push(x); else (linked[r.course] = linked[r.course] || []).push(x); }
     } catch (e) { patches = []; }
   }
-  const head = course ? `<script>window.__BWX=${safeJson({ c: course, p: patches, linked })}</script><script src="/bw-content.js"></script>` + links.map(l => `<script src="/api/exam/data?c=${encodeURIComponent(l)}"></script>`).join('') : '';
+  let head = course ? `<script>window.__BWX=${safeJson({ c: course, p: patches, linked })}</script><script src="/bw-content.js"></script>` + links.map(l => `<script src="/api/exam/data?c=${encodeURIComponent(l)}"></script>`).join('') : '';
   const paused = !!st && (st.pause_until || 0) > now;
   const valid = !!st && st.status === 'active' && (!st.expires_at || st.expires_at > iso) && !paused;
+  // الطالب المسجّل: يُسترجع تقدمه المحفوظ على الخادم قبل أن تقرأه الصفحة (يعمل على أي جهاز)
+  if (valid) head += '<script src="/api/progress/restore.js"></script>';
   const contact = String(S.contact || '').replace(/\D/g, '');
   const ui = o => `<script>window.__bw=${JSON.stringify({ contact, ...o })}</script><script src="/bw-ui.js"></script>`;
   const isHtml = r => (r.headers.get('content-type') || '').includes('text/html');
@@ -149,5 +151,5 @@ export async function onRequest({ request, env, next }) {
     const left = Math.floor((st.duration_minutes || 0) * 0.10) - (st.pause_used || 0);
     if (st.kind === 'single' && (st.duration_minutes || 0) > 0 && left >= 60) o.pauseMax = left;
   }
-  return serve(ui(o) + '<script src="/bw-tracker.js"></script>');
+  return serve(ui(o) + '<script src="/bw-tracker.js"></script><script src="/bw-sync.js"></script>');
 }

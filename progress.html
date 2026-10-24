@@ -112,7 +112,7 @@
     return h + '</div>';
   }
   function draw() {
-    var n = K.n + V.n, g = K.g + V.g, step = nextStep(), h = '<h1>تقدمي</h1><p class="sub">ملخص تدريبك على هذا الجهاز، والخطوة التالية المقترحة لك.</p>';
+    var n = K.n + V.n, g = K.g + V.g, step = nextStep(), h = '<h1>تقدمي</h1><p class="sub">ملخص تدريبك، والخطوة التالية المقترحة لك.</p>';
     h += '<section class="next"><div><small>خطوتك التالية</small><h2>' + esc(step.t) + '</h2><p>' + esc(step.d) + '</p></div>' + (step.go ? '<a class="btn btn-gold" href="' + step.go + '">' + esc(step.b) + '</a>' : '<button class="btn btn-gold" id="stepBtn">' + esc(step.b) + '</button>') + '</section>';
     h += '<div class="kpis"><div class="kpi"><b>' + AR(n) + '</b><span>سؤالًا حللته</span></div><div class="kpi"><b>' + (n ? AR(Math.round(g / n * 100)) + '٪' : '—') + '</b><span>دقة إجاباتك</span></div><div class="kpi"><b>' + AR(K.wk + V.wk) + '</b><span>سؤالًا هذا الأسبوع</span></div><div class="kpi"><b>' + AR(K.errs.length + V.errs.length) + '</b><span>سؤالًا في مجلد الأخطاء</span></div></div>';
     h += '<div class="two">' + subjCard('kamy', K) + subjCard('lafzi', V) + '</div>';
@@ -124,7 +124,7 @@
     h += '</div><div class="card"><h3>تأسيس اللفظي</h3>';
     if (tasisDone) { var vals = Object.keys(tasis).map(function (k) { return +tasis[k]; }), avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length); h += '<p class="m">أنجزت ' + AR(tasisDone) + ' اختبارًا بمتوسط أفضل نتيجة ' + AR(avg) + '٪.</p><a class="btn btn-soft" href="/tasis%20lafzi.html.html">أكمل اختبارات التأسيس</a>'; }
     else h += '<p class="m">لم تبدأ اختبارات التأسيس بعد.</p><a class="btn btn-soft" href="/tasis%20lafzi.html.html">ابدأ التأسيس</a>';
-    h += '</div></div><p class="note">التقدم محفوظ في متصفح هذا الجهاز. لو مسحت بيانات المتصفح أو غيّرت الجهاز يبدأ من جديد.</p>';
+    h += '</div></div><p class="note">' + (window.__bwSid ? 'تقدمك محفوظ في حسابك على المنصة، ويظهر لك على أي جهاز تدخل منه بنفس الكود أو بحساب منصة الدورات.' : 'تقدمك في الفترة التجريبية محفوظ على هذا الجهاز فقط. بعد الاشتراك والدخول بالكود يُحفظ في حسابك ويظهر على أي جهاز.') + '</p>';
     app.innerHTML = h;
     var sb = document.getElementById('stepBtn'); if (sb) sb.onclick = step.fn;
     app.querySelectorAll('[data-weak]').forEach(function (b) { b.onclick = function () { practice(b.dataset.weak, b.dataset.ids.split(',').map(Number)); }; });
