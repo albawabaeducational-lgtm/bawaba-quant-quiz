@@ -181,3 +181,63 @@
     };
   };
 })();
+
+// شطب الاختيارات (كالاختبار الحقيقي): كليك يمين على الكمبيوتر أو ضغطة مطوّلة على الجوال تشطب الاختيار
+// المستبعد ولا تختاره. الشطب يُحفظ لكل سؤال طوال الجلسة ويرجع عند العودة للسؤال.
+(function () {
+  if (!document.getElementById('bw-shell')) return;
+  var SEL = '.opts > button, .opts > .opt, .opts > label';
+  var KEY = 'bw-strike', M = {}; try { M = JSON.parse(sessionStorage.getItem(KEY) || '{}') || {}; } catch (e) { }
+  var save = function () { try { sessionStorage.setItem(KEY, JSON.stringify(M)); } catch (e) { } };
+  var st = document.createElement('style');
+  st.textContent = '.bw-x{opacity:.42!important;text-decoration:line-through!important;text-decoration-thickness:2px!important;filter:grayscale(1)}.bw-x *{text-decoration:line-through}.bw-xhint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#0c2440;color:#fff;border-radius:12px;padding:9px 16px;font:600 13.5px/1.6 inherit;box-shadow:0 8px 24px #0004;max-width:92vw;text-align:center}';
+  document.head.appendChild(st);
+  function sig(btn) {
+    var box = btn.closest('.exam, .qcard, .card, main') || document.body, q = box.querySelector('.qbody, .stem, .qimg, .q, h2');
+    var s = q ? (q.innerHTML || '').slice(0, 400) : location.pathname, h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return location.pathname + '#' + h;
+  }
+  function idx(btn) { return [].indexOf.call(btn.parentNode.querySelectorAll(':scope > button, :scope > .opt, :scope > label'), btn); }
+  function toggle(btn) {
+    var k = sig(btn), i = idx(btn), a = M[k] || [], p = a.indexOf(i);
+    if (p >= 0) a.splice(p, 1); else a.push(i);
+    if (a.length) M[k] = a; else delete M[k];
+    btn.classList.toggle('bw-x', p < 0); save();
+    try { if (!localStorage.getItem('bw-xh')) { localStorage.setItem('bw-xh', '1'); } } catch (e) { }
+  }
+  function apply() {
+    var seen = {};
+    [].forEach.call(document.querySelectorAll('.opts'), function (o) {
+      var b = o.querySelector(':scope > button, :scope > .opt, :scope > label'); if (!b) return;
+      var k = sig(b); if (seen[k]) return; seen[k] = 1;
+      var a = M[k] || [];
+      [].forEach.call(o.querySelectorAll(':scope > button, :scope > .opt, :scope > label'), function (x, i) { x.classList.toggle('bw-x', a.indexOf(i) >= 0); });
+    });
+  }
+  document.addEventListener('contextmenu', function (e) {
+    var b = e.target.closest && e.target.closest(SEL); if (!b || b.disabled) return;
+    e.preventDefault(); toggle(b);
+  }, true);
+  // الجوال: ضغطة مطوّلة نصف ثانية
+  var tm = null, lp = false;
+  document.addEventListener('touchstart', function (e) {
+    var b = e.target.closest && e.target.closest(SEL); if (!b || b.disabled) return;
+    lp = false; clearTimeout(tm); tm = setTimeout(function () { lp = true; toggle(b); if (navigator.vibrate) try { navigator.vibrate(20); } catch (x) { } }, 520);
+  }, { passive: true });
+  ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { document.addEventListener(ev, function () { clearTimeout(tm); }, { passive: true }); });
+  document.addEventListener('click', function (e) { if (lp) { lp = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  var pend = 0; new MutationObserver(function () { if (pend) return; pend = 1; requestAnimationFrame(function () { pend = 0; apply(); }); }).observe(document.body, { childList: true, subtree: true });
+  // تلميح مرة واحدة أول ما تظهر اختيارات
+  var hinted = false; try { hinted = !!localStorage.getItem('bw-xh'); } catch (e) { }
+  if (!hinted) {
+    var hw = new MutationObserver(function () {
+      if (!document.querySelector('.opts > button, .opts > .opt')) return;
+      hw.disconnect(); try { localStorage.setItem('bw-xh', '1'); } catch (e) { }
+      var t = document.createElement('div'); t.className = 'bw-xhint';
+      t.textContent = '💡 لشطب اختيار تستبعده: ' + (('ontouchstart' in window) ? 'اضغط عليه ضغطة مطوّلة' : 'كليك يمين عليه') + '. ونفس الطريقة تلغي الشطب.';
+      document.body.appendChild(t); setTimeout(function () { t.remove(); }, 6000);
+    });
+    hw.observe(document.body, { childList: true, subtree: true });
+  }
+})();

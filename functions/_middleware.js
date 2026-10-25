@@ -94,6 +94,10 @@ async function staffOf(env, request, iso) {
 
 export async function onRequest({ request, env, next }) {
   const url = new URL(request.url), p = url.pathname;
+  // روابط قصيرة وسهلة للمشاركة (الروابط القديمة تظل تعمل كما هي)
+  const SHORT = { '/kamy': '/aksam%20kamy.html', '/lafzi': '/aksam%20lafzi.html', '/mock': '/muhaky%20mohawsab.html', '/mohawsab': '/muhaky%20mohawsab.html', '/tasis': '/tasis%20lafzi.html.html', '/paper': '/waraqi.html', '/aktar': '/aktar%20kamy.html', '/level': '/placement.html' };
+  const sp = SHORT[p.replace(/\/+$/, '').toLowerCase()];
+  if (sp) return new Response(null, { status: 302, headers: { location: sp + url.search + url.hash } });
   const isPage = request.method === 'GET' && (p === '/' || !/\.[a-z0-9]+$/i.test(p) || /\.html$/i.test(p));
   if (!env.DB || !isPage || /^\/(login|admin|api\/)/.test(p)) return next();
   const now = Date.now(), iso = new Date(now).toISOString();

@@ -164,3 +164,12 @@ html { overflow-x: clip; }
 
 /* تأسيس اللفظي: يكفي «اختبار ١» بدون عدد الأسئلة ومداها */
 body.bwt-raw .grid .card .m { display: none !important; }
+
+/* اللفظي: على الشاشات الواسعة القطعة يمين والاختيارات يسار (ثابتة أثناء القراءة) */
+@media (min-width: 1150px) {
+  .exam .mainc:has(.psg) { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(260px, 1fr); column-gap: 16px; align-items: start; }
+  .exam .mainc:has(.psg) > .qcard { grid-column: 1; grid-row: 1 / span 8; margin-bottom: 0; }
+  .exam .mainc:has(.psg) > :not(.qcard) { grid-column: 2; }
+  .exam .mainc:has(.psg) > .opts { position: sticky; top: 84px; margin-top: 0; }
+  .exam .mainc:has(.psg) > .opts > * { width: 100%; }
+}

@@ -46,6 +46,27 @@
     .empty { text-align: center; padding: 30px 10px; color: #5a6b80; }
     .streak { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; background: #fff; border: 1px solid var(--bw-line); border-radius: 20px; padding: 16px 20px; margin-bottom: 22px; }
     .streak b { display: block; color: var(--bw-navy); font-size: 17px; }
+    .goal { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+    .cd { text-align: center; background: var(--bw-navy); color: #fff; border-radius: 16px; padding: 12px 18px; min-width: 110px; }
+    .cd b { display: block; font-size: 30px; line-height: 1.1; color: var(--bw-gold); }
+    .cd span { font-size: 13px; }
+    .gbar { height: 12px; background: #e8eef6; border-radius: 99px; overflow: hidden; margin: 8px 0 4px; }
+    .gbar i { display: block; height: 100%; background: linear-gradient(90deg, #1f9d61, #3cc483); border-radius: 99px; }
+    .gin { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font-size: 14px; color: #5a6b80; }
+    .gin input, .gin select { font: inherit; border: 1px solid var(--bw-line); border-radius: 10px; padding: 6px 10px; background: #fff; }
+    .plan { list-style: none; margin: 8px 0 0; padding: 0; }
+    .plan li { display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid #eef3f8; font-size: 14.5px; }
+    .plan li:first-child { border-top: 0; }
+    .plan li b { color: var(--bw-navy); }
+    .plan li.today { background: #fff8e6; border-radius: 10px; padding: 9px 8px; }
+    .rv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 12px; }
+    .rv div { background: #f5f8fc; border-radius: 12px; padding: 10px; text-align: center; }
+    .rv b { display: block; font-size: 22px; color: var(--bw-navy); }
+    .rv span { font-size: 12.5px; color: #5a6b80; }
+    .rk { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid #eef3f8; font-size: 14.5px; }
+    .rk:first-of-type { border-top: 0; }
+    .lnk { background: none; border: 0; color: #5a6b80; text-decoration: underline; cursor: pointer; font: inherit; font-size: 13px; padding: 0; }
+    @media (max-width: 640px) { .goal { grid-template-columns: 1fr; } .plan li { grid-template-columns: 64px 1fr; } }
     .streak span { color: #5a6b80; font-size: 14px; }
     .streak .wk { display: flex; gap: 6px; max-width: 100%; }
     .streak .wk i { flex: 1 1 38px; min-width: 0; max-width: 38px; height: 38px; border-radius: 12px; background: #eef3f8; display: grid; place-items: center; font-style: normal; }
@@ -125,6 +146,81 @@
     return { n: n, today: today, week: week };
   }
   function lv(p) { return p >= .8 ? 'g' : p >= .5 ? 'o' : 'r'; }
+  // ===== الهدف والعد التنازلي والخطة الأسبوعية (تتعدل تلقائيًا حسب الأداء) =====
+  var GOAL = get('bw-goal-v1', {}) || {}, SKV = get('bw-skill-v1', {}) || {};
+  function setGoal(o) { for (var k in o) GOAL[k] = o[k]; try { localStorage.setItem('bw-goal-v1', JSON.stringify(GOAL)); } catch (e) { } draw(); }
+  window.bwSetGoal = setGoal;
+  function todayCount() {
+    var t = dayKey(now), n = 0;
+    K.h.concat(V.h).forEach(function (x) { if (x.d && dayKey(x.d) === t) n += x.n || 0; });
+    ['bw-sim-v1', 'bwv-sim-v1', 'bwm-sim-v1', 'bwmt-hist'].forEach(function (k) { (get(k, []) || []).forEach(function (x) { if (x && x.d && dayKey(x.d) === t) n += x.n || 0; }); });
+    Object.keys(SKV).forEach(function (k) { (SKV[k].h || []).forEach(function (x) { if (dayKey(x[0]) === t) n += x[1] || 0; }); });
+    return n;
+  }
+  function daysLeft() { if (!GOAL.exam) return null; var d = new Date(GOAL.exam + 'T08:00:00'); return Math.ceil((d - now) / DAY); }
+  function skills() { return Object.keys(SKV).map(function (k) { var r = SKV[k]; return { id: +k, n: r.n, s: r.s, t: r.t, c: r.c, p: r.t ? r.c / r.t : 0 }; }).filter(function (x) { return x.t >= 3; }); }
+  function weakList() {
+    var a = K.secs.map(function (x) { return { k: 'sec', sj: 'kamy', id: x.id, p: x.p, t: x.t }; }).concat(V.secs.map(function (x) { return { k: 'sec', sj: 'lafzi', id: x.id, p: x.p, t: x.t }; }))
+      .concat(skills().map(function (x) { return { k: 'skill', id: x.id, n: x.n, p: x.p, t: x.t }; }));
+    return a.filter(function (x) { return x.t >= 3 && x.p < .75; }).sort(function (a, b) { return a.p - b.p; });
+  }
+  function itemName(w) { return w.k === 'skill' ? 'مهارة «' + w.n + '»' : secName(w.sj, w.id) + ' (' + (w.sj === 'kamy' ? 'كمي' : 'لفظي') + ')'; }
+  function reviewSched() {
+    var all = K.errs.concat(V.errs), r = { now: 0, d3: 0, d7: 0 };
+    all.forEach(function (x) { var due = new Date(x.date).getTime() + [1, 3, 7][x.ok || 0] * DAY, dd = (due - now) / DAY; if (dd <= 0) r.now++; else if (dd <= 3) r.d3++; else if (dd <= 7) r.d7++; });
+    return r;
+  }
+  function weekPlan() {
+    var left = daysLeft(), weak = weakList(), rv = reviewSched(), daily = +GOAL.daily || 30, out = [];
+    var simEvery = left !== null && left <= 14 ? 2 : left !== null && left <= 30 ? 3 : 5;
+    var lastSim = sims[sims.length - 1], sinceSim = lastSim ? Math.floor((now - new Date(lastSim.d)) / DAY) : 99;
+    var DN = ['اليوم', 'غدًا'];
+    for (var i = 0; i < 7; i++) {
+      if (left !== null && i >= left) break;
+      var d = new Date(now + i * DAY), lab = DN[i] || d.toLocaleDateString('ar-SA', { weekday: 'long' }), parts = [];
+      var cap = Math.max(10, Math.round(daily * .6)), back = Math.max(0, rv.now - cap * i);
+      var rvN = Math.min(cap, (i === 0 ? rv.now : back) + (i >= 1 && i <= 3 ? Math.ceil(rv.d3 / 3) : i > 3 ? Math.ceil(rv.d7 / 4) : 0));
+      if (rvN) parts.push('راجع <b>' + AR(rvN) + '</b> من أخطائك');
+      var isSim = (sinceSim + i) % simEvery === simEvery - 1 || (i === 0 && sinceSim >= simEvery);
+      if (isSim) parts.push('<b>اختبار محاكي كامل</b> بالمؤقت');
+      var rest = Math.max(10, daily - rvN - (isSim ? daily : 0));
+      if (weak.length) { var w = weak[i % weak.length]; parts.push('<b>' + AR(Math.min(rest, 20) || 15) + '</b> سؤالًا في ' + esc(itemName(w))); }
+      else if (!isSim) parts.push('<b>' + AR(Math.round(daily / 2)) + '</b> كمي + <b>' + AR(Math.round(daily / 2)) + '</b> لفظي من أقسام جديدة');
+      out.push({ lab: lab, txt: parts.join(' + '), today: i === 0 });
+    }
+    return out;
+  }
+  function goalCard() {
+    var left = daysLeft(), tc = todayCount(), daily = +GOAL.daily || 30, pc = Math.min(100, Math.round(tc / daily * 100));
+    var h = '<div class="card" style="margin-bottom:22px"><div class="goal">';
+    h += '<div class="cd">' + (left === null ? '<b>؟</b><span>حدّد موعد اختبارك</span>' : left > 0 ? '<b>' + AR(left) + '</b><span>' + (left === 1 ? 'يوم على اختبارك' : 'يومًا على اختبارك') + '</span>' : left === 0 ? '<b>اليوم</b><span>بالتوفيق 🤍</span>' : '<b>✓</b><span>انتهى الموعد</span>') + '</div>';
+    h += '<div><h3>🎯 هدف اليوم: ' + AR(daily) + ' سؤالًا</h3><div class="gbar"><i style="width:' + Math.max(3, pc) + '%"></i></div><p class="m" style="margin:0">' + (tc >= daily ? 'أنجزت هدف اليوم 🎉 (' + AR(tc) + ' سؤالًا). أي زيادة بركة.' : 'أنجزت ' + AR(tc) + ' · باقي ' + AR(daily - tc) + ' سؤالًا لتحقق هدفك.') + '</p>';
+    h += '<div class="gin"><label>موعد اختباري: <input type="date" id="gExam" value="' + esc(GOAL.exam || '') + '"></label><label>الهدف اليومي: <select id="gDaily">' + [20, 30, 50, 80].map(function (n) { return '<option value="' + n + '"' + (n === daily ? ' selected' : '') + '>' + AR(n) + ' سؤالًا</option>'; }).join('') + '</select></label></div></div></div></div>';
+    var plan = weekPlan();
+    h += '<div class="two"><div class="card"><h3>🗓 خطتك لهذا الأسبوع</h3><p class="m">تتعدل تلقائيًا كل يوم حسب أخطائك وأضعف أقسامك ومهاراتك' + (left !== null && left <= 14 ? '، ومع اقتراب الاختبار تزيد المحاكاة' : '') + '.</p><ul class="plan">' + plan.map(function (d) { return '<li class="' + (d.today ? 'today' : '') + '"><b>' + esc(d.lab) + '</b><span>' + d.txt + '</span></li>'; }).join('') + '</ul></div>';
+    var rv = reviewSched();
+    h += '<div class="card"><h3>🔁 جدول المراجعة المتباعدة</h3><p class="m">كل سؤال أخطأت فيه يرجع لك بعد يوم، ثم ٣ أيام، ثم أسبوع. لو حليته صح ٣ مرات يخرج من المجلد.</p><div class="rv"><div><b>' + AR(rv.now) + '</b><span>جاهزة اليوم</span></div><div><b>' + AR(rv.d3) + '</b><span>خلال ٣ أيام</span></div><div><b>' + AR(rv.d7) + '</b><span>خلال أسبوع</span></div></div>' + (rv.now ? '<div class="acts">' + (K.due ? '<a class="btn btn-navy" href="' + SUBJ.kamy.page + '#errors">راجع الكمي (' + AR(K.due) + ')</a>' : '') + (V.due ? '<a class="btn btn-navy" href="' + SUBJ.lafzi.page + '#errors">راجع اللفظي (' + AR(V.due) + ')</a>' : '') + '</div>' : '<p class="m" style="margin:0">لا توجد مراجعات مستحقة اليوم 👍</p>') + '</div></div>';
+    return h;
+  }
+  function skillCard() {
+    var L = skills().sort(function (a, b) { return a.p - b.p; }), h = '<div class="card"><h3>🧩 إتقانك حسب المهارة</h3>';
+    if (!L.length) return h + '<p class="m">تدرّب من صفحة «التدريب حسب المهارة» ليظهر هنا مستوى إتقانك لكل مهارة.</p><a class="btn btn-soft" href="/skills.html">التدريب حسب المهارة</a></div>';
+    var row = function (x) { return '<div class="sk lv-' + lv(x.p) + '"><span class="nm">' + esc(x.n) + '</span><span class="bar"><i style="width:' + Math.max(4, Math.round(x.p * 100)) + '%"></i></span><b>' + AR(Math.round(x.p * 100)) + '٪</b></div>'; };
+    h += '<p class="m">' + AR(L.length) + ' مهارة تدرّبت عليها.</p>' + L.slice(0, 6).map(row).join('');
+    return h + '<div class="acts"><a class="btn btn-navy" href="/skills.html?id=' + L[0].id + '">تدرّب على أضعف مهارة</a></div></div>';
+  }
+  var RANK = null, PGN = { 'muhaky mohawsab': 'المحاكي المحوسب', 'aksam kamy': 'محاكي الكمي', 'aksam lafzi': 'محاكي اللفظي', 'muhaky warky1': 'المحاكي الورقي ١', 'muhaky warky2': 'المحاكي الورقي ٢' };
+  function rankCard() {
+    if (!window.__bwSid) return '<div class="card"><h3>📊 مقارنتك بالطلاب</h3><p class="m">تظهر للمشتركين بعد أول اختبار محاكي: ترتيبك بين الطلاب بدون أي أسماء.</p></div>';
+    var h = '<div class="card"><h3>📊 مقارنتك بالطلاب</h3>';
+    if (!RANK) return h + '<p class="m">جارٍ الحساب…</p></div>';
+    if (RANK.off) return h + '<p class="m">المقارنة مخفية، ونتائجك لا تدخل في مقارنة غيرك.</p><button class="lnk" id="rkOn">إظهار المقارنة</button></div>';
+    if (!RANK.list.length) h += '<p class="m">تظهر المقارنة بعد اختبار محاكي واحد على الأقل، وعند وجود ٥ طلاب أو أكثر في نفس الاختبار. بدون أي أسماء.</p>';
+    else h += '<p class="m">مقارنة مجهولة الأسماء بمتوسط آخر ٣ محاولات.</p>' + RANK.list.map(function (r) { return '<div class="rk"><span>' + esc(PGN[r.page] || r.page) + ' <small style="color:#5a6b80">(' + AR(r.mine) + '٪)</small></span><b>أعلى من ' + AR(r.pct) + '٪ من ' + AR(r.n) + ' طالبًا</b></div>'; }).join('');
+    return h + '<p style="margin:10px 0 0"><button class="lnk" id="rkOff">إخفاء المقارنة واستبعادي منها</button></p></div>';
+  }
+  function setRank(off) { try { localStorage.setItem('bw-rank-off', off ? '1' : '0'); } catch (e) { } RANK = off ? { off: true, list: [] } : null; draw(); if (!off) setTimeout(loadRank, 3500); }
+  function loadRank() { if (!window.__bwSid) return; fetch('/api/rank', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { RANK = d; draw(); }).catch(function () { }); }
   function subjCard(sj, X) {
     var T = SUBJ[sj], h = '<div class="card"><h3>' + T.title + '</h3>';
     if (!X.n) return h + '<p class="m">لم تحل أي اختبار هنا بعد.</p><a class="btn btn-navy" href="' + T.page + '">ابدأ ' + T.title + '</a></div>';
@@ -146,8 +242,10 @@
     h += '<section class="next"><div><small>خطوتك التالية</small><h2>' + esc(step.t) + '</h2><p>' + esc(step.d) + '</p></div>' + (step.go ? '<a class="btn btn-gold" href="' + step.go + '">' + esc(step.b) + '</a>' : '<button class="btn btn-gold" id="stepBtn">' + esc(step.b) + '</button>') + '</section>';
     var SK2 = streak();
     h += '<div class="streak"><div><b>' + (SK2.n === 1 ? '🔥 يوم تدريب واحد' : SK2.n === 2 ? '🔥 يوما تدريب متتاليان' : SK2.n ? '🔥 ' + AR(SK2.n) + (SK2.n <= 10 ? ' أيام تدريب متتالية' : ' يومًا تدريبيًا متتاليًا') : 'ابدأ اليوم سلسلة أيام تدريبك') + '</b><span>' + (SK2.n && !SK2.today ? 'تدرّب اليوم ولو ١١ سؤالًا لتستمر السلسلة.' : SK2.today ? 'أحسنت، تدربت اليوم.' : 'قليل كل يوم أفضل من كثير مرة واحدة.') + '</span></div><div class="wk">' + SK2.week.map(function (d) { return '<i class="' + (d.on ? 'on' : '') + (d.today ? ' t' : '') + '" title="' + esc(d.l) + '"><em>' + esc(d.l) + '</em></i>'; }).join('') + '</div></div>';
+    h += goalCard();
     h += '<div class="kpis"><div class="kpi"><b>' + AR(n) + '</b><span>سؤالًا حللته</span></div><div class="kpi"><b>' + (n ? AR(Math.round(g / n * 100)) + '٪' : '—') + '</b><span>دقة إجاباتك</span></div><div class="kpi"><b>' + AR(K.wk + V.wk) + '</b><span>سؤالًا هذا الأسبوع</span></div><div class="kpi"><b>' + AR(K.errs.length + V.errs.length) + '</b><span>سؤالًا في مجلد الأخطاء</span></div></div>';
     h += '<div class="two">' + subjCard('kamy', K) + subjCard('lafzi', V) + '</div>';
+    h += '<div class="two">' + skillCard() + rankCard() + '</div>';
     h += '<div class="two"><div class="card"><h3>نتائج المحاكاة</h3>';
     var last = sims.slice(-10);
     if (last.length) {
@@ -159,9 +257,14 @@
     h += '</div></div><p class="note">' + (window.__bwSid ? 'تقدمك محفوظ في حسابك على المنصة، ويظهر لك على أي جهاز تدخل منه بنفس الكود أو بحساب منصة الدورات.' : 'تقدمك في الفترة التجريبية محفوظ على هذا الجهاز فقط. بعد الاشتراك والدخول بالكود يُحفظ في حسابك ويظهر على أي جهاز.') + '</p>';
     app.innerHTML = h;
     var sb = document.getElementById('stepBtn'); if (sb) sb.onclick = step.fn;
+    var ge = document.getElementById('gExam'); if (ge) ge.onchange = function () { setGoal({ exam: ge.value }); };
+    var gd = document.getElementById('gDaily'); if (gd) gd.onchange = function () { setGoal({ daily: +gd.value }); };
+    var ro = document.getElementById('rkOff'); if (ro) ro.onclick = function () { setRank(true); };
+    var rn = document.getElementById('rkOn'); if (rn) rn.onclick = function () { setRank(false); };
     app.querySelectorAll('[data-weak]').forEach(function (b) { b.onclick = function () { practice(b.dataset.weak, b.dataset.ids.split(',').map(Number)); }; });
   }
   draw();
+  if ((function () { try { return localStorage.getItem('bw-rank-off') === '1'; } catch (e) { return false; } })()) { RANK = { off: true, list: [] }; draw(); } else loadRank();
   // أسماء الأقسام من ملفات الأقسام نفسها (تُحمّل في الخلفية)
   function loadNames(sj) {
     fetch('/api/exam/secs?c=' + encodeURIComponent(SUBJ[sj].slug)).then(function (r) { return r.json(); }).then(function (d) { if (d.secs) { names[sj] = {}; d.secs.forEach(function (x) { names[sj][x.id] = x.name; }); draw(); } }).catch(function () { });

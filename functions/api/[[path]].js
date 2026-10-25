@@ -138,7 +138,7 @@ let schemaReady = false, leadsReady = false, moodleReady = false;
 const GOOGLE_CLIENT_ID = '1017687433947-oscl9bci17amtnqp8hlrgogk1p29ub23.apps.googleusercontent.com';
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
-const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist'];
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-skill-v1', 'bw-rank-off'];
 let progressReady = false;
 const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
@@ -585,6 +585,28 @@ export async function onRequest({ request, env, params }) {
         .bind(s.id, page, String(b.sub || '').slice(0, 60), num(b.score), num(b.correct), num(b.total), iso).run();
     }
     return J({ ok: 1 });
+  }
+
+  // مقارنة مجهولة بباقي الطلاب في اختبارات المحاكاة (متوسط آخر ٣ محاولات، آخر ١٢٠ يومًا).
+  // من يختار «إخفاء المقارنة» لا يرى المقارنة ولا يدخل في حسابها عند غيره.
+  if (p === 'rank' && m === 'GET') {
+    const s = await byCode(norm(ck(request, 'bw_code')));
+    if (!s || s.status !== 'active') return J({ list: [] });
+    const OFF = "SELECT student_id FROM student_progress WHERE key='bw-rank-off' AND data IN ('1','true')";
+    const me = await DB.prepare(OFF + ' AND student_id=?').bind(s.id).first().catch(() => null);
+    if (me) return J({ off: true, list: [] });
+    const since = new Date(now - 120 * 864e5).toISOString();
+    const rows = (await DB.prepare("SELECT student_id sid, page, score FROM events WHERE kind='attempt' AND score IS NOT NULL AND sub IN ('محاكي','ورقي') AND created_at>? AND student_id NOT IN (" + OFF + ") ORDER BY id").bind(since).all().catch(() => ({ results: [] }))).results || [];
+    const by = {};
+    for (const r of rows) { const P = by[r.page] = by[r.page] || {}; (P[r.sid] = P[r.sid] || []).push(r.score); }
+    const avg = a => { const x = a.slice(-3); return x.reduce((t, v) => t + v, 0) / x.length; }, list = [];
+    for (const pg of Object.keys(by)) {
+      const P = by[pg]; if (!P[s.id]) continue;
+      const mine = avg(P[s.id]), others = Object.keys(P).filter(k => +k !== s.id).map(k => avg(P[k]));
+      if (others.length < 4) continue;
+      list.push({ page: pg, mine: Math.round(mine), n: others.length + 1, pct: Math.round(others.filter(v => v < mine).length / others.length * 100) });
+    }
+    return J({ off: false, list });
   }
 
   // بيانات أسئلة «أقسام الكمي» و«أقسام اللفظي» يستخدمها المحاكي المحوسب مباشرة،
