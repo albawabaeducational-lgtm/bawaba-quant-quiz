@@ -118,6 +118,13 @@ export async function onRequest({ request, env, next }) {
     return new Response(null, { status: 302, headers: h });
   };
 
+  // اختبار مخفي عن الطلاب من لوحة التحكم: يرجع الطالب للرئيسية (العاملون يرونه دائمًا)
+  if (!staff) {
+    let hid = []; try { hid = JSON.parse(S.hidden_courses || '[]'); } catch (e) { }
+    const vk = /^muhaky warky[12]$|^waraqi$/.test(slug) ? 'waraqi' : slug;
+    if (Array.isArray(hid) && vk && hid.includes(vk)) return new Response(null, { status: 302, headers: { location: '/?unavailable=1' } });
+  }
+
   // العاملون في المنصة يدخلون كل الصفحات بدون كود، ويظهر لهم «وضع التحرير» في المقررات المسندة لهم
   if (staff) {
     // المعلم يرى شريط «وضع المعلم» في كل مقرر؛ أدوات التحرير تظهر فقط في المقررات المسندة له

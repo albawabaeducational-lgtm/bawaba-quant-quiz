@@ -160,3 +160,6 @@ html { overflow-x: clip; }
   #bw-shell .bws-a11y, #bw-shell .bws-report { padding: 7px 9px; }
   .bws-a11yp { top: 64px; }
 }
+
+/* تأسيس اللفظي: يكفي «اختبار ١» بدون عدد الأسئلة ومداها */
+body.bwt-raw .grid .card .m { display: none !important; }

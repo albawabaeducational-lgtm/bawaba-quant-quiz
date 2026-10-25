@@ -259,6 +259,7 @@
     /* الطالب المسجّل (بالكود أو بحساب منصة الدورات): لا تظهر له الباقات والاشتراك والتجربة */
     html.bw-in .guest-only { display: none !important; }
     html:not(.bw-in) .member-only { display: none !important; }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
@@ -267,7 +268,7 @@
       <a class="brand" href="/"><img src="/icons/logo.jpg" alt="" width="42" height="42"><b>منصة البوابة التعليمية</b></a>
       <nav aria-label="أقسام الصفحة">
         <a href="#tests">الاختبارات</a>
-        <a href="/placement.html">تحديد المستوى</a>
+        <a href="/placement.html" data-vis="placement">تحديد المستوى</a>
         <a href="/progress.html">تقدمي</a>
         <a class="guest-only" href="#try">جرّب سؤالًا</a>
         <a class="guest-only" href="#courses">الدورات</a>
@@ -298,7 +299,7 @@
       <div class="wrap">
         <div class="tfilter" role="group" aria-label="تصفية الاختبارات"><button type="button" class="on" data-f="">الكل</button><button type="button" data-f="kamy">كمي</button><button type="button" data-f="lafzi">لفظي</button><button type="button" data-f="mohawsab">محوسب</button><button type="button" data-f="waraqi">ورقي</button><button type="button" data-f="tasis">تأسيس</button></div>
         <div class="exams">
-          <a class="exam-main" data-cat="mohawsab" href="/muhaky%20mohawsab.html">
+          <a class="exam-main" data-vis="muhaky mohawsab" data-cat="mohawsab" href="/muhaky%20mohawsab.html">
             <div>
               <span class="tag">الأقرب للاختبار الحقيقي</span>
               <h3>محاكي اختبار القدرات المحوسب</h3>
@@ -309,14 +310,14 @@
             <span class="btn btn-gold go">ابدأ المحاكاة</span>
           </a>
           <div class="exam-list">
-            <a class="exam-row" data-cat="tasis lafzi" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي<em class="mode tr">تدريب</em></strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
-            <a class="exam-row" data-cat="kamy" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم الكمي</span><span class="claim"><mark>نسخ ولصق</mark> لن يخرج عنها الاختبار · تحدَّ نفسك</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
-            <a class="exam-row" data-cat="lafzi" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم اللفظي</span><span class="claim"><mark>نسخ ولصق</mark> لن يخرج عنها الاختبار · تحدَّ نفسك</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
-            <a class="exam-row" data-cat="kamy" href="/aktar%20kamy.html"><span class="ic" aria-hidden="true">★</span><span><strong>الأسئلة الأكثر تكرارًا – كمي<em class="mode tr">تدريب</em><em class="mode sm">محاكاة</em></strong><span class="d">بنك واحد، اختبارات ١٠ إلى ٥٥ سؤالًا بدون تكرار</span></span><span class="cnt">+١٤٠٠ سؤال</span></a>
+            <a class="exam-row" data-vis="tasis lafzi" data-cat="tasis lafzi" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي<em class="mode tr">تدريب</em></strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
+            <a class="exam-row" data-vis="aksam kamy" data-cat="kamy" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم الكمي</span><span class="claim"><mark>نسخ ولصق</mark> لن يخرج عنها الاختبار · تحدَّ نفسك</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
+            <a class="exam-row" data-vis="aksam lafzi" data-cat="lafzi" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم اللفظي</span><span class="claim"><mark>نسخ ولصق</mark> لن يخرج عنها الاختبار · تحدَّ نفسك</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
+            <a class="exam-row" data-vis="aktar kamy" data-cat="kamy" href="/aktar%20kamy.html"><span class="ic" aria-hidden="true">★</span><span><strong>الأسئلة الأكثر تكرارًا – كمي<em class="mode tr">تدريب</em><em class="mode sm">محاكاة</em></strong><span class="d">بنك واحد، اختبارات ١٠ إلى ٥٥ سؤالًا بدون تكرار</span></span><span class="cnt">+١٤٠٠ سؤال</span></a>
           </div>
           <div class="exam-list">
-            <a class="exam-row" data-cat="kamy lafzi tasis" href="/skills.html"><span class="ic" aria-hidden="true">◈</span><span><strong>التدريب حسب المهارة<em class="mode tr">تدريب</em></strong><span class="d">اختر المهارة وتدرّب على كل أسئلتها من كل الأقسام</span></span><span class="cnt">الكمي واللفظي</span></a>
-            <a class="exam-row" data-cat="waraqi" href="waraqi.html"><span class="ic" aria-hidden="true">✎</span><span><strong>محاكيات اختبار القدرات الورقي<em class="mode sm">محاكاة</em></strong><span class="d">النموذج الأول والنموذج الثاني</span></span><span class="cnt">١٢٠ سؤالًا لكل نموذج</span></a>
+            <a class="exam-row" data-vis="skills" data-cat="kamy lafzi tasis" href="/skills.html"><span class="ic" aria-hidden="true">◈</span><span><strong>التدريب حسب المهارة<em class="mode tr">تدريب</em></strong><span class="d">اختر المهارة وتدرّب على كل أسئلتها من كل الأقسام</span></span><span class="cnt">الكمي واللفظي</span></a>
+            <a class="exam-row" data-vis="waraqi" data-cat="waraqi" href="waraqi.html"><span class="ic" aria-hidden="true">✎</span><span><strong>محاكيات اختبار القدرات الورقي<em class="mode sm">محاكاة</em></strong><span class="d">النموذج الأول والنموذج الثاني</span></span><span class="cnt">١٢٠ سؤالًا لكل نموذج</span></a>
           </div>
         </div>
       </div>
@@ -480,7 +481,17 @@
     });
   }
   draw(DEF);
-  fetch('/api/public').then(function (r) { return r.json(); }).then(function (d) { if (d.contact) wa = String(d.contact).replace(/\D/g, ''); if (d.courses) draw(d.courses); }).catch(function () {});
+  fetch('/api/public').then(function (r) { return r.json(); }).then(function (d) { if (d.contact) wa = String(d.contact).replace(/\D/g, ''); if (d.courses) draw(d.courses); hideCourses(d.hidden || []); }).catch(function () {});
+  // الاختبارات المخفية من لوحة التحكم لا تظهر للطالب
+  function hideCourses(h) {
+    if (!h.length) return;
+    [].forEach.call(document.querySelectorAll('[data-vis]'), function (el) { if (h.indexOf(el.getAttribute('data-vis')) >= 0) el.setAttribute('hidden', ''); });
+    [].forEach.call(document.querySelectorAll('.exam-list'), function (l) { if (![].some.call(l.children, function (a) { return !a.hasAttribute('hidden'); })) l.setAttribute('hidden', ''); });
+    var ex = document.querySelector('.exams'); if (ex && document.querySelector('.exam-main[hidden]')) ex.classList.add('filtered');
+    [].forEach.call(document.querySelectorAll('.tfilter [data-f]'), function (c) { var f = c.getAttribute('data-f'); if (f && ![].some.call(document.querySelectorAll('.exams [data-cat]'), function (x) { return !x.hasAttribute('hidden') && x.getAttribute('data-cat').split(' ').indexOf(f) >= 0; })) c.setAttribute('hidden', ''); });
+    if (h.indexOf('placement') >= 0) { [].forEach.call(document.querySelectorAll('a[href="/placement.html"]'), function (a) { if (a.id === 'heroMain') { a.textContent = 'تقدمي وخطوتي التالية'; a.href = '/progress.html'; var s2 = document.getElementById('heroSec'); if (s2 && s2.getAttribute('href') === '/progress.html') s2.setAttribute('hidden', ''); } else a.setAttribute('hidden', ''); }); }
+  }
+  if (/[?&]unavailable=1/.test(location.search)) { var nb = document.createElement('div'); nb.textContent = 'هذا الاختبار غير متاح حاليًا.'; nb.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:999;background:#0c2440;color:#fff;border:2px solid #e3a92b;border-radius:12px;padding:10px 18px;font-weight:600'; document.body.appendChild(nb); setTimeout(function () { nb.remove(); }, 4000); history.replaceState(null, '', location.pathname + location.hash); }
 })();
 </script>
 <script>
