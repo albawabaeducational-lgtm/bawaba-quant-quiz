@@ -28,6 +28,7 @@
     "/*.css",
     "/bw-sync.js",
     "/mt/*",
-    "/bw-bank.js"
+    "/bw-bank.js",
+    "/bw-free.js"
   ]
 }

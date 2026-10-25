@@ -18,6 +18,41 @@ const COURSES = {
 };
 // صفحات ليست مقررات لكنها تقرأ أسئلة المقررات (مع تعديلات المعلمين): اختبار تحديد المستوى
 const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'] };
+// النسخة المجانية: تُحذف من الصفحة نفسها أسئلة الأجزاء المقفولة (لا تصل للمتصفح أصلًا).
+// نفس الدالة موجودة في functions/api/[[path]].js
+const DB_TAG = '<script id="db" type="application/json">';
+function freeDb(text, n, kind) {
+  const d = JSON.parse(text);
+  const cut = (arr, i) => { const k = new Set([...new Set(arr.map(a => a[i]))].sort((a, b) => a - b).slice(0, n)); return arr.filter(a => k.has(a[i])); };
+  if (kind === 'aktar') { if (Array.isArray(d.qs)) d.qs = d.qs.slice(0, n * 5); }
+  else {
+    if (Array.isArray(d.qs)) d.qs = cut(d.qs, 1);
+    if (Array.isArray(d.qq)) { d.qq = cut(d.qq, 1); if (d.qh) { const k = new Set(d.qq.map(a => String(a[0]))); for (const x of Object.keys(d.qh)) if (!k.has(x)) delete d.qh[x]; } }
+    if (Array.isArray(d.ps) && Array.isArray(d.qs)) { const u = new Set(d.qs.map(a => a[3])); d.ps = d.ps.map((x, i) => u.has(i) ? x : ''); }
+  }
+  return JSON.stringify(d).replace(/</g, '\\u003c');
+}
+// تأسيس اللفظي: RAW مصفوفة في كود الصفحة؛ تُقص لأول n اختبارات (بنفس طريقة تقسيم الصفحة: ~٢٥ سؤالًا للاختبار)
+function freeRaw(html, n) {
+  const a = html.indexOf('const RAW = '), z = a < 0 ? -1 : html.indexOf(']];', a);
+  if (a < 0 || z < 0) return { html, tests: 0 };
+  const R = JSON.parse(html.slice(a + 12, z + 2)), N = Math.round(R.length / 25);
+  let keep = 0; for (let i = 0; i < N && i < n; i++) keep += Math.floor(R.length / N) + (i < R.length % N ? 1 : 0);
+  return { html: html.slice(0, a + 12) + JSON.stringify(R.slice(0, keep)).replace(/</g, '\\u003c') + html.slice(z + 2), tests: N };
+}
+async function freePage(html, slug, n, etag) {
+  const key = etag && typeof caches !== 'undefined' ? new Request('https://bw-free.cache/' + encodeURIComponent(slug) + '/' + n + '/' + encodeURIComponent(etag)) : null;
+  if (key) { try { const c = await caches.default.match(key); if (c) return JSON.parse(await c.text()); } catch (e) { } }
+  let out = { html, tests: 0 };
+  if (slug === 'tasis lafzi') out = freeRaw(html, n);
+  else {
+    const a = html.indexOf(DB_TAG), z = a < 0 ? -1 : html.indexOf('</script>', a);
+    if (a >= 0 && z >= 0) out.html = html.slice(0, a + DB_TAG.length) + freeDb(html.slice(a + DB_TAG.length, z), n, slug === 'aktar kamy' ? 'aktar' : 'bank') + html.slice(z);
+  }
+  // نخزن فقط الجزء المتغير (البيانات) بدلًا من الصفحة كلها؟ الصفحة نفسها ثابتة لكل نسخة، فتخزينها كاملة أبسط
+  if (key) { try { await caches.default.put(key, new Response(JSON.stringify(out), { headers: { 'cache-control': 'public, max-age=604800' } })); } catch (e) { } }
+  return out;
+}
 const safeJson = o => JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
 // حماية التجربة: نفس الجهاز/الشبكة يعيد التجربة بمسح المتصفح => يرجع له وقته الأصلي (لا يربح شيئًا)،
@@ -89,16 +124,18 @@ export async function onRequest({ request, env, next }) {
   const isHtml = r => (r.headers.get('content-type') || '').includes('text/html');
   // يقدّم الصفحة مع الإضافات. الـETag يتضمن بصمة الإضافات، فالمتصفح يعيد استخدام نسخته المحفوظة (304)
   // فقط إذا لم تتغير الصفحة ولا تعديلات الأسئلة ولا حالة المستخدم — فلا يرى أحد نسخة قديمة من الأسئلة.
-  const serve = async (bodyHtml, setCookie) => {
+  const serve = async (bodyHtml, setCookie, transform) => {
     const sig = await sha(head + '|' + (bodyHtml || ''));
     const h = new Headers(request.headers), inm = h.get('if-none-match') || '';
     h.delete('if-none-match'); h.delete('if-modified-since');
     const mm = inm.match(/^(W\/)?"(.*)-bw([0-9a-f]+)"$/);
     if (mm && mm[3] === sig) h.set('if-none-match', (mm[1] || '') + '"' + mm[2] + '"');
-    const res = await next(new Request(request, { headers: h }));
+    let res = await next(new Request(request, { headers: h }));
     const tag = et => et ? et.replace(/"$/, '-bw' + sig + '"') : '';
     if (res.status === 304) { const r = new Response(null, { status: 304, headers: res.headers }); if (res.headers.get('etag')) r.headers.set('etag', tag(res.headers.get('etag'))); return r; }
     if (!isHtml(res)) return res;
+    // النسخة المجانية: تعديل الصفحة نفسها قبل إرسالها (حذف أسئلة الأجزاء المقفولة)
+    if (transform) { const body = await transform(await res.text(), res.headers.get('etag') || ''); res = new Response(body, res); }
     let rw = new HTMLRewriter();
     if (head) rw = rw.on('head', { element(e) { e.prepend(head, { html: true }); } });
     if (bodyHtml) rw = rw.on('body', { element(e) { e.append(bodyHtml, { html: true }); } });
@@ -138,19 +175,36 @@ export async function onRequest({ request, env, next }) {
   }
 
   if (S.require_login === '1' && !valid) {
-    if (st) return go(st.status !== 'active' ? 'blocked' : paused ? 'paused' : 'expired', paused ? st.pause_until : '');
-    const tm = +S.trial_minutes || 0;
-    if (tm <= 0) return go('need');
+    // الصفحة الرئيسية وصفحات التعريف (تحديد المستوى، تقدمي، قائمة الورقي…) مفتوحة دائمًا لأنها واجهة المنصة ودعايتها.
+    // القفل على صفحات الاختبارات فقط.
+    const GATED = !!(course || slug === 'aktar kamy' || slug === 'skills');
+    const freeOn = S.free_mode !== '0', fN = Math.max(1, Math.min(50, +S.free_count || 10)), tm = +S.trial_minutes || 0;
+    // النسخة المجانية المحدودة: أول N من كل اختبار مفتوحة، والباقي يظهر بقفل ويطلب التسجيل
+    const free = (why, setCookie) => {
+      if (slug === 'muhaky warky2') return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
+      // لو فشل التجهيز لا نرسل الصفحة كاملة: نرسل صفحة بدون بيانات أفضل من كشف كل الأسئلة
+      const tf = slug === 'muhaky warky1' ? null : async (html, etag) => { try { const o = await freePage(html, slug, fN, etag); return o.tests ? o.html.replace('</head>', '<script>window.__BWFT=' + o.tests + '</script></head>') : o.html; } catch (e) { return '<!doctype html><meta charset="utf-8"><p style="font-family:sans-serif;text-align:center;margin:40px">تعذّر تحميل الصفحة. <a href="/">الرئيسية</a></p>'; } };
+      head += `<script>window.__BWF=${safeJson({ n: fN, why, c: slug, wa: contact })}</script><script src="/bw-free.js"></script>`;
+      return serve(ui({}), setCookie, tf);
+    };
+    if (!GATED) {
+      const ts0 = +cookie(request, 'bw_trial') || 0, inTrial = !st && tm > 0 && ts0 && now - ts0 < tm * 60000;
+      if (freeOn && !inTrial) head += `<script>window.__BWF=${safeJson({ n: fN, why: '', c: slug, wa: contact })}</script><script src="/bw-free.js"></script>`;
+      return serve(ui({}));
+    }
+    if (st && (st.status !== 'active' || paused)) return go(st.status !== 'active' ? 'blocked' : 'paused', paused ? st.pause_until : '');
+    if (st) return freeOn ? free('expired') : go('expired');
+    if (tm <= 0) return freeOn ? free('need') : go('need');
     let ts = +cookie(request, 'bw_trial') || 0, warn = 0, fresh = false;
     if (!ts) {
       fresh = true;
       if (S.trial_guard === '0') ts = now;
       else {
-        try { const r = await guard(env, request, now, iso); if (r.deny) return go(r.deny); ts = r.start; warn = r.warn; } catch (e) { ts = now; }
+        try { const r = await guard(env, request, now, iso); if (r.deny) return freeOn ? free('trial_ended') : go(r.deny); ts = r.start; warn = r.warn; } catch (e) { ts = now; }
       }
     }
     const ck = `bw_trial=${ts}; Path=/; Max-Age=31536000; Secure; SameSite=Lax`;
-    if (now - ts >= tm * 60000) return go('trial_ended', '', fresh ? ck : '');
+    if (now - ts >= tm * 60000) return freeOn ? free('trial_ended', fresh ? ck : '') : go('trial_ended', '', fresh ? ck : '');
     return serve(ui({ trialStart: ts, trialEnd: ts + tm * 60000, warn }), fresh ? ck : '');
   }
   if (!valid) return serve(ui({}));

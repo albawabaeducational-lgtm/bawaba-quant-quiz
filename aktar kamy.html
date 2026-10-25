@@ -151,6 +151,7 @@
   'use strict';
   // ===== البيانات =====
   var DB = JSON.parse(document.getElementById('db').textContent);
+    if (window.__bwFreeData) DB = window.__bwFreeData('aktar', DB); // النسخة المجانية (يضيفها الخادم لغير المشترك)
   var Q = DB.qs.map(function (a) { return { id: a[0], m: a[1], c: a[2] }; });
   var BY = {}; Q.forEach(function (q) { BY[q.id] = q; });
   var MN = {}; DB.models.forEach(function (m) { MN[m.id] = m.name; });

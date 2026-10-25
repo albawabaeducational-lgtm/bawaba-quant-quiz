@@ -162,6 +162,18 @@ const fetchAsset = async (env, request, file) => {
 };
 // ---------- تصنيف الأسئلة حسب المهارات ----------
 // البنوك التي يمكن تصنيف أسئلتها، ومادة كل بنك (كمي/لفظي)
+// النسخة المجانية: حذف أسئلة الأجزاء المقفولة (نفس الدالة في functions/_middleware.js)
+function freeDb(text, n, kind) {
+  const d = JSON.parse(text);
+  const cut = (arr, i) => { const k = new Set([...new Set(arr.map(a => a[i]))].sort((a, b) => a - b).slice(0, n)); return arr.filter(a => k.has(a[i])); };
+  if (kind === 'aktar') { if (Array.isArray(d.qs)) d.qs = d.qs.slice(0, n * 5); }
+  else {
+    if (Array.isArray(d.qs)) d.qs = cut(d.qs, 1);
+    if (Array.isArray(d.qq)) { d.qq = cut(d.qq, 1); if (d.qh) { const k = new Set(d.qq.map(a => String(a[0]))); for (const x of Object.keys(d.qh)) if (!k.has(x)) delete d.qh[x]; } }
+    if (Array.isArray(d.ps) && Array.isArray(d.qs)) { const u = new Set(d.qs.map(a => a[3])); d.ps = d.ps.map((x, i) => u.has(i) ? x : ''); }
+  }
+  return JSON.stringify(d).replace(/</g, '\\u003c');
+}
 // الاختبارات التي يمكن إخفاؤها عن الطلاب من لوحة التحكم
 const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['aksam kamy', 'أقسام الكمي'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
 const hiddenOf = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a.filter(k => VIS.some(x => x[0] === k)) : []; } catch (e) { return []; } };
@@ -321,6 +333,25 @@ export async function onRequest({ request, env, params }) {
   const tooMany = async (key, max = 10) => (await DB.prepare('SELECT COUNT(*) n FROM login_fails WHERE ip=? AND at>?').bind(key, now - 900000).first()).n >= max;
   const addFail = key => DB.batch([DB.prepare('INSERT INTO login_fails (ip,at) VALUES (?,?)').bind(key, now), DB.prepare('DELETE FROM login_fails WHERE at<?').bind(now - 86400000)]);
   const byCode = c => c ? DB.prepare('SELECT * FROM students WHERE code=?').bind(c).first() : null;
+  // هل لهذا الزائر النسخة الكاملة؟ (الموقع مفتوح، أو طالب صالح، أو داخل التجربة، أو من فريق العمل)
+  const fullAccess = async () => {
+    if (await setting('require_login') !== '1') return true;
+    const st = await byCode(norm(ck(request, 'bw_code'))), tm = +(await setting('trial_minutes')) || 0, ts = +ck(request, 'bw_trial') || 0;
+    if (st && st.status === 'active' && (!st.expires_at || st.expires_at > iso) && !((st.pause_until || 0) > Date.now())) return true;
+    if (!st && tm > 0 && ts && Date.now() - ts < tm * 60000) return true;
+    if (env.ADMIN_PASSWORD && ck(request, 'bw_admin') && ck(request, 'bw_admin') === await tok(env)) return true;
+    if (ck(request, 'bw_staff')) { try { if (await DB.prepare("SELECT 1 x FROM staff_sessions s JOIN staff_users u ON u.id=s.staff_id WHERE s.token_hash=? AND u.status='active' AND s.expires_at>?").bind(await tok({ ADMIN_PASSWORD: 'staff|' + ck(request, 'bw_staff') }), iso).first()) return true; } catch (e) { } }
+    return false;
+  };
+  // نتيجة النسخة المجانية ثابتة لكل نسخة من الملف، فتُحفظ في ذاكرة Cloudflare بدل إعادة حسابها مع كل زائر
+  const freeCached = async (slug, n, ver, make) => {
+    const key = ver && typeof caches !== 'undefined' ? new Request('https://bw-free.cache/data/' + encodeURIComponent(slug) + '/' + n + '/' + encodeURIComponent(ver)) : null;
+    if (key) { try { const r = await caches.default.match(key); if (r) return await r.text(); } catch (e) { } }
+    const out = make();
+    if (key) { try { await caches.default.put(key, new Response(out, { headers: { 'cache-control': 'public, max-age=604800' } })); } catch (e) { } }
+    return out;
+  };
+  const freeN = async () => Math.max(1, Math.min(50, +(await setting('free_count')) || 10));
   // إنهاء الاستراحة: يُرجَّع الوقت غير المستخدم من الاستراحة إلى رصيدها ويُخصم من تاريخ الانتهاء
   const endPause = async s => {
     if ((s.pause_until || 0) > now && s.expires_at) {
@@ -489,14 +520,16 @@ export async function onRequest({ request, env, params }) {
     if (!c || c.model !== 'bank') return J({ error: 'not found' }, 404);
     const res = await fetchAsset(env, request, c.file);
     if (!res) return J({ error: 'not found' }, 404);
+    // غير المشترك (بعد التجربة) يأخذ نسخة البيانات المجانية فقط، لا البنك كاملًا
+    const full = await fullAccess(), n = full ? 0 : await freeN();
     const raw = res.headers.get('etag') || res.headers.get('last-modified') || '';
-    const tag = raw ? '"d-' + (await tok({ ADMIN_PASSWORD: 'data|' + c.slug + '|' + raw })).slice(0, 24) + '"' : '';
-    const hdr = { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=0, must-revalidate' };
+    const tag = raw ? '"d-' + (await tok({ ADMIN_PASSWORD: 'data|' + c.slug + '|' + raw + '|' + n })).slice(0, 24) + '"' : '';
+    const hdr = { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'private, no-cache', vary: 'cookie' };
     if (tag) hdr.etag = tag;
     if (tag && request.headers.get('if-none-match') === tag) { try { await res.body.cancel(); } catch (e) { } return new Response(null, { status: 304, headers: hdr }); }
     const html = await res.text(), a = html.indexOf('<script id="db" type="application/json">'), z = a < 0 ? -1 : html.indexOf('</script>', a);
     if (a < 0 || z < 0) return J({ error: 'not found' }, 404);
-    return new Response('window.__BWD=window.__BWD||{};window.__BWD[' + JSON.stringify(c.slug) + ']=' + html.slice(a + 40, z) + ';', { headers: hdr });
+    return new Response('window.__BWD=window.__BWD||{};window.__BWD[' + JSON.stringify(c.slug) + ']=' + (full ? html.slice(a + 40, z) : await freeCached(c.slug, n, raw, () => freeDb(html.slice(a + 40, z), n, 'bank'))) + ';', { headers: hdr });
   }
 
   // بلاغ من الطالب عن خطأ في سؤال: يظهر للمعلم في وضع التحرير
@@ -531,6 +564,8 @@ export async function onRequest({ request, env, params }) {
     const by = {}; tags.forEach(t => (by[t.course] = by[t.course] || new Set()).add(t.qkey));
     const out = [];
     for (const slug of Object.keys(by)) { const items = await bankItems(env, request, DB, slug); for (const it of items) if (by[slug].has(it.key)) out.push({ course: slug, bank: COURSE[slug].title, ...it }); }
+    // النسخة المجانية: غير المشترك (بعد انتهاء التجربة) يرى أول N سؤال فقط من كل مهارة
+    if (out.length && !(await fullAccess())) { const n = await freeN(); if (out.length > n) return J({ skill: sk, items: out.slice(0, n), locked: out.length - n, total: out.length }); }
     return J({ skill: sk, items: out });
   }
 
@@ -1146,7 +1181,7 @@ export async function onRequest({ request, env, params }) {
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;
     const settings = {};
-    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.vis = VIS; }
+    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.free_count = +S.free_count || 10; settings.vis = VIS; }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
     if (can('settings.contact') || can('leads.manage')) settings.lead_message = S.lead_message || DEFAULT_LEAD_MSG;
@@ -1237,6 +1272,8 @@ export async function onRequest({ request, env, params }) {
     else if (b.key === 'moodle_enabled') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
     else if (b.key === 'moodle_courses') { if (!can('settings.access')) return deny(); v = String(b.value || '').split(/[^0-9]+/).filter(Boolean).slice(0, 50).join(','); }
     else if (b.key === 'moodle_url') { if (!can('settings.access')) return deny(); v = String(b.value || '').trim().replace(/\/+$/, ''); if (!/^https:\/\/[^\s]+$/.test(v)) return J({ error: 'اكتب رابط منصة الدورات يبدأ بـ https://' }, 400); }
+    else if (b.key === 'free_mode') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
+    else if (b.key === 'free_count') { if (!can('settings.access')) return deny(); v = String(Math.max(1, Math.min(50, int(b.value) || 10))); }
     else if (b.key === 'hidden_courses') { if (!can('settings.access')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
     else if (b.key === 'lead_message') { if (!can('settings.contact')) return deny(); v = String(b.value || '').slice(0, 3000); }
     else return J({ error: 'not found' }, 404);
