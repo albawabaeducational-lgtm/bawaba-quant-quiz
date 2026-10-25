@@ -1,0 +1,24 @@
+<script>
+/* البوابة التعليمية: دخول تلقائي لمنصة الاختبارات لطالب مسجّل دخوله في منصة الدورات */
+(function () {
+  var SITE = 'https://bawaba-quant-quiz.pages.dev';
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="' + SITE + '"]');
+    if (!a || !window.M || !M.cfg || !(M.cfg.userId > 1) || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    var dest = a.href, path = '/'; try { path = new URL(dest).pathname || '/'; } catch (x) { }
+    var win = a.target === '_blank' ? window.open('', '_blank') : null;
+    var go = function (u) { if (win) win.location.href = u; else location.href = u; };
+    fetch(SITE + '/api/sso/nonce', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.n) throw 0;
+      return fetch(M.cfg.wwwroot + '/lib/ajax/service.php?sesskey=' + M.cfg.sesskey + '&info=core_user_set_user_preferences', {
+        method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify([{ index: 0, methodname: 'core_user_set_user_preferences', args: { preferences: [{ name: 'filepicker_recentlicense', value: d.n, userid: M.cfg.userId }] } }])
+      }).then(function (r) { return r.json(); }).then(function (x) {
+        if (!x || !x[0] || x[0].error) throw 0;
+        go(SITE + '/api/sso/finish?n=' + d.n + '&u=' + M.cfg.userId + '&next=' + encodeURIComponent(path));
+      });
+    }).catch(function () { go(dest); });
+  }, true);
+})();
+</script>

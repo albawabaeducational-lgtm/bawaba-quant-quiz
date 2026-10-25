@@ -10,6 +10,7 @@ h1, h2, h3 { font-family: "Readex Pro", "IBM Plex Sans Arabic", Tahoma, sans-ser
 #bw-shell .bws-brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; flex: none; }
 #bw-shell .bws-brand img { width: 40px; height: 40px; border-radius: 11px; background: #fff; padding: 3px; object-fit: contain; }
 #bw-shell .bws-brand b { font-family: "Readex Pro", sans-serif; font-weight: 700; font-size: 16px; }
+#bw-shell .bws-brand b small { display: block; font-size: 11.5px; font-weight: 600; color: var(--bw-gold, #e3a92b); line-height: 1.25; letter-spacing: .2px; }
 #bw-shell .bws-title { color: var(--bw-gold); font-weight: 600; font-size: 15px; padding-inline-start: 14px; border-inline-start: 1px solid #ffffff2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 #bw-shell .bws-tools { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
 #bw-shell .bws-back { flex: none; color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 10px; padding: 8px 14px; box-shadow: inset 0 0 0 1.5px #ffffff4d; }

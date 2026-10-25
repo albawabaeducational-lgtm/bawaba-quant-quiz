@@ -444,6 +444,51 @@ export async function onRequest({ request, env, params }) {
     if (!info || !info.userid) return J({ error: 'تعذّر قراءة بيانات حسابك من منصة الدورات' }, 502);
     return admitMoodle(info, username, courses);
   }
+  // ===== الدخول التلقائي من منصة الدورات (مودل) بدون تسجيل دخول ثانٍ =====
+  // سكربت صغير في مودل (Additional HTML) يطلب رمزًا مؤقتًا من هنا، ويحفظه في تفضيلات الطالب على مودل
+  // (لا يستطيع أحد كتابة تفضيلات طالب غيره)، ثم يفتح sso/finish. نحن نقرأ التفضيل بتوكن مودل ونتأكد أنه نفس الرمز.
+  const SSO_PREF = 'filepicker_recentlicense';
+  const ssoCors = async () => { const o = request.headers.get('origin') || '', base = ((await setting('moodle_url')) || MOODLE_URL); let mo = ''; try { mo = new URL(base).origin; } catch (e) { } return o && o === mo ? { 'access-control-allow-origin': o, 'access-control-allow-methods': 'POST, OPTIONS', 'access-control-max-age': '600', vary: 'origin' } : {}; };
+  const ensureSso = () => DB.prepare('CREATE TABLE IF NOT EXISTS sso_nonces (n TEXT PRIMARY KEY, at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)').run();
+  if (p === 'sso/nonce') {
+    const cors = await ssoCors();
+    if (m === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+    if (m !== 'POST') return J({ error: 'not found' }, 404, cors);
+    if (!env.MOODLE_TOKEN || await setting('moodle_enabled') === '0') return J({ error: 'off' }, 503, cors);
+    if (await tooMany('s|' + ip, 40)) return J({ error: 'محاولات كثيرة' }, 429, cors);
+    await addFail('s|' + ip);
+    await ensureSso();
+    const n = 'bw' + [...crypto.getRandomValues(new Uint8Array(18))].map(x => x.toString(36).padStart(2, '0')).join('').slice(0, 30);
+    await DB.batch([DB.prepare('INSERT INTO sso_nonces (n,at) VALUES (?,?)').bind(n, now), DB.prepare('DELETE FROM sso_nonces WHERE at<?').bind(now - 3600000)]);
+    return J({ n }, 200, { ...cors, 'cache-control': 'no-store' });
+  }
+  if (p === 'sso/finish' && m === 'GET') {
+    const q = new URL(request.url).searchParams, n = String(q.get('n') || ''), uid = int(q.get('u')), nx0 = String(q.get('next') || '/');
+    const nx = nx0.charAt(0) === '/' && nx0.charAt(1) !== '/' ? nx0 : '/';
+    const fail = msg => new Response(null, { status: 302, headers: { location: '/login?next=' + encodeURIComponent(nx) + (msg ? '&sso=' + encodeURIComponent(msg) : ''), 'cache-control': 'no-store' } });
+    if (!env.MOODLE_TOKEN || await setting('moodle_enabled') === '0' || !/^bw[a-z0-9]{20,40}$/.test(n) || !(uid > 1)) return fail('');
+    if (await tooMany('sf|' + ip, 20)) return fail('محاولات كثيرة، حاول بعد ربع ساعة');
+    await ensureSso();
+    const row = await DB.prepare('SELECT at,used FROM sso_nonces WHERE n=?').bind(n).first();
+    if (!row || row.used || now - row.at > 300000) { await addFail('sf|' + ip); return fail('انتهت صلاحية رابط الدخول، سجّل دخولك مرة واحدة'); }
+    await DB.prepare('UPDATE sso_nonces SET used=1 WHERE n=?').bind(n).run();
+    const base = ((await setting('moodle_url')) || MOODLE_URL).replace(/\/+$/, '');
+    const ws = async (fn, params = {}) => { const r = await fetch(base + '/webservice/rest/server.php', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ wstoken: env.MOODLE_TOKEN, wsfunction: fn, moodlewsrestformat: 'json', ...params }) }); return r.json(); };
+    let pref, users, courses;
+    try { pref = await ws('core_user_get_user_preferences', { name: SSO_PREF, userid: String(uid) }); } catch (e) { return fail('تعذّر الاتصال بمنصة الدورات'); }
+    const val = pref && Array.isArray(pref.preferences) && pref.preferences[0] ? String(pref.preferences[0].value || '') : '';
+    if (val !== n) { await addFail('sf|' + ip); return fail(pref && pref.exception ? 'إعداد الدخول التلقائي غير مكتمل (' + String(pref.errorcode || '').slice(0, 50) + ')' : ''); }
+    try { users = await ws('core_user_get_users_by_field', { field: 'id', 'values[0]': String(uid) }); courses = await ws('core_enrol_get_users_courses', { userid: String(uid) }); }
+    catch (e) { return fail('تعذّر قراءة بيانات حسابك من منصة الدورات'); }
+    const u = Array.isArray(users) ? users[0] : null;
+    if (!u || u.suspended) return fail('');
+    const res = await admitMoodle({ userid: uid, fullname: u.fullname }, String(u.username || u.email || uid).toLowerCase(), courses);
+    if (res.status !== 200) { let e = ''; try { e = (await res.json()).error || ''; } catch (x) { } return fail(e); }
+    const h = new Headers({ location: nx, 'cache-control': 'no-store' });
+    for (const [k, v] of res.headers) if (k.toLowerCase() === 'set-cookie') h.append('set-cookie', v);
+    if (typeof res.headers.getSetCookie === 'function') { h.delete('set-cookie'); for (const v of res.headers.getSetCookie()) h.append('set-cookie', v); }
+    return new Response(null, { status: 302, headers: h });
+  }
   // الدخول بحساب جوجل: نتحقق من جوجل، ثم نبحث عن نفس الإيميل في مودل ونتأكد من اشتراكه في دورة
   if (p === 'login/google' && m === 'POST') {
     if (await setting('moodle_enabled') === '0') return J({ error: 'الدخول بحساب منصة الدورات غير مفعّل حاليًا' }, 403);

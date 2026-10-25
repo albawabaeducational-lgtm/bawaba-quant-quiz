@@ -47,7 +47,14 @@
     .top .wrap { display: flex; align-items: center; gap: 20px; min-height: 66px; }
     .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
     .brand img { width: 42px; height: 42px; border-radius: 12px; background: #fff; padding: 3px; object-fit: contain; }
-    .brand b { font-family: var(--display); font-size: 17px; font-weight: 700; }
+    .brand b { font-family: var(--display); font-size: 17px; font-weight: 700; line-height: 1.25; }
+    .brand b small { display: block; font-size: 12px; font-weight: 600; color: var(--gold); letter-spacing: .2px; }
+    /* شريط منصة الدورات أعلى الصفحة: يوضح أن الاختبارات والدورات منصة واحدة بجزأين */
+    .lms-strip { background: linear-gradient(90deg, #e3a92b, #f0c25a); color: #0c2440; font-weight: 700; font-size: 14.5px; }
+    .lms-strip .wrap { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; text-align: center; }
+    .lms-strip a { color: #fff; background: #0c2440; text-decoration: none; border-radius: 999px; padding: 5px 14px; white-space: nowrap; }
+    .lms-strip a:hover { background: #163a63; }
+    .btn-lms { background: #fff1d1; color: #0c2440; box-shadow: inset 0 0 0 1.5px var(--gold); }
     .top nav { display: flex; gap: 4px; margin-inline-start: auto; }
     .top nav a { text-decoration: none; color: #c9d8e8; font-size: 14.5px; font-weight: 500; padding: 7px 12px; border-radius: 10px; }
     .top nav a:hover { color: #fff; background: #ffffff14; }
@@ -262,12 +269,16 @@
     [hidden] { display: none !important; }
     @media (max-width: 480px) { header.top .brand b { font-size: 13px; line-height: 1.3; max-width: 7.5em; } header.top .brand img { width: 36px; height: 36px; } header.top .btn { padding: 8px 11px; font-size: 13px; } header.top .wrap { gap: 6px; } }
     @media (max-width: 350px) { header.top .brand b { display: none; } }
+    @media (max-width: 1280px) { .hide-sm { display: none !important; } }
+    header.top nav a, header.top .brand b { white-space: nowrap; }
+    @media (max-width: 480px) { .lms-strip .lx { display: none; } .lms-strip { font-size: 13px; } .lms-strip .wrap { gap: 6px; padding: 7px 0; } header.top .brand b small { font-size: 10.5px; } }
   </style>
 </head>
 <body>
+  <div class="lms-strip"><div class="wrap"><span>🎓 الشروحات والدورات والفيديوهات على <u>منصة الدورات</u><span class="lx"> — وهنا منصة الاختبارات</span></span><a href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">ادخل منصة الدورات ←</a></div></div>
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="/"><img src="/icons/logo.jpg" alt="" width="42" height="42"><b>منصة البوابة التعليمية</b></a>
+      <a class="brand" href="/"><img src="/icons/logo.jpg" alt="" width="42" height="42"><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a>
       <nav aria-label="أقسام الصفحة">
         <a href="#tests">الاختبارات</a>
         <a href="/placement.html" data-vis="placement">تحديد المستوى</a>
@@ -276,6 +287,7 @@
         <a class="guest-only" href="#courses">الدورات</a>
         <a href="#join">تواصل معنا</a>
       </nav>
+      <a class="btn btn-lms hide-sm" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">🎓 منصة الدورات</a>
       <a class="btn btn-line guest-only" href="https://albawaba-edu.com/e/login/signup.php" target="_blank" rel="noopener">إنشاء حساب</a>
       <a class="btn btn-gold guest-only" href="/login">تسجيل الدخول</a>
       <a class="btn btn-line member-only" href="#" id="bwOut">تسجيل الخروج</a>
