@@ -42,7 +42,7 @@ var VD=[[0,'دائم (بدون انتهاء)'],[7,'٧ أيام'],[30,'٣٠ يو�
 var LS={new:['in','جديد'],contacted:['wn','تم التواصل'],added:['ok','أُضيف للمجموعة'],subscribed:['ok','مشترك'],not_interested:['mu','غير مهتم']};
 var AU={login:'تسجيل دخول',create:'إنشاء',update:'تعديل',delete:'حذف',block:'حظر',unblock:'تفعيل',resetdev:'تصفير الأجهزة',setting:'إعدادات',unban:'رفع حظر',reset:'تصفير',password:'كلمة المرور',member_add:'إضافة أعضاء',member_remove:'إزالة أعضاء',content:'تعديل أسئلة',revert:'رجوع للأصل',course_assign:'إسناد مقرر',course_remove:'إلغاء إسناد مقرر'};
 var AT={staff:'حساب عامل',student:'طالب',group:'مجموعة',lead:'مهتم',settings:'المنصة',course:'مقرر'};
-var MODEL={bank:'بنك أسئلة بأقسام',raw:'أسئلة نصية',key:'مفتاح إجابات (اختبار ورقي)',linked:'مرتبط بالكمي واللفظي'};
+var MODEL={static:'بنك صور (تصنيف المهارات)',bank:'بنك أسئلة بأقسام',raw:'أسئلة نصية',key:'مفتاح إجابات (اختبار ورقي)',linked:'مرتبط بالكمي واللفظي'};
 var D=null,view='',PL=[],st={q:'',status:'',group:'',pg:'',lf:'',lq:''},app=document.getElementById('app'),auditRows=null;
 
 /* ---------- أدوات ---------- */
@@ -85,6 +85,7 @@ var SECTIONS=[
  {id:'settings',icon:'⚙',title:'إعدادات المنصة',sub:'نمط الدخول والباقات والتواصل والحماية',show:function(){return canAny(['settings.access','settings.plans','settings.contact','settings.guard'])},draw:drawSettings},
  {id:'staff',icon:'♚',title:'فريق العمل والصلاحيات',sub:'حسابات المعلمين والمشرفين وصلاحيات كل حساب',show:function(){return D.actor.role==='super_admin'},draw:drawStaff,count:function(){return D.staff?D.staff.length:0}},
  {id:'courses',icon:'▣',title:'المقررات',sub:'الاختبارات بأنواعها، والمعلمون المسندون لكل مقرر وصلاحياتهم',show:function(){return D.actor.role==='super_admin'||D.actor.role==='teacher'||!!(D.courses&&D.courses.length)},draw:drawCourses},
+ {id:'skills',icon:'◈',title:'تصنيف المهارات',sub:'صنّف كل سؤال تحت مهارته، ثم استدعِ أسئلة أي مهارة في الشرح والتدريب',show:function(){return D.actor.role==='super_admin'||(D.courses||[]).some(function(c){return SKB[c.slug]})},draw:drawSkills},
  {id:'versions',icon:'⟲',title:'النسخ والتراجع',sub:'كل تحديث يُرفع للموقع نسخة؛ علّم النسخ الجيدة وارجع لأي نسخة بضغطة',show:function(){return D.actor.role==='super_admin'},draw:drawVersions},
  {id:'audit',icon:'☰',title:'سجل العمليات',sub:'من فعل ماذا ومتى',show:function(){return can('audit.view')},draw:drawAudit},
  {id:'account',icon:'☺',title:'حسابي',sub:'بياناتك وصلاحياتك وكلمة المرور',show:function(){return true},draw:drawAccount}
@@ -237,6 +238,71 @@ function drawLearn(c,L){st.secN=st.secN||{};var N=st.secN[c.slug];
  h+='<div class="card"><h2>❌ الأسئلة الأكثر خطأ</h2><p class="m" style="margin:-4px 0 8px">أسئلة في مجلد أخطاء طالبين أو أكثر. لو أخطأ فيها كثيرون راجع صياغتها وإجابتها.</p><div class="sc"><table><tr><th>السؤال</th><th>القسم</th><th>طلاب أخطأوا</th><th></th></tr>'+(L.missed.map(function(x){return'<tr><td><b>رقم '+x.id+'</b></td><td>'+esc(sn(x.sectionId))+'</td><td>'+x.students+'</td><td><a class="btn sm" style="background:var(--navy);color:#fff" target="_blank" rel="noopener" href="'+edit+x.id+'">✏ افتح</a></td></tr>'}).join('')||'<tr><td colspan="4" class="empty">لا توجد بيانات كافية بعد.</td></tr>')+'</table></div></div></div>';
  h+='<div class="card"><h2>📈 مستوى كل طالب</h2><div class="sc"><table><tr><th>الطالب</th><th>أسئلة محلولة</th><th>الدقة</th><th>هذا الأسبوع</th><th>أضعف قسم</th><th>في مجلد الأخطاء</th><th>تحديد المستوى</th><th>آخر تحديث</th></tr>'+(L.students.map(function(x){return'<tr><td><b>'+esc(x.name)+'</b></td><td>'+x.n+'</td><td>'+(x.acc==null?'—':pc(x.acc))+'</td><td>'+x.wk+'</td><td>'+(x.weak?esc(sn(x.weak.id))+' <span class="m">('+x.weak.p+'٪)</span>':'—')+'</td><td>'+x.errs+'</td><td>'+(x.place?esc(x.place.lvl)+' <span class="m">('+x.place.p+'٪)</span>':'—')+'</td><td>'+(x.last?ago(new Date(x.last).toISOString()):'—')+'</td></tr>'}).join('')||'<tr><td colspan="8" class="empty">لا يوجد طلاب لهم تقدم محفوظ بعد. يُحفظ التقدم تلقائيًا للطلاب الذين يدخلون بالكود أو بحساب منصة الدورات.</td></tr>')+'</table></div></div>';
  return'<h3 style="margin:18px 0 10px;color:var(--navy)">تعلّم الطلاب في '+esc(c.title)+'</h3>'+h+'<h3 style="margin:18px 0 10px;color:var(--navy)">النشاط والزيارات</h3>'}
+// ===== تصنيف الأسئلة حسب المهارات =====
+var SKB={'aksam kamy':'kamy','aktar kamy':'kamy','aksam lafzi':'lafzi'},LT=['أ','ب','ج','د'],TYN=['التناظر اللفظي','إكمال الجمل','الخطأ السياقي','استيعاب المقروء','المفردة الشاذة'];
+function skLoad(){return api('skills').then(function(r){st.sk=r;if(!st.skBank||!r.banks.some(function(b){return b.slug===st.skBank}))st.skBank=r.banks.length?r.banks[0].slug:'';if(view==='skills')$('sec').innerHTML=drawSkills()})}
+function skBankLoad(slug){st.skData=null;return api('skills/bank?course='+encodeURIComponent(slug)).then(function(r){st.skData=r;st.skPos=0;skFix();if(view==='skills')$('sec').innerHTML=drawSkills()})}
+function skList(){var d=st.skData,f=st.skFilter||'untagged';if(!d)return[];return d.items.filter(function(it){var t=d.tags[it.key];return f==='all'?true:f==='untagged'?!t:String(t)===f})}
+function skFix(){var L=skList();if(st.skPos>=L.length)st.skPos=Math.max(0,L.length-1)}
+function skOf(sub){return(st.sk.skills||[]).filter(function(x){return x.subject===sub})}
+function drawSkills(){
+ if(!st.sk){skLoad().catch(function(e){if(e)toast(e.message,'err')});return'<div class="card"><div class="empty">جارٍ التحميل…</div></div>'}
+ var S=st.sk,tab=st.skTab||'tag',h='<div class="row" style="margin-bottom:12px"><button class="'+(tab==='tag'?'':'g')+'" data-act="skTab" data-id="tag">تصنيف الأسئلة</button><button class="'+(tab==='list'?'':'g')+'" data-act="skTab" data-id="list">قائمة المهارات</button><a class="btn" style="background:#e3ebf3;color:var(--navy)" target="_blank" rel="noopener" href="/skills.html">↗ صفحة التدريب حسب المهارة</a></div>';
+ if(tab==='list')return h+skManage();
+ if(!S.banks.length)return h+'<div class="card"><div class="empty">لا توجد بنوك أسئلة مسندة لك.</div></div>';
+ h+='<div class="card"><h2>اختر البنك</h2><div class="row">'+S.banks.map(function(b){return'<button class="'+(st.skBank===b.slug?'':'g')+'" data-act="skBank" data-id="'+esc(b.slug)+'">'+esc(b.title)+' <span class="b in" style="margin-inline-start:6px">'+(S.tagged[b.slug]||0)+' مصنف</span></button>'}).join('')+'</div></div>';
+ var d=st.skData;
+ if(!d||d.course!==st.skBank){if(st.skBank)skBankLoad(st.skBank).catch(function(e){if(e)toast(e.message,'err')});return h+'<div class="card"><div class="empty">جارٍ تحميل أسئلة البنك…</div></div>'}
+ var sk=skOf(d.subject),SN={};sk.forEach(function(x){SN[x.id]=x.name});
+ var total=d.items.length,done=Object.keys(d.tags).length,L=skList(),f=st.skFilter||'untagged';
+ h+='<div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div><b>صُنِّف '+done+' من '+total+' سؤالًا</b><div class="bar" style="width:260px;margin-top:6px"><i style="width:'+Math.round(done/Math.max(1,total)*100)+'%"></i></div></div>'
+  +'<div class="row"><label class="m">عرض: <select id="skF"><option value="untagged"'+(f==='untagged'?' selected':'')+'>غير المصنفة ('+(total-done)+')</option><option value="all"'+(f==='all'?' selected':'')+'>كل الأسئلة ('+total+')</option>'+sk.map(function(x){var n=0;for(var k in d.tags)if(d.tags[k]===x.id)n++;return n?'<option value="'+x.id+'"'+(f===String(x.id)?' selected':'')+'>'+esc(x.name)+' ('+n+')</option>':''}).join('')+'</select></label>'
+  +(d.subject==='lafzi'&&d.canTag?'<button class="g sm" data-act="skAutoType">⚡ صنّف تلقائيًا حسب نوع السؤال</button>':'')+'<label class="m"><input type="checkbox" id="skAuto"'+(st.skAuto===false?'':' checked')+'> انتقل للتالي بعد الاختيار</label></div></div></div>';
+ if(!L.length)return h+'<div class="card"><div class="empty">'+(f==='untagged'?'🎉 كل أسئلة هذا البنك مصنفة.':'لا توجد أسئلة هنا.')+'</div></div>';
+ var it=L[st.skPos],cur=d.tags[it.key];
+ var body=it.img?'<img src="'+esc(it.img)+'" alt="" style="width:100%;border-radius:12px;border:1px solid var(--line);background:#fff">'
+  :'<div style="background:#f6f9fc;border-radius:12px;padding:14px;line-height:2"><span class="b in">'+esc(TYN[it.t]||'')+'</span>'+(it.p?'<p class="m" style="white-space:pre-wrap;max-height:180px;overflow:auto">'+esc(it.p)+'</p>':'')+'<p style="font-size:18px;font-weight:700;margin:8px 0">'+esc(it.s)+'</p><div>'+(it.o||[]).map(function(o,i){return'<div'+(i===it.c?' style="color:#17633f;font-weight:700"':'')+'>'+LT[i]+') '+esc(o)+'</div>'}).join('')+'</div></div>';
+ h+='<div class="two" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start"><div class="card">'+body+'</div>'
+  +'<div class="card"><p class="m" style="margin:0 0 6px">سؤال '+(st.skPos+1)+' من '+L.length+' · رقم '+esc(it.key)+' · '+esc(it.sec||'')+' · الإجابة: <b>'+LT[it.c]+'</b></p>'
+  +(cur?'<p style="margin:8px 0 0;font-size:15px">✓ مصنف تحت: <b style="color:#17633f">'+esc(SN[cur]||'')+'</b> <button class="g sm" data-act="skClear">إلغاء</button></p>':'<p class="m" style="margin-top:8px">لم يُصنف بعد · الاختيار يُحفظ فورًا</p>')
+  +(d.canTag?skPicker(d.subject,sk,cur):'')
+  +'<details style="margin-top:10px"><summary class="m" style="cursor:pointer">القائمة المنسدلة الكاملة</summary><select id="skSel" style="width:100%;font-size:15px;padding:8px;margin-top:6px"'+(d.canTag?'':' disabled')+'><option value="">— اختر المهارة —</option>'+sk.map(function(x){return'<option value="'+x.id+'"'+(cur===x.id?' selected':'')+'>'+esc(x.name)+'</option>'}).join('')+'</select></details>'
+  +'<div class="row" style="margin-top:14px"><button class="g" data-act="skPrev"'+(st.skPos?'':' disabled')+'>→ السابق</button><button data-act="skNext"'+(st.skPos<L.length-1?'':' disabled')+'>التالي ←</button></div>'
+  +'<div class="row" style="margin-top:10px"><label class="m">اذهب لسؤال رقم <input id="skGo" type="number" min="1" max="'+L.length+'" style="width:90px"></label></div>'
+  +'<p class="m" style="margin-top:12px">⌨ <b>/</b> للبحث · <b>Enter</b> نفس مهارة السؤال السابق · <b>1–8</b> المهارات الأخيرة · الأسهم للتنقل.'+(d.canTag?'':' (عرض فقط: صلاحيتك على هذا البنك لا تشمل التعديل)')+'</p></div></div>';
+ return h}
+// اختيار المهارة بسرعة: بحث فوري + آخر المهارات المستخدمة + «نفس مهارة السؤال السابق» + كل المهارات كأزرار
+function skNorm(t){return String(t||'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[\u064B-\u0652ـ]/g,'').replace(/[()–\-]/g,' ').replace(/\s+/g,' ').trim()}
+function skRecent(sub){try{return JSON.parse(localStorage.getItem('bw-sk-recent-'+sub)||'[]')}catch(e){return[]}}
+function skPushRecent(sub,id){var r=skRecent(sub).filter(function(x){return x!==id});r.unshift(id);try{localStorage.setItem('bw-sk-recent-'+sub,JSON.stringify(r.slice(0,8)))}catch(e){}}
+function skResults(sk,q){q=skNorm(q);if(!q)return'';var words=q.split(' '),m=sk.filter(function(x){var n=skNorm(x.name);return words.every(function(w){return n.indexOf(w)>=0})}).map(function(x){var n=skNorm(x.name),sc=n.indexOf(words[0])===0?0:(' '+n).indexOf(' '+words[0])>=0?1:(' '+n).indexOf(' ال'+words[0])>=0?1:2;return{x:x,s:sc*1000+n.length}}).sort(function(a,b){return a.s-b.s}).map(function(o){return o.x});
+ return m.length?m.slice(0,12).map(function(x,i){return'<button class="'+(i?'g':'')+' sm" style="margin:3px" data-act="skPick" data-id="'+x.id+'">'+esc(x.name)+'</button>'}).join('')+(m.length>12?'<span class="m"> +'+(m.length-12)+' أخرى، اكتب أكثر</span>':''):'<span class="m">لا توجد مهارة بهذا الاسم</span>'}
+function skPicker(sub,sk,cur){var SN={};sk.forEach(function(x){SN[x.id]=x});var rec=skRecent(sub).filter(function(id){return SN[id]}),last=st.skLast&&SN[st.skLast]?SN[st.skLast]:null,h='';
+ if(last)h+='<button data-act="skPick" data-id="'+last.id+'" style="width:100%;margin-top:12px;background:var(--gold, #e3a92b);color:#0c2440;font-size:15px">⚡ نفس مهارة السؤال السابق: '+esc(last.name)+' <span style="opacity:.6">(Enter)</span></button>';
+ h+='<label style="display:block;font-weight:700;margin:12px 0 6px">ابحث عن المهارة</label><input id="skQ" autocomplete="off" placeholder="اكتب جزءًا من الاسم… مثل: نسب، دائرة، سرعة" style="width:100%;font-size:16px;padding:10px" value="'+esc(st.skQ||'')+'"><div id="skRes" style="margin-top:6px">'+skResults(sk,st.skQ||'')+'</div>';
+ if(rec.length)h+='<div style="margin-top:10px"><span class="m">آخر ما استخدمته:</span><div style="margin-top:4px">'+rec.map(function(id,i){return'<button class="g sm" style="margin:3px'+(cur===id?';background:#d7f0e2;color:#17633f':'')+'" data-act="skPick" data-id="'+id+'"><b>'+(i+1)+'</b> · '+esc(SN[id].name)+'</button>'}).join('')+'</div></div>';
+ h+='<details style="margin-top:10px"'+(st.skAll?' open':'')+' id="skAllBox"><summary class="m" style="cursor:pointer">عرض كل المهارات كأزرار ('+sk.length+')</summary><div style="margin-top:6px;max-height:340px;overflow:auto">'+sk.map(function(x){return'<button class="g sm" style="margin:2px'+(cur===x.id?';background:#d7f0e2;color:#17633f':'')+'" data-act="skPick" data-id="'+x.id+'">'+esc(x.name)+'</button>'}).join('')+'</div></details>';
+ return h}
+document.addEventListener('input',function(e){if(e.target.id!=='skQ'||!st.skData)return;st.skQ=e.target.value;var r=document.getElementById('skRes');if(r)r.innerHTML=skResults(skOf(st.skData.subject),st.skQ)});
+document.addEventListener('toggle',function(e){if(e.target.id==='skAllBox')st.skAll=e.target.open},true);
+function skManage(){var S=st.sk,h='';
+ Object.keys(S.subjects).forEach(function(sub){var L=skOf(sub);
+  h+='<div class="card"><h2>مهارات '+esc(S.subjects[sub])+' ('+L.length+')</h2><div class="sc"><table><tr><th>المهارة</th><th>عدد الأسئلة</th><th></th></tr>'+L.map(function(x,i){return'<tr><td><b>'+esc(x.name)+'</b></td><td>'+x.n+'</td><td><div class="row" style="gap:6px;flex-wrap:nowrap"><a class="btn sm" style="background:#e3ebf3;color:var(--navy)" target="_blank" rel="noopener" href="/skills.html?id='+x.id+'">عرض الأسئلة</a>'+(S.manage?'<button class="g sm" data-act="skUp" data-id="'+x.id+'"'+(i?'':' disabled')+'>↑</button><button class="g sm" data-act="skDown" data-id="'+x.id+'"'+(i<L.length-1?'':' disabled')+'>↓</button><button class="g sm" data-act="skRen" data-id="'+x.id+'">تعديل الاسم</button><button class="r sm" data-act="skDel" data-id="'+x.id+'">حذف</button>':'')+'</div></td></tr>'}).join('')+'</table></div>'
+   +(S.manage?'<div class="row" style="margin-top:10px"><input id="skNew_'+sub+'" placeholder="اسم مهارة جديدة" style="max-width:320px"><button data-act="skAdd" data-id="'+sub+'">+ إضافة مهارة</button></div>':'')+'</div>'});
+ return h+(S.manage?'<p class="m">حذف مهارة يلغي تصنيف أسئلتها (الأسئلة نفسها لا تُحذف).</p>':'')}
+async function skTag(val){var d=st.skData,L=skList(),it=L[st.skPos];if(!it||!d.canTag)return;var sid=val===''?null:+val;
+ try{await api('skills/tag',{course:d.course,key:it.key,skill_id:sid});if(sid===null)delete d.tags[it.key];else{d.tags[it.key]=sid;st.skLast=sid;skPushRecent(d.subject,sid)}
+  st.skQ='';st.sk.tagged[d.course]=Object.keys(d.tags).length;
+  var f=st.skFilter||'untagged';if(f==='untagged'){skFix()}else if(st.skAuto!==false&&sid!==null&&st.skPos<skList().length-1)st.skPos++;
+  toast('تم الحفظ','ok');$('sec').innerHTML=drawSkills();var q=document.getElementById('skQ');if(q&&window.innerWidth>900)q.focus({preventScroll:true})}catch(e){if(e)toast(e.message,'err')}}
+function skMove(id,dir){var L=skOf(st.sk.skills.filter(function(x){return x.id===id})[0].subject).map(function(x){return x.id}),i=L.indexOf(id),j=i+dir;if(j<0||j>=L.length)return;L[i]=L[j];L[j]=id;act(function(){return api('skills/move',{ids:L}).then(function(){st.sk=null})},'تم الترتيب')}
+document.addEventListener('keydown',function(e){if(view!=='skills'||!st.skData)return;
+ if(e.target.id==='skQ'){if(e.key==='Enter'){e.preventDefault();var b=document.querySelector('#skRes [data-act="skPick"]');if(b)skTag(b.dataset.id);else if(!e.target.value&&st.skLast)skTag(String(st.skLast))}else if(e.key==='Escape'){e.target.value='';st.skQ='';document.getElementById('skRes').innerHTML='';e.target.blur()}return}
+ if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))return;
+ if(e.key==='/'){var q=document.getElementById('skQ');if(q){e.preventDefault();q.focus()}return}
+ if(e.key==='Enter'&&st.skLast){e.preventDefault();skTag(String(st.skLast));return}
+ if(/^[1-8]$/.test(e.key)){var rc=skRecent(st.skData.subject)[+e.key-1];if(rc){skTag(String(rc))}return}
+ var L=skList();if(e.key==='ArrowLeft'&&st.skPos<L.length-1){st.skPos++;$('sec').innerHTML=drawSkills()}else if(e.key==='ArrowRight'&&st.skPos>0){st.skPos--;$('sec').innerHTML=drawSkills()}});
 // النسخ والتراجع: قائمة نسخ الموقع على Cloudflare Pages، وتعليم النسخ الجيدة، والرجوع لأي نسخة
 function drawVersions(){
  if(!st.ver){api('versions').then(function(r){st.ver=r;if(view==='versions')$('sec').innerHTML=drawVersions()}).catch(function(e){if(e)toast(e.message,'err')});return'<div class="card"><div class="empty">جارٍ تحميل النسخ…</div></div>'}
@@ -295,6 +361,21 @@ app.addEventListener('click',async function(e){var t=e.target.closest('[data-act
  if(a==='toggleStaff'){var u=D.staff.filter(function(x){return x.id===+id})[0];act(function(){return api('staff/update',{id:u.id,status:u.status==='active'?'blocked':'active'})},u.status==='active'?'تم إيقاف الحساب':'تم تفعيل الحساب');return}
  if(a==='delStaff'){if(await confirmBox('حذف حساب العامل نهائيًا؟',true))act(function(){return api('staff/delete',{id:+id})},'تم الحذف');return}
  if(a==='report'){st.report=t.dataset.c;st.rep=null;history.replaceState(null,'','#courses:'+encodeURIComponent(st.report));$('sec').innerHTML=drawCourses();window.scrollTo(0,0);return}
+ if(a==='skTab'){st.skTab=id;$('sec').innerHTML=drawSkills();return}
+ if(a==='skBank'){st.skBank=id;st.skFilter='untagged';st.skData=null;$('sec').innerHTML=drawSkills();return}
+ if(a==='skPrev'){if(st.skPos>0)st.skPos--;$('sec').innerHTML=drawSkills();return}
+ if(a==='skNext'){if(st.skPos<skList().length-1)st.skPos++;$('sec').innerHTML=drawSkills();return}
+ if(a==='skPick'){skTag(id);return}
+ if(a==='skClear'){skTag('');return}
+ if(a==='skAutoType'){var d=st.skData,sk=skOf('lafzi'),map={};TYN.forEach(function(n,i){var x=sk.filter(function(z){return z.name===n})[0];if(x)map[i]=x.id});
+  var todo={};d.items.forEach(function(it){if(!d.tags[it.key]&&map[it.t]){(todo[map[it.t]]=todo[map[it.t]]||[]).push(it.key)}});var tot=0;for(var k in todo)tot+=todo[k].length;
+  if(!tot){toast('لا توجد أسئلة غير مصنفة تطابق أنواع المهارات','err');return}
+  if(!(await confirmBox('سيُصنَّف '+tot+' سؤالًا غير مصنف حسب نوعه (التناظر، إكمال الجمل، …). الأسئلة المصنفة يدويًا لن تتغير. متابعة؟')))return;
+  try{for(var sid in todo){var ks=todo[sid];for(var i=0;i<ks.length;i+=400){await api('skills/tag',{course:d.course,keys:ks.slice(i,i+400),skill_id:+sid});ks.slice(i,i+400).forEach(function(k){d.tags[k]=+sid})}}st.sk=null;toast('تم تصنيف '+tot+' سؤالًا','ok');skFix();$('sec').innerHTML=drawSkills()}catch(e){if(e)toast(e.message,'err')}return}
+ if(a==='skAdd'){var inp=$('skNew_'+id);if(!inp||!inp.value.trim()){toast('اكتب اسم المهارة','err');return}var nm=inp.value.trim();try{await api('skills/save',{subject:id,name:nm});st.sk=null;toast('تمت الإضافة','ok');$('sec').innerHTML=drawSkills()}catch(e){if(e)toast(e.message,'err')}return}
+ if(a==='skRen'){var x=st.sk.skills.filter(function(z){return z.id===+id})[0],nn=prompt('الاسم الجديد للمهارة:',x.name);if(!nn||!nn.trim())return;try{await api('skills/save',{id:+id,name:nn.trim()});st.sk=null;$('sec').innerHTML=drawSkills()}catch(e){if(e)toast(e.message,'err')}return}
+ if(a==='skDel'){var y=st.sk.skills.filter(function(z){return z.id===+id})[0];if(await confirmBox('حذف مهارة «'+esc(y.name)+'»؟ سيُلغى تصنيف '+y.n+' سؤالًا تحتها.',true)){try{await api('skills/delete',{id:+id});st.sk=null;st.skData=null;$('sec').innerHTML=drawSkills()}catch(e){if(e)toast(e.message,'err')}}return}
+ if(a==='skUp'||a==='skDown'){var ids=skOf(st.sk.skills.filter(function(z){return z.id===+id})[0].subject).map(function(z){return z.id}),i=ids.indexOf(+id),j=i+(a==='skUp'?-1:1);if(j<0||j>=ids.length)return;ids[i]=ids[j];ids[j]=+id;try{await api('skills/move',{ids:ids});st.sk=null;$('sec').innerHTML=drawSkills()}catch(e){if(e)toast(e.message,'err')}return}
  if(a==='verReload'){st.ver=null;$('sec').innerHTML=drawVersions();return}
  if(a==='verMark'){var note=t.dataset.good==='1'?(prompt('ملاحظة اختيارية عن هذه النسخة (مثلًا: قبل إضافة المحاكي):','')||''):'';try{await api('versions/mark',{id:t.dataset.id,good:t.dataset.good==='1',note:note,short:t.dataset.short,msg:t.dataset.msg});toast('تم الحفظ');st.ver=null;$('sec').innerHTML=drawVersions()}catch(e){if(e)toast(e.message,'err')}return}
  if(a==='verBack'){if(await confirmBox('سيرجع الموقع كله فورًا لهذه النسخة (الملفات والكود فقط، بدون مسح أي بيانات). متأكد؟',true)){try{await api('versions/rollback',{id:t.dataset.id});toast('تم التراجع. حدّث الصفحة بعد دقيقة.');st.ver=null;setTimeout(function(){$('sec').innerHTML=drawVersions()},2500)}catch(e){if(e)toast(e.message,'err')}}return}
@@ -309,6 +390,10 @@ app.addEventListener('input',function(e){var t=e.target;
  if(t.id==='lq'){st.lq=t.value;var pos=t.selectionStart;$('sec').innerHTML=drawLeads();var n=$('lq');n.focus();n.setSelectionRange(pos,pos);return}
  if(t.dataset.pn!==undefined)PL[+t.dataset.pn].name=t.value;if(t.dataset.pd!==undefined)PL[+t.dataset.pd].days=+t.value;if(t.dataset.pp!==undefined)PL[+t.dataset.pp].price=+t.value});
 app.addEventListener('change',async function(e){var t=e.target;
+ if(t.id==='skSel'){skTag(t.value);return}
+ if(t.id==='skF'){st.skFilter=t.value;st.skPos=0;$('sec').innerHTML=drawSkills();return}
+ if(t.id==='skAuto'){st.skAuto=t.checked;return}
+ if(t.id==='skGo'){var n=+t.value;if(n>=1&&n<=skList().length){st.skPos=n-1;$('sec').innerHTML=drawSkills()}return}
  if(t.id==='fs'){st.status=t.value;$('stbl').innerHTML=studentTable();return}
  if(t.id==='fg'){st.group=t.value;$('stbl').innerHTML=studentTable();return}
  if(t.id==='ps'){st.pg=t.value;$('sec').innerHTML=drawReports();return}

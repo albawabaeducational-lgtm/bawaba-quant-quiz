@@ -104,10 +104,11 @@ const COURSES = [
   { slug: 'muhaky mohawsab', title: 'المحاكي المحوسب', file: '/muhaky mohawsab.html.html', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] }, // يُبنى تلقائيًا من الكمي واللفظي
   { slug: 'muhaky warky1', title: 'المحاكي الورقي – النموذج الأول', file: '/muhaky warky1.html', model: 'key' },
   { slug: 'muhaky warky2', title: 'المحاكي الورقي – النموذج الثاني', file: '/muhaky warky2.html', model: 'key' },
-  { slug: 'tasis lafzi', title: 'تأسيس اللفظي', file: '/tasis lafzi.html.html', model: 'raw' }
+  { slug: 'tasis lafzi', title: 'تأسيس اللفظي', file: '/tasis lafzi.html.html', model: 'raw' },
+  { slug: 'aktar kamy', title: 'الأسئلة الأكثر تكرارًا – كمي', file: '/aktar kamy.html', model: 'static' } // بنك صور: تصنيف المهارات والتقارير فقط
 ];
 const COURSE = Object.fromEntries(COURSES.map(c => [c.slug, c]));
-const KINDS = { bank: ['q', 's', 'p', 'o'], raw: ['r'], key: ['k'], linked: [] };
+const KINDS = { bank: ['q', 's', 'p', 'o'], raw: ['r'], key: ['k'], linked: [], static: [] };
 const LETTERS = ['أ', 'ب', 'ج', 'د'];
 const txt = (v, n) => String(v == null ? '' : v).replace(/\r/g, '').slice(0, n);
 const int = v => { const n = Math.trunc(+v); return Number.isFinite(n) ? n : NaN; };
@@ -153,6 +154,71 @@ const fetchAsset = async (env, request, file) => {
   }
   return res && res.ok ? res : null;
 };
+// ---------- تصنيف الأسئلة حسب المهارات ----------
+// البنوك التي يمكن تصنيف أسئلتها، ومادة كل بنك (كمي/لفظي)
+const SKILL_BANKS = { 'aksam kamy': 'kamy', 'aktar kamy': 'kamy', 'aksam lafzi': 'lafzi' };
+const SUBJECTS = { kamy: 'الكمي', lafzi: 'اللفظي' };
+const SEED_SKILLS = {
+  kamy: ['المهارات الأساسية والعمليات الذهنية', 'جمع وطرح الأعداد', 'الضرب والقسمة (مهارة ضرب الآحاد)', 'عدد المئات – الخمسينات – العشرات', 'الأعداد الفردية والزوجية', 'القيمة المطلقة', 'مفهوم الكسور الاعتيادية والكسور العشرية', 'الكسور', 'الكسور العشرية', 'جمع وطرح الكسور العشرية', 'ضرب الكسور العشرية', 'قسمة الكسور العشرية', 'العمليات على الكسور الاعتيادية', 'تقريب ومقارنة الكسور', 'الربط بين الكسور العشرية والاعتيادية والنسب المئوية', 'قابلية القسمة', 'المضاعفات المشتركة – المضاعف المشترك الأصغر', 'القواسم المشتركة – القاسم المشترك الأكبر', 'الأعداد الأولية', 'الأسس', 'رقم الآحاد لأي عدد مرفوع لأي أس', 'الجذور', 'تحليل المقادير الجبرية (تحليل الفرق بين مربعين – تحليل المقدار الثلاثي – مربع مقدار ذي حدين)', 'ترتيب العمليات الحسابية', 'التناسب', 'التناسب الطردي', 'التناسب العكسي', 'التناسب المتعدد', 'تطبيقات التناسب', 'النسب المئوية', 'حساب النسب المئوية في الزيادة والنقصان', 'المعادلات', 'الدوريات', 'قوانين متفرقة', 'قانون المصافحات', 'عدد المربعات والمستطيلات والمثلثات', 'الزكاة', 'أعواد الكبريت', 'أعمدة الإنارة', 'مشابك الغسيل', 'التحويل بين الوحدات', 'قانون صفحات الكتاب', 'الطابور', 'الزاوية بين عقارب الساعة', 'مسائل الساعات', 'الأنماط والمتتابعات', 'الأعداد المحصورة', 'قانون المسافة – السرعة – الزمن', 'قانون زمن الالتقاء (التقابل)', 'قانون زمن اللحاق', 'مسائل الصنابير وملحقاتها', 'قانون زمن التساوي (المرتبات)', 'مسائل الأعمار', 'شكل فن', 'الإحصاء', 'المتوسط الحسابي', 'الوسيط والمنوال', 'المدى', 'الاحتمالات', 'مبدأ العد الأساسي والتباديل والتوافيق', 'مهارة تجريب الخيارات', 'مهارة استبدال المتغيرات', 'مسائل فئات العملات', 'زوايا قياسها ١٨٠', 'الزاويتين المتقابلتين بالرأس', 'زوايا قياسها ٣٦٠', 'الزوايا الخارجة عن المثلث', 'التوازي', 'المضلع', 'الأشكال الرباعية (متوازي الأضلاع – المعين – المستطيل – المربع – شبه المنحرف – الطائرة الورقية)', 'مساحة المثلث', 'المساحة', 'المحيط', 'قوانين المثلث (متباينة المثلث – تساوي مثلثين)', 'فيثاغورث', 'الدائرة (محيط الدائرة – مساحة الدائرة)', 'الزاوية المحيطية والمركزية', 'طول القوس', 'مماس الدائرة', 'علاقة الدائرة بالأشكال الهندسية الأخرى', 'المسافة التي تقطعها عجلة تدور', 'معادلة الدائرة', 'تقاطع الأوتار داخل وخارج الدائرة', 'الحجوم', 'المظلل', 'هندسة الإحداثيات', 'إحداثيات نقطة المنتصف', 'ميل المستقيم', 'المستوى الإحداثي', 'تفسير الجداول والرسومات البيانية', 'المسائل العامة', 'المسائل اللفظية', 'مسائل المقارنات', 'أسئلة إجابتها (ج) – المقارنات', 'أسئلة إجابتها (د) – المقارنات'],
+  lafzi: ['التناظر اللفظي', 'إكمال الجمل', 'الخطأ السياقي', 'استيعاب المقروء', 'المفردة الشاذة', 'الارتباط والاختلاف']
+};
+let skillsReady = false;
+const ensureSkillsSchema = async DB => {
+  if (skillsReady) return;
+  await DB.batch([
+    DB.prepare('CREATE TABLE IF NOT EXISTS skills (id INTEGER PRIMARY KEY AUTOINCREMENT, subject TEXT NOT NULL, name TEXT NOT NULL, sort INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)'),
+    DB.prepare('CREATE TABLE IF NOT EXISTS question_skills (course TEXT NOT NULL, qkey TEXT NOT NULL, skill_id INTEGER NOT NULL, by_name TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (course, qkey))'),
+    DB.prepare('CREATE INDEX IF NOT EXISTS question_skills_skill ON question_skills(skill_id)')
+  ]);
+  const iso = new Date().toISOString();
+  // مزامنة قائمة المهارات مع القائمة المعتمدة (مرة واحدة لكل إصدار من القائمة):
+  // تُضاف المهارات الناقصة، وتُحذف المهارات القديمة غير المعتمدة إن لم يُصنف تحتها أي سؤال، ويُعاد الترتيب
+  if (!(await DB.prepare("SELECT 1 x FROM settings WHERE key='skills_v3'").first())) {
+    const cur = (await DB.prepare('SELECT s.id,s.subject,s.name,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skills q ON q.skill_id=s.id GROUP BY s.id').all()).results || [], st = [];
+    for (const [sub, list] of Object.entries(SEED_SKILLS)) {
+      const mine = cur.filter(r => r.subject === sub), byName = Object.fromEntries(mine.map(r => [r.name, r]));
+      mine.forEach(r => { if (!list.includes(r.name) && !r.n) st.push(DB.prepare('DELETE FROM skills WHERE id=?').bind(r.id)); });
+      list.forEach((name, i) => st.push(byName[name] ? DB.prepare('UPDATE skills SET sort=? WHERE id=?').bind(i + 1, byName[name].id) : DB.prepare('INSERT INTO skills (subject,name,sort,created_at) VALUES (?,?,?,?)').bind(sub, name, i + 1, iso)));
+      mine.forEach(r => { if (!list.includes(r.name) && r.n) st.push(DB.prepare('UPDATE skills SET sort=? WHERE id=?').bind(1000 + r.id, r.id)); });
+    }
+    st.push(DB.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES ('skills_v3','1')"));
+    await DB.batch(st);
+  }
+  skillsReady = true;
+};
+// أسئلة البنك كما يراها الطالب (الملف الأصلي + تعديلات المعلمين)، مع ذاكرة مؤقتة داخل العامل
+const bankCache = {};
+const bankItems = async (env, request, DB, slug) => {
+  const c = COURSE[slug]; if (!c || !SKILL_BANKS[slug]) return [];
+  const res = await fetchAsset(env, request, c.file); if (!res) return [];
+  let pv = { n: 0, m: '' };
+  try { pv = await DB.prepare('SELECT COUNT(*) n, MAX(updated_at) m FROM exam_patch WHERE course=?').bind(slug).first() || pv; } catch (e) { }
+  const sig = (res.headers.get('etag') || res.headers.get('last-modified') || '') + '|' + pv.n + '|' + pv.m;
+  if (bankCache[slug] && bankCache[slug].sig === sig) { try { await res.body.cancel(); } catch (e) { } return bankCache[slug].items; }
+  const html = await res.text(), a = html.indexOf('<script id="db" type="application/json">'), z = a < 0 ? -1 : html.indexOf('</script>', a);
+  if (a < 0 || z < 0) return [];
+  const D = JSON.parse(html.slice(a + 40, z)); let items = [];
+  if (c.model === 'static') {
+    const MN = Object.fromEntries((D.models || []).map(m => [m.id, m.name]));
+    items = D.qs.map(q => ({ key: String(q[0]), sec: MN[q[1]] || '', img: '/mt/' + String(q[0]).padStart(4, '0') + '.webp', c: q[2] }));
+  } else {
+    let secs = D.secs.slice(), qs = D.qs.slice();
+    let rows = []; try { rows = (await DB.prepare('SELECT kind,key,data,deleted FROM exam_patch WHERE course=? ORDER BY created_at,rowid').bind(slug).all()).results || []; } catch (e) { }
+    for (const r of rows) {
+      const d = r.deleted ? null : (r.data ? JSON.parse(r.data) : null);
+      if (r.kind === 's') { const i = secs.findIndex(x => String(x.id) === r.key); if (!d) { if (i >= 0) secs.splice(i, 1); } else if (i >= 0) secs[i] = { id: secs[i].id, name: d.name }; else secs.push({ id: +r.key, name: d.name }); }
+      else if (r.kind === 'q') { const i = qs.findIndex(x => String(x[0]) === r.key); if (!d) { if (i >= 0) qs.splice(i, 1); } else if (i >= 0) qs[i] = d; else qs.push(d); }
+      else if (r.kind === 'p' && d !== null) { D.ps = D.ps || []; D.ps[+r.key] = d; }
+    }
+    const SN = Object.fromEntries(secs.map(x => [x.id, x.name]));
+    qs = qs.filter(q => SN[q[1]] !== undefined);
+    if (slug === 'aksam lafzi') items = qs.map(q => ({ key: String(q[0]), sec: SN[q[1]], t: q[2], p: q[3] >= 0 && D.ps ? D.ps[q[3]] || '' : '', s: q[4], o: q[5], c: q[6] }));
+    else items = qs.map(q => { const m = /\/api\/exam\/img\/\d+/.exec(q[4] || ''); return { key: String(q[0]), sec: SN[q[1]], img: m ? m[0] : '/img/' + q[0] + '.webp', c: q[6] }; });
+  }
+  bankCache[slug] = { sig, items };
+  return items;
+};
+
 const ensureLeadsSchema = async DB => {
   if (leadsReady) return;
   await DB.batch([
@@ -405,6 +471,26 @@ export async function onRequest({ request, env, params }) {
   }
 
   // أسماء الأقسام فقط (لصفحة «تقدمي») بدون تحميل بنك الأسئلة كاملًا
+  // قائمة المهارات وعدد أسئلة كل مهارة (للطالب وللمعلم في الشرح)
+  if (p === 'skills' && m === 'GET') {
+    await ensureSkillsSchema(DB);
+    const sub = new URL(request.url).searchParams.get('subject') || '';
+    const rows = await DB.prepare('SELECT s.id,s.subject,s.name,s.sort,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skills q ON q.skill_id=s.id ' + (SUBJECTS[sub] ? 'WHERE s.subject=? ' : '') + 'GROUP BY s.id ORDER BY s.subject,s.sort,s.id').bind(...(SUBJECTS[sub] ? [sub] : [])).all();
+    return J({ subjects: SUBJECTS, skills: rows.results || [] });
+  }
+  // كل أسئلة مهارة معينة من كل البنوك
+  if (p === 'skills/questions' && m === 'GET') {
+    await ensureSkillsSchema(DB);
+    const id = int(new URL(request.url).searchParams.get('id'));
+    const sk = await DB.prepare('SELECT id,subject,name FROM skills WHERE id=?').bind(id).first();
+    if (!sk) return J({ error: 'المهارة غير موجودة' }, 404);
+    const tags = (await DB.prepare('SELECT course,qkey FROM question_skills WHERE skill_id=?').bind(id).all()).results || [];
+    const by = {}; tags.forEach(t => (by[t.course] = by[t.course] || new Set()).add(t.qkey));
+    const out = [];
+    for (const slug of Object.keys(by)) { const items = await bankItems(env, request, DB, slug); for (const it of items) if (by[slug].has(it.key)) out.push({ course: slug, bank: COURSE[slug].title, ...it }); }
+    return J({ skill: sk, items: out });
+  }
+
   if (p === 'exam/secs' && m === 'GET') {
     const c = COURSE[new URL(request.url).searchParams.get('c')];
     if (!c || c.model !== 'bank') return J({ error: 'not found' }, 404);
@@ -719,6 +805,60 @@ export async function onRequest({ request, env, params }) {
     await DB.batch([DB.prepare('DELETE FROM staff_sessions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_perms WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_permissions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM course_staff WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_users WHERE id=?').bind(id), audit(A, 'delete', 'staff', id, u ? u.username : '')]);
     return J({ ok: 1 });
   }
+  // ---------- تصنيف الأسئلة حسب المهارات ----------
+  if (p.startsWith('admin/skills')) {
+    await ensureSkillsSchema(DB); await ensureStaffSchema(DB);
+    const banksFor = async () => { const out = []; for (const slug of Object.keys(SKILL_BANKS)) { const R2 = await courseRights(slug); if (R2) out.push({ slug, title: COURSE[slug].title, subject: SKILL_BANKS[slug], canTag: !!R2.edit }); } return out; };
+    if (p === 'admin/skills' && m === 'GET') {
+      const banks = await banksFor(); if (!banks.length && !isSuper) return deny('لا توجد بنوك أسئلة مسندة لك');
+      const skills = await all('SELECT s.id,s.subject,s.name,s.sort,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skills q ON q.skill_id=s.id GROUP BY s.id ORDER BY s.subject,s.sort,s.id');
+      const per = await all('SELECT course,COUNT(*) n FROM question_skills GROUP BY course');
+      return J({ subjects: SUBJECTS, skills, banks, tagged: Object.fromEntries(per.map(r => [r.course, r.n])), manage: isSuper });
+    }
+    if (p === 'admin/skills/bank' && m === 'GET') {
+      const slug = new URL(request.url).searchParams.get('course'), R2 = SKILL_BANKS[slug] && await courseRights(slug);
+      if (!R2) return deny('هذا البنك غير مسند لك');
+      const items = await bankItems(env, request, DB, slug);
+      const tags = Object.fromEntries((await all('SELECT qkey,skill_id FROM question_skills WHERE course=?', slug)).map(r => [r.qkey, r.skill_id]));
+      return J({ course: slug, subject: SKILL_BANKS[slug], canTag: !!R2.edit, items, tags });
+    }
+    if (p === 'admin/skills/tag' && m === 'POST') {
+      const b = await body(), slug = String(b.course || ''), R2 = SKILL_BANKS[slug] && await courseRights(slug);
+      if (!R2 || !R2.edit) return deny('ليس لديك صلاحية تصنيف أسئلة هذا البنك');
+      const keys = (Array.isArray(b.keys) ? b.keys : [b.key]).map(k => txt(k, 40)).filter(Boolean).slice(0, 500);
+      if (!keys.length) return J({ error: 'لا توجد أسئلة' }, 400);
+      const sid = b.skill_id == null || b.skill_id === '' ? null : int(b.skill_id);
+      if (sid !== null) { const sk = await one('SELECT subject FROM skills WHERE id=?', sid); if (!sk || sk.subject !== SKILL_BANKS[slug]) return J({ error: 'المهارة لا تخص هذه المادة' }, 400); }
+      await DB.batch(keys.map(k => sid === null ? DB.prepare('DELETE FROM question_skills WHERE course=? AND qkey=?').bind(slug, k) : DB.prepare('INSERT INTO question_skills (course,qkey,skill_id,by_name,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(course,qkey) DO UPDATE SET skill_id=excluded.skill_id,by_name=excluded.by_name,updated_at=excluded.updated_at').bind(slug, k, sid, A.name, iso)));
+      return J({ ok: 1 });
+    }
+    if (p === 'admin/skills/save' && m === 'POST') {
+      if (!isSuper) return deny('إدارة قائمة المهارات من صلاحيات الإدارة العامة');
+      const b = await body(), name = txt(b.name, 80).trim(), sub = String(b.subject || '');
+      if (!name) return J({ error: 'اكتب اسم المهارة' }, 400);
+      if (b.id) { await DB.batch([DB.prepare('UPDATE skills SET name=? WHERE id=?').bind(name, int(b.id)), audit(A, 'skill_rename', 'skill', int(b.id), name)]); return J({ ok: 1 }); }
+      if (!SUBJECTS[sub]) return J({ error: 'اختر المادة' }, 400);
+      const mx = await one('SELECT COALESCE(MAX(sort),0) m FROM skills WHERE subject=?', sub);
+      const r = await DB.prepare('INSERT INTO skills (subject,name,sort,created_at) VALUES (?,?,?,?)').bind(sub, name, mx.m + 1, iso).run();
+      await audit(A, 'skill_add', 'skill', r.meta && r.meta.last_row_id, SUBJECTS[sub] + ': ' + name).run();
+      return J({ ok: 1 });
+    }
+    if (p === 'admin/skills/delete' && m === 'POST') {
+      if (!isSuper) return deny('إدارة قائمة المهارات من صلاحيات الإدارة العامة');
+      const b = await body(), id = int(b.id), sk = await one('SELECT name FROM skills WHERE id=?', id);
+      if (!sk) return J({ error: 'غير موجودة' }, 404);
+      await DB.batch([DB.prepare('DELETE FROM question_skills WHERE skill_id=?').bind(id), DB.prepare('DELETE FROM skills WHERE id=?').bind(id), audit(A, 'skill_delete', 'skill', id, sk.name)]);
+      return J({ ok: 1 });
+    }
+    if (p === 'admin/skills/move' && m === 'POST') {
+      if (!isSuper) return deny();
+      const b = await body(), ids = (Array.isArray(b.ids) ? b.ids : []).map(int).filter(x => x > 0).slice(0, 300);
+      await DB.batch(ids.map((id, i) => DB.prepare('UPDATE skills SET sort=? WHERE id=?').bind(i + 1, id)));
+      return J({ ok: 1 });
+    }
+    return J({ error: 'not found' }, 404);
+  }
+
   // ---------- النسخ والتراجع (الإدارة العامة فقط) ----------
   // يحتاج متغيرات البيئة: CF_API_TOKEN (صلاحية Cloudflare Pages: Edit) و CF_ACCOUNT_ID، و CF_PAGES_PROJECT (افتراضي bawaba-quant-quiz)
   if (p.startsWith('admin/versions')) {

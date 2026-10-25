@@ -51,3 +51,6 @@ CREATE INDEX IF NOT EXISTS moodle_links_student ON moodle_links(student_id);
 CREATE TABLE IF NOT EXISTS question_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, course TEXT NOT NULL, qkey TEXT, reason TEXT, note TEXT, student_id INTEGER, status TEXT NOT NULL DEFAULT 'open', created_at TEXT NOT NULL, handled_by TEXT, handled_at TEXT);
 CREATE INDEX IF NOT EXISTS question_reports_course ON question_reports(course,status);
 CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key));
+CREATE TABLE IF NOT EXISTS skills (id INTEGER PRIMARY KEY AUTOINCREMENT, subject TEXT NOT NULL, name TEXT NOT NULL, sort INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS question_skills (course TEXT NOT NULL, qkey TEXT NOT NULL, skill_id INTEGER NOT NULL, by_name TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (course, qkey));
+CREATE INDEX IF NOT EXISTS question_skills_skill ON question_skills(skill_id);

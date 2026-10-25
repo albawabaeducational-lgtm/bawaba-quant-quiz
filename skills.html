@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c2440">
+  <meta name="bw-hub" content="1">
+  <title>التدريب حسب المهارة | البوابة التعليمية</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="bw-theme.css">
+  <style>
+    body.bwt-hub { color: #142338; line-height: 1.7; }
+    .mw { width: min(1080px, calc(100% - 32px)); margin: 28px auto 70px; }
+    .hidden { display: none !important; }
+    .card { background: #fff; border: 1px solid var(--bw-line); border-radius: 20px; padding: 22px; margin-bottom: 16px; }
+    .card h2 { margin: 0 0 6px; font-size: 20px; color: var(--bw-navy); }
+    .m { color: #5a6b80; font-size: 14.5px; margin: 0; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: 600 15px "IBM Plex Sans Arabic", Tahoma, sans-serif; text-decoration: none; border: 0; border-radius: 12px; padding: 11px 18px; cursor: pointer; white-space: nowrap; background: var(--bw-navy); color: #fff; }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .btn.gold { background: var(--bw-gold); color: var(--bw-night); }
+    .btn.soft { background: #eaf2f9; color: var(--bw-navy); }
+    .btn.ghost { background: #fff; color: var(--bw-navy); box-shadow: inset 0 0 0 1.5px var(--bw-line); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .hero { background: var(--bw-night) radial-gradient(circle at 1.5px 1.5px, #ffffff12 1.5px, transparent 0) 0 0 / 26px 26px; color: #fff; border-radius: 22px; padding: 24px; margin-bottom: 16px; box-shadow: -8px 8px 0 var(--bw-gold); }
+    .hero h1 { margin: 0 0 6px; font-size: clamp(26px, 4vw, 36px); }
+    .hero p { margin: 0; color: #c3d3e4; }
+    .tabs { display: flex; gap: 8px; margin: 16px 0 0; }
+    .tabs button { font: 600 15px "IBM Plex Sans Arabic", sans-serif; border: 0; border-radius: 99px; padding: 8px 18px; cursor: pointer; background: #ffffff1f; color: #fff; }
+    .tabs button.on { background: var(--bw-gold); color: var(--bw-night); }
+    .skg { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .sk { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: start; background: #fff; border: 1.5px solid var(--bw-line); border-radius: 16px; padding: 14px 16px; cursor: pointer; font: 600 16px "IBM Plex Sans Arabic", sans-serif; color: #142338; }
+    .sk:hover { border-color: var(--bw-navy); }
+    .sk b { font-family: "Readex Pro", sans-serif; color: var(--bw-sea); font-size: 14px; white-space: nowrap; }
+    .sk.empty { opacity: .5; cursor: default; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { font: 600 14.5px "IBM Plex Sans Arabic", sans-serif; border: 1.5px solid var(--bw-line); background: #fff; color: #142338; border-radius: 12px; padding: 9px 14px; cursor: pointer; }
+    .chip small { display: block; font-size: 12px; color: #5a6b80; font-weight: 500; }
+    .chip.on { background: var(--bw-navy); border-color: var(--bw-navy); color: #fff; }
+    .chip.on small { color: #c3d3e4; }
+    .lbl { font-weight: 700; color: var(--bw-navy); margin: 14px 0 8px; display: block; }
+    .qhead { display: flex; justify-content: space-between; color: #5a6b80; font-weight: 600; font-size: 14.5px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap; }
+    .qtrack { height: 6px; background: #e3ebf3; border-radius: 99px; overflow: hidden; margin-bottom: 14px; }
+    .qtrack i { display: block; height: 100%; background: linear-gradient(90deg, var(--bw-sea), var(--bw-gold)); }
+    .qimg img { display: block; width: 100%; border-radius: 12px; cursor: zoom-in; background: #fff; }
+    .tq .ty { display: inline-block; background: var(--bw-gold-soft); color: #7a5300; font-weight: 600; font-size: 13px; border-radius: 99px; padding: 2px 12px; }
+    .tq .psg { background: var(--bw-paper); border: 1px solid var(--bw-line); border-radius: 14px; padding: 12px 14px; margin: 10px 0; max-height: 260px; overflow: auto; line-height: 2; white-space: pre-wrap; }
+    .tq .stem { font-size: 20px; font-weight: 700; margin: 10px 0; }
+    .opts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+    .opts.txt { grid-template-columns: 1fr 1fr; }
+    .opt { font: 700 20px "Readex Pro", sans-serif; border: 2px solid var(--bw-line); background: #fff; color: var(--bw-navy); border-radius: 14px; padding: 12px; cursor: pointer; text-align: center; }
+    .opts.txt .opt { font: 600 16px "IBM Plex Sans Arabic", sans-serif; text-align: start; }
+    .opt.on { background: var(--bw-navy); border-color: var(--bw-navy); color: #fff; }
+    .opt.ok { background: #e1f4ea; border-color: #1d8a58; color: #17633f; }
+    .opt.no { background: #fbe6e2; border-color: #c2412f; color: #b4321f; }
+    .fb { margin-top: 12px; border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+    .fb.ok { background: #e1f4ea; color: #17633f; } .fb.no { background: #fbe6e2; color: #b4321f; } .fb.in { background: #eaf2f9; color: var(--bw-navy); }
+    .qnav { display: flex; gap: 8px; justify-content: space-between; margin-top: 14px; flex-wrap: wrap; }
+    .lb { position: fixed; inset: 0; z-index: 2147483400; background: #0c2440ee; display: grid; place-items: center; padding: 16px; cursor: zoom-out; }
+    .lb img { max-width: 100%; max-height: 92vh; border-radius: 12px; background: #fff; }
+    body.present .mw { width: min(1300px, calc(100% - 24px)); }
+    body.present .opt { font-size: 26px; padding: 16px; }
+    @media (max-width: 640px) { .card, .hero { padding: 16px; } .opts.txt { grid-template-columns: 1fr; } .opt { font-size: 18px; padding: 10px; } .qnav .btn { flex: 1; } }
+  </style>
+</head>
+<body class="bwt-hub">
+  <div id="bw-shell"><a class="bws-brand" href="./"><img src="icons/logo.jpg" alt=""><b>منصة البوابة التعليمية</b></a><span class="bws-title">التدريب حسب المهارة</span><span class="bws-tools"></span><a class="bws-back" href="./#tests">كل الاختبارات</a></div>
+  <main class="mw" id="app"><p class="m">جارٍ التحميل…</p></main>
+<script>
+(function () {
+  'use strict';
+  var app = document.getElementById('app'), L = ['أ', 'ب', 'ج', 'د'], TYN = ['التناظر اللفظي', 'إكمال الجمل', 'الخطأ السياقي', 'استيعاب المقروء', 'المفردة الشاذة'];
+  var AR = function (n) { return String(n).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function cnt(n) { return n === 1 ? 'سؤال واحد' : n === 2 ? 'سؤالان' : AR(n) + (n <= 10 ? ' أسئلة' : ' سؤالًا'); }
+  var SK = null, sub = 'kamy', cur = null, S = null; // S = جلسة التدريب
+  var opt = { mode: 'train', n: 0, order: 'rand' };
+
+  function list() {
+    document.body.classList.remove('present'); S = null;
+    var skills = (SK.skills || []).filter(function (x) { return x.subject === sub; });
+    var h = '<section class="hero"><h1>التدريب حسب المهارة</h1><p>اختر المهارة لتظهر لك كل أسئلتها من أقسام الكمي والأكثر تكرارًا وأقسام اللفظي، وتدرّب عليها بتصحيح فوري.</p><div class="tabs">' + Object.keys(SK.subjects).map(function (k) { return '<button type="button" data-sub="' + k + '" class="' + (k === sub ? 'on' : '') + '">' + esc(SK.subjects[k]) + '</button>'; }).join('') + '</div></section>';
+    h += '<div class="card"><div class="skg">' + (skills.map(function (x) { return '<button type="button" class="sk' + (x.n ? '' : ' empty') + '" data-sk="' + x.id + '"' + (x.n ? '' : ' disabled') + '><span>' + esc(x.name) + '</span><b>' + (x.n ? cnt(x.n) : 'قريبًا') + '</b></button>'; }).join('') || '<p class="m">لا توجد مهارات بعد.</p>') + '</div></div>';
+    app.innerHTML = h; window.scrollTo(0, 0);
+  }
+  function setup(id) {
+    app.innerHTML = '<div class="card"><p class="m">جارٍ تحميل أسئلة المهارة…</p></div>';
+    fetch('/api/skills/questions?id=' + id).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.items) throw new Error(d.error || 'تعذّر التحميل');
+      cur = d; history.replaceState(null, '', '?id=' + id);
+      var banks = {}; d.items.forEach(function (it) { banks[it.bank] = (banks[it.bank] || 0) + 1; });
+      var h = '<section class="hero"><p style="color:var(--bw-gold);font-weight:600">' + esc(SK.subjects[d.skill.subject] || '') + '</p><h1>' + esc(d.skill.name) + '</h1><p>' + cnt(d.items.length) + ' من: ' + Object.keys(banks).map(function (b) { return esc(b) + ' (' + AR(banks[b]) + ')'; }).join('، ') + '</p></section>';
+      h += '<div class="card"><span class="lbl" style="margin-top:0">طريقة العرض</span><div class="chips" id="md"><button type="button" class="chip' + (opt.mode === 'train' ? ' on' : '') + '" data-m="train">تدريب<small>تصحيح فوري بعد كل إجابة</small></button><button type="button" class="chip' + (opt.mode === 'test' ? ' on' : '') + '" data-m="test">اختبار<small>بمؤقت، والنتيجة في النهاية</small></button><button type="button" class="chip' + (opt.mode === 'present' ? ' on' : '') + '" data-m="present">وضع الشرح<small>للمعلم: خط كبير وزر «أظهر الإجابة»</small></button></div>'
+        + '<span class="lbl">عدد الأسئلة</span><div class="chips">' + [0, 10, 20, 30].filter(function (n) { return !n || n < d.items.length; }).map(function (n) { return '<button type="button" class="chip' + (opt.n === n ? ' on' : '') + '" data-n="' + n + '">' + (n ? AR(n) : 'كلها (' + AR(d.items.length) + ')') + '</button>'; }).join('') + '</div>'
+        + '<span class="lbl">الترتيب</span><div class="chips"><button type="button" class="chip' + (opt.order === 'rand' ? ' on' : '') + '" data-o="rand">عشوائي</button><button type="button" class="chip' + (opt.order === 'seq' ? ' on' : '') + '" data-o="seq">بالترتيب</button></div>'
+        + '<div class="row" style="margin-top:16px"><button class="btn gold" data-a="go" style="font-size:17px;padding:13px 28px"' + (d.items.length ? '' : ' disabled') + '>ابدأ</button><button class="btn ghost" data-a="back">كل المهارات</button></div></div>';
+      app.innerHTML = h; window.scrollTo(0, 0);
+    }).catch(function (e) { app.innerHTML = '<div class="card"><p class="m">' + esc(e.message) + '</p><button class="btn" data-a="back">رجوع</button></div>'; });
+  }
+  function go() {
+    var items = cur.items.slice(); if (opt.order === 'rand') shuffle(items); if (opt.n) items = items.slice(0, opt.n);
+    S = { items: items, pos: 0, ans: {}, show: {}, t0: Date.now(), total: opt.mode === 'test' ? items.length * 60 : 0 };
+    clearInterval(window.__skT); if (S.total) window.__skT = setInterval(tick, 1000);
+    document.body.classList.toggle('present', opt.mode === 'present'); draw();
+  }
+  function fmt(x) { x = Math.max(0, Math.round(x)); return AR(Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0')); }
+  function tick() { if (!S || !S.total) return; var l = S.total - (Date.now() - S.t0) / 1000, e = document.getElementById('sktm'); if (e) e.textContent = '⏱ ' + fmt(l); if (l <= 0) { clearInterval(window.__skT); end(true); } }
+  function draw() {
+    var it = S.items[S.pos], n = S.items.length, a = S.ans[S.pos], shown = opt.mode === 'train' ? a !== undefined : opt.mode === 'test' ? false : !!S.show[S.pos], done = Object.keys(S.ans).length;
+    var body = it.img ? '<div class="qimg"><img src="' + esc(it.img) + '" alt="السؤال ' + AR(S.pos + 1) + '" data-z="' + esc(it.img) + '"></div>'
+      : '<div class="tq"><span class="ty">' + esc(TYN[it.t] || '') + '</span>' + (it.p ? '<div class="psg">' + esc(it.p) + '</div>' : '') + '<div class="stem">' + esc(it.s) + '</div></div>';
+    var opts = it.img ? L : (it.o || []);
+    var h = '<div class="qhead"><span>' + esc(cur.skill.name) + ' · السؤال ' + AR(S.pos + 1) + ' من ' + AR(n) + '</span>' + (S.total ? '<span id="sktm" style="background:var(--bw-gold);color:var(--bw-night);border-radius:10px;padding:2px 12px;font-weight:700">⏱ ' + fmt(S.total - (Date.now() - S.t0) / 1000) + '</span>' : '<span>' + esc(it.bank) + ' · ' + esc(it.sec || '') + '</span>') + '</div><div class="qtrack"><i style="width:' + ((S.pos + 1) / n * 100) + '%"></i></div>'
+      + '<div class="card">' + body + '<div class="opts' + (it.img ? '' : ' txt') + '">' + opts.map(function (o, i) { var c = 'opt'; if (shown) { if (i === it.c) c += ' ok'; else if (i === a) c += ' no'; } else if (a === i) c += opt.mode === 'test' ? ' on' : ' no'; return '<button type="button" class="' + c + '" data-ans="' + i + '"' + (opt.mode === 'train' && shown ? ' disabled' : '') + '>' + (it.img ? o : L[i] + ') ' + esc(o)) + '</button>'; }).join('') + '</div>'
+      + (shown ? '<div class="fb ' + (a === undefined ? 'in">الإجابة الصحيحة: ' + L[it.c] : a === it.c ? 'ok">✓ إجابة صحيحة' : 'no">✗ الإجابة الصحيحة: ' + L[it.c]) + '</div>' : '')
+      + '<div class="qnav"><button class="btn ghost" data-a="prev"' + (S.pos ? '' : ' disabled') + '>السابق</button>' + (opt.mode === 'present' && !shown ? '<button class="btn soft" data-a="show">أظهر الإجابة</button>' : '') + (S.pos < n - 1 ? '<button class="btn" data-a="next">التالي</button>' : '<button class="btn gold" data-a="end">إنهاء</button>') + '</div></div>'
+      + '<div class="row"><button class="btn ghost" data-a="setup">تغيير الإعدادات</button><button class="btn ghost" data-a="back">كل المهارات</button></div>';
+    app.innerHTML = h;
+    if (S.pos < n - 1 && S.items[S.pos + 1].img) { var pre = new Image(); pre.src = S.items[S.pos + 1].img; }
+  }
+  function end(auto) {
+    clearInterval(window.__skT);
+    var n = S.items.length, g = 0, an = 0; S.items.forEach(function (it, i) { if (S.ans[i] !== undefined) { an++; if (S.ans[i] === it.c) g++; } });
+    document.body.classList.remove('present');
+    var test = opt.mode === 'test', h = '<section class="hero"><p style="color:var(--bw-gold);font-weight:600">' + esc(cur.skill.name) + (auto ? ' · انتهى الوقت' : '') + '</p><h1>' + AR(g) + ' / ' + AR(test ? n : (an || n)) + '</h1><p>' + (an ? 'دقتك في هذه المهارة ' + AR(Math.round(g / (test ? n : an) * 100)) + '٪' : 'انتهى العرض') + '</p></section><div class="row" style="margin-bottom:16px"><button class="btn gold" data-a="go">أعد ' + (test ? 'الاختبار' : 'التدريب') + '</button><button class="btn ghost" data-a="back">كل المهارات</button></div>';
+    if (test) h += '<div class="card"><h2>مراجعة الإجابات</h2>' + S.items.map(function (it, i) { var a = S.ans[i], ok = a === it.c; return '<div style="border-top:1px solid #eef3f8;padding:12px 0"><b style="color:' + (ok ? '#17633f' : '#b4321f') + '">' + AR(i + 1) + '. ' + (a === undefined ? '— لم تُجب' : ok ? '✓ صحيحة' : '✗ خاطئة') + '</b> · ' + (a !== undefined ? 'إجابتك ' + L[a] + ' · ' : '') + 'الصحيحة <b>' + L[it.c] + '</b>' + (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" data-z="' + esc(it.img) + '" style="display:block;max-width:420px;width:100%;margin-top:8px;border-radius:10px;border:1px solid var(--bw-line);cursor:zoom-in">' : '<div class="m" style="margin-top:4px">' + esc(it.s) + '</div>') + '</div>'; }).join('') + '</div>';
+    app.innerHTML = h; window.scrollTo(0, 0);
+  }
+  app.addEventListener('click', function (e) {
+    var z = e.target.closest('[data-z]'); if (z) { var d = document.createElement('div'); d.className = 'lb'; d.innerHTML = '<img src="' + esc(z.getAttribute('data-z')) + '" alt="">'; d.onclick = function () { d.remove(); }; document.body.appendChild(d); return; }
+    var b = e.target.closest('button'); if (!b || b.disabled) return; var x = b.dataset;
+    if (x.sub) { sub = x.sub; return list(); }
+    if (x.sk) return setup(+x.sk);
+    if (x.m) { opt.mode = x.m; [].forEach.call(b.parentNode.children, function (c) { c.classList.toggle('on', c === b); }); return; }
+    if (x.n !== undefined) { opt.n = +x.n; [].forEach.call(b.parentNode.children, function (c) { c.classList.toggle('on', c === b); }); return; }
+    if (x.o) { opt.order = x.o; [].forEach.call(b.parentNode.children, function (c) { c.classList.toggle('on', c === b); }); return; }
+    if (x.ans !== undefined) { if (opt.mode === 'train' && S.ans[S.pos] !== undefined) return; S.ans[S.pos] = +x.ans; if (opt.mode === 'present') S.show[S.pos] = 1; draw(); if (opt.mode === 'test' && S.pos < S.items.length - 1) { var at = S.pos; setTimeout(function () { if (S && S.pos === at) { S.pos++; draw(); } }, 250); } return; }
+    switch (x.a) {
+      case 'go': return go();
+      case 'back': clearInterval(window.__skT); history.replaceState(null, '', location.pathname); return list();
+      case 'setup': return setup(cur.skill.id);
+      case 'prev': S.pos--; return draw();
+      case 'next': S.pos++; return draw();
+      case 'show': S.show[S.pos] = 1; return draw();
+      case 'end': if (opt.mode === 'test' && Object.keys(S.ans).length < S.items.length && !confirm('لم تُجب عن كل الأسئلة. إنهاء الاختبار؟')) return; return end();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (!S || document.querySelector('.lb')) { if (e.key === 'Escape') { var o = document.querySelector('.lb'); if (o) o.remove(); } return; }
+    if (e.key === 'ArrowLeft' && S.pos < S.items.length - 1) { S.pos++; draw(); }
+    else if (e.key === 'ArrowRight' && S.pos > 0) { S.pos--; draw(); }
+    else if (e.key === ' ' && opt.mode === 'present') { e.preventDefault(); S.show[S.pos] = 1; draw(); }
+  });
+  fetch('/api/skills').then(function (r) { return r.json(); }).then(function (d) {
+    SK = d; var id = +new URLSearchParams(location.search).get('id');
+    var s0 = id && (d.skills || []).filter(function (x) { return x.id === id; })[0];
+    if (s0) { sub = s0.subject; setup(id); } else list();
+  }).catch(function () { app.innerHTML = '<div class="card"><p class="m">تعذّر تحميل المهارات. تأكد من الاتصال وأعد تحميل الصفحة.</p></div>'; });
+})();
+</script>
+<script src="bw-shell.js"></script>
+</body>
+</html>
