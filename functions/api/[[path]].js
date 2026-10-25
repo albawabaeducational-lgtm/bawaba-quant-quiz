@@ -52,12 +52,18 @@ const PERM_GROUPS = [
     ['settings.plans', 'باقات الاشتراك والأسعار'],
     ['settings.contact', 'رقم واتساب المنصة ورسالة المهتمين'],
     ['settings.guard', 'حماية التجربة المجانية ورفع الحظر']] },
+  { key: 'bank', title: 'بنك الأسئلة', items: [
+    ['bank.view', 'عرض بنك الأسئلة'],
+    ['bank.edit', 'تعديل الأسئلة وتصنيفها'],
+    ['bank.import', 'إضافة واستيراد الأسئلة (مودل، صور، إكسيل، نص)'],
+    ['bank.delete', 'حذف الأسئلة من البنك']] },
   { key: 'audit', title: 'الرقابة', items: [
     ['audit.view', 'عرض سجل العمليات']] }
 ];
 const ALL_PERMS = PERM_GROUPS.flatMap(g => g.items.map(x => x[0]));
 // أي صلاحية فرعية تتطلب صلاحية العرض الخاصة بقسمها
 const PERM_NEEDS = {
+  'bank.edit': ['bank.view'], 'bank.import': ['bank.view'], 'bank.delete': ['bank.view'],
   'students.codes': ['students.view'], 'students.create': ['students.view'], 'students.edit': ['students.view'], 'students.block': ['students.view'], 'students.delete': ['students.view'], 'students.message': ['students.view', 'students.codes'],
   'reports.view': ['students.view'], 'reports.export': ['students.view'], 'groups.manage': ['groups.view', 'students.view'], 'groups.delete': ['groups.view'], 'leads.manage': ['leads.view'], 'leads.delete': ['leads.view']
 };
@@ -65,7 +71,7 @@ const ROLES = {
   super_admin: { label: 'الإدارة العامة', perms: ALL_PERMS },
   supervisor: { label: 'مشرف', perms: ['dashboard.view', 'reports.view', 'reports.export', 'students.view', 'students.codes', 'students.create', 'students.edit', 'students.block', 'students.message', 'groups.view', 'groups.manage', 'leads.view', 'leads.manage'] },
   teacher: { label: 'معلم', perms: [] }, // المعلم يعمل داخل المقررات المسندة له فقط (تحرير الأسئلة + تقارير المقرر)
-  content_manager: { label: 'مدير المحتوى', perms: ['dashboard.view', 'reports.view', 'settings.access', 'settings.plans'] }
+  content_manager: { label: 'مدير المحتوى', perms: ['dashboard.view', 'reports.view', 'settings.access', 'settings.plans', 'bank.view', 'bank.edit', 'bank.import'] }
 };
 const cleanPerms = list => {
   const set = new Set((Array.isArray(list) ? list : []).filter(x => ALL_PERMS.includes(x)));
@@ -186,6 +192,40 @@ const ensureSkillsSchema = async DB => {
   }
   skillsReady = true;
 };
+// ---------- بنك الأسئلة الموحد ----------
+// كل سؤال يُسجَّل مرة واحدة (اختيار من متعدد): صورة أو نص، اختيارات بعدد مرن، إجابة صحيحة واحدة افتراضيًا أو أكثر.
+let bankReady = false;
+const ensureBankSchema = async DB => {
+  if (bankReady) return;
+  await DB.batch([
+    DB.prepare("CREATE TABLE IF NOT EXISTS qbank (id INTEGER PRIMARY KEY AUTOINCREMENT, subject TEXT NOT NULL, skill_id INTEGER, difficulty INTEGER NOT NULL DEFAULT 0, source TEXT, stem TEXT, passage TEXT, image_id INTEGER, image_url TEXT, options TEXT NOT NULL, correct TEXT NOT NULL, multi INTEGER NOT NULL DEFAULT 0, explanation TEXT, status TEXT NOT NULL DEFAULT 'active', hash TEXT, ext_ref TEXT, created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"),
+    DB.prepare('CREATE UNIQUE INDEX IF NOT EXISTS qbank_ext ON qbank(ext_ref)'),
+    DB.prepare('CREATE INDEX IF NOT EXISTS qbank_subject ON qbank(subject,status)'),
+    DB.prepare('CREATE INDEX IF NOT EXISTS qbank_skill ON qbank(skill_id)'),
+    DB.prepare('CREATE INDEX IF NOT EXISTS qbank_hash ON qbank(hash)')
+  ]);
+  bankReady = true;
+};
+const normAr = t => String(t || '').replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[^\u0621-\u064A0-9\u0660-\u0669a-z]+/gi, ' ').trim();
+const textHash = async (stem, opts) => 't:' + (await sha256hex(normAr(stem) + '|' + (opts || []).map(normAr).join('|'))).slice(0, 24);
+const sha256hex = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map(x => x.toString(16).padStart(2, '0')).join('');
+const hamming = (a, b) => { let d = 0; for (let i = 0; i < 16; i += 4) { let x = parseInt(a.slice(i, i + 4), 16) ^ parseInt(b.slice(i, i + 4), 16); while (x) { d += x & 1; x >>= 1; } } return d; };
+// يتحقق من سؤال قادم من الاستيراد أو التعديل ويعيده بالشكل المخزّن
+const cleanQ = q => {
+  const subject = SUBJECTS[q.subject] ? q.subject : null; if (!subject) throw new Error('المادة غير معروفة');
+  let options = (Array.isArray(q.options) ? q.options : []).map(o => txt(o, 600).trim());
+  while (options.length && !options[options.length - 1]) options.pop();
+  if (options.length < 2 || options.length > 6) throw new Error('عدد الاختيارات يجب أن يكون من ٢ إلى ٦');
+  let correct = (Array.isArray(q.correct) ? q.correct : [q.correct]).map(int).filter(i => i >= 0 && i < options.length);
+  correct = [...new Set(correct)].sort();
+  const multi = q.multi ? 1 : 0;
+  if (!multi && correct.length > 1) correct = correct.slice(0, 1);
+  const stem = txt(q.stem, 4000).trim(), image_url = /^\/(mt|img)\/[\w.-]+$|^\/api\/exam\/img\/\d+$/.test(q.image_url || '') ? q.image_url : null;
+  if (!stem && !q.image_id && !image_url) throw new Error('السؤال بلا نص ولا صورة');
+  const diff = int(q.difficulty); 
+  return { subject, skill_id: q.skill_id ? int(q.skill_id) : null, difficulty: diff >= 0 && diff <= 3 ? diff : 0, source: txt(q.source, 120).trim() || null, stem: stem || null, passage: txt(q.passage, 8000).trim() || null, image_id: q.image_id ? int(q.image_id) : null, image_url, options: JSON.stringify(options), correct: JSON.stringify(correct), multi, explanation: txt(q.explanation, 4000).trim() || null, status: ['active', 'draft'].includes(q.status) ? q.status : 'active', hash: /^[0-9a-f]{16}$|^t:[0-9a-f]{24}$/.test(q.hash || '') ? q.hash : null };
+};
+
 // أسئلة البنك كما يراها الطالب (الملف الأصلي + تعديلات المعلمين)، مع ذاكرة مؤقتة داخل العامل
 const bankCache = {};
 const bankItems = async (env, request, DB, slug) => {
@@ -805,6 +845,136 @@ export async function onRequest({ request, env, params }) {
     await DB.batch([DB.prepare('DELETE FROM staff_sessions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_perms WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_permissions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM course_staff WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_users WHERE id=?').bind(id), audit(A, 'delete', 'staff', id, u ? u.username : '')]);
     return J({ ok: 1 });
   }
+  // ---------- بنك الأسئلة الموحد ----------
+  if (p.startsWith('admin/bank')) {
+    if (!can('bank.view')) return deny();
+    await ensureBankSchema(DB); await ensureSkillsSchema(DB); await ensureStaffSchema(DB);
+    const imgOf = r => r.image_id ? '/api/exam/img/' + r.image_id : r.image_url || null;
+    const shape = r => ({ id: r.id, subject: r.subject, skill_id: r.skill_id, difficulty: r.difficulty, source: r.source, stem: r.stem, passage: r.passage, img: imgOf(r), image_id: r.image_id, image_url: r.image_url, options: JSON.parse(r.options), correct: JSON.parse(r.correct), multi: !!r.multi, explanation: r.explanation, status: r.status, hash: r.hash, ext_ref: r.ext_ref, updated_at: r.updated_at });
+    if (p === 'admin/bank/meta' && m === 'GET') {
+      const [counts, sources, issues] = await Promise.all([
+        all("SELECT subject,status,COUNT(*) n,SUM(skill_id IS NULL) unskilled FROM qbank GROUP BY subject,status"),
+        all("SELECT subject,source,COUNT(*) n FROM qbank WHERE source IS NOT NULL GROUP BY subject,source ORDER BY source"),
+        all("SELECT subject,SUM(correct='[]') nocorrect,SUM(hash IS NULL) nohash FROM qbank GROUP BY subject")
+      ]);
+      const skills = await all('SELECT id,subject,name,sort FROM skills ORDER BY subject,sort,id');
+      return J({ subjects: SUBJECTS, counts, sources, issues, skills, perms: { edit: can('bank.edit'), import: can('bank.import'), del: can('bank.delete'), legacy: isSuper } });
+    }
+    if (p === 'admin/bank/list' && m === 'GET') {
+      const u = new URL(request.url).searchParams, w = ['1=1'], v = [];
+      if (SUBJECTS[u.get('subject')]) { w.push('subject=?'); v.push(u.get('subject')); }
+      const sk = u.get('skill'); if (sk === 'none') w.push('skill_id IS NULL'); else if (int(sk) > 0) { w.push('skill_id=?'); v.push(int(sk)); }
+      if (u.get('source')) { w.push('source=?'); v.push(u.get('source')); }
+      const stt = u.get('status'); if (['active', 'draft'].includes(stt)) { w.push('status=?'); v.push(stt); }
+      const iss = u.get('issue'); if (iss === 'nocorrect') w.push("correct='[]'"); else if (iss === 'short') w.push("json_array_length(options)<4"); else if (iss === 'multi') w.push('multi=1');
+      const q = String(u.get('q') || '').trim(); if (q) { if (/^\d+$/.test(q)) { w.push('(id=? OR ext_ref LIKE ?)'); v.push(int(q), '%:' + q); } else { w.push('(stem LIKE ? OR passage LIKE ? OR options LIKE ? OR source LIKE ?)'); v.push('%' + q + '%', '%' + q + '%', '%' + q + '%', '%' + q + '%'); } }
+      const size = Math.min(100, Math.max(10, int(u.get('size')) || 40)), page = Math.max(0, int(u.get('page')) || 0);
+      const where = w.join(' AND ');
+      const [tot, rows] = await Promise.all([one('SELECT COUNT(*) n FROM qbank WHERE ' + where, ...v), all('SELECT * FROM qbank WHERE ' + where + ' ORDER BY id LIMIT ? OFFSET ?', ...v, size, page * size)]);
+      return J({ total: tot.n, page, size, items: rows.map(shape) });
+    }
+    if (p === 'admin/bank/get' && m === 'GET') {
+      const r = await one('SELECT * FROM qbank WHERE id=?', int(new URL(request.url).searchParams.get('id')));
+      return r ? J({ item: shape(r) }) : J({ error: 'غير موجود' }, 404);
+    }
+    if (p === 'admin/bank/image' && m === 'POST') {
+      if (!can('bank.import') && !can('bank.edit')) return deny();
+      const b = await body(), mm = /^data:(image\/(?:webp|jpeg|png));base64,([A-Za-z0-9+/=]+)$/.exec(String(b.data || ''));
+      if (!mm) return J({ error: 'الصورة غير صالحة' }, 400);
+      const bin = atob(mm[2]); if (bin.length > 1500000) return J({ error: 'حجم الصورة كبير، الحد الأقصى ١٫٥ ميجابايت' }, 400);
+      const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const r = await DB.prepare('INSERT INTO exam_images (course,mime,data,created_at,created_by) VALUES (?,?,?,?,?)').bind('bank', mm[1], bytes.buffer, iso, A.name).run();
+      return J({ ok: 1, id: r.meta.last_row_id, src: '/api/exam/img/' + r.meta.last_row_id });
+    }
+    // كشف التكرار قبل الإضافة: النصوص هنا (بعد التطبيع)، وبصمات الصور تُرسل للمتصفح ليقارنها هو (أخف على الخادم)
+    if (p === 'admin/bank/check' && m === 'POST') {
+      const b = await body(), sub = String(b.subject || ''), list = (Array.isArray(b.items) ? b.items : []).slice(0, 2000);
+      const have = await all("SELECT id,hash,source FROM qbank WHERE subject=? AND hash IS NOT NULL", sub);
+      const txtMap = Object.fromEntries(have.filter(r => r.hash.startsWith('t:')).map(r => [r.hash, r]));
+      const out = [];
+      for (const it of list) {
+        if (!it || !it.stem || it.hash) { out.push(null); continue; }
+        const h = await textHash(it.stem, it.options), r = txtMap[h];
+        out.push(r ? { id: r.id, source: r.source, hash: h } : { hash: h });
+      }
+      return J({ results: out, images: b.withImages ? have.filter(r => !r.hash.startsWith('t:')).map(r => [r.id, r.hash]) : undefined });
+    }
+    if (p === 'admin/bank/import' && m === 'POST') {
+      if (!can('bank.import')) return deny();
+      const b = await body(), list = (Array.isArray(b.items) ? b.items : []).slice(0, 50), ids = [], errors = [];
+      const skills = Object.fromEntries((await all('SELECT id,subject,name FROM skills')).map(x => [x.subject + '|' + normAr(x.name), x.id]));
+      const st = [];
+      for (let i = 0; i < list.length; i++) {
+        try {
+          const raw = list[i] || {};
+          if (!raw.skill_id && raw.skill_name) raw.skill_id = skills[raw.subject + '|' + normAr(raw.skill_name)] || null;
+          const q = cleanQ(raw); if (!q.hash && q.stem && !q.image_id && !q.image_url) q.hash = await textHash(q.stem, JSON.parse(q.options));
+          const ext = raw.ext_ref ? txt(raw.ext_ref, 80) : null;
+          st.push(DB.prepare('INSERT INTO qbank (subject,skill_id,difficulty,source,stem,passage,image_id,image_url,options,correct,multi,explanation,status,hash,ext_ref,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(ext_ref) DO NOTHING').bind(q.subject, q.skill_id, q.difficulty, q.source, q.stem, q.passage, q.image_id, q.image_url, q.options, q.correct, q.multi, q.explanation, q.status, q.hash, ext, A.name, iso, iso));
+        } catch (e) { errors.push({ i, error: e.message }); }
+      }
+      if (st.length) { const res = await DB.batch(st); res.forEach(r => ids.push(r.meta && r.meta.changes ? r.meta.last_row_id : null)); }
+      if (st.length) await audit(A, 'bank_import', 'qbank', null, (list[0] && list[0].source || '') + ' — ' + ids.filter(Boolean).length + ' سؤال').run();
+      return J({ ok: 1, added: ids.filter(Boolean).length, ids, errors });
+    }
+    if (p === 'admin/bank/save' && m === 'POST') {
+      const b = await body(), id = int(b.id);
+      if (id ? !can('bank.edit') : !can('bank.import')) return deny();
+      let q; try { q = cleanQ(b); } catch (e) { return J({ error: e.message }, 400); }
+      if (!q.hash && q.stem && !q.image_id && !q.image_url) q.hash = await textHash(q.stem, JSON.parse(q.options));
+      if (id) {
+        const old = await one('SELECT id,hash,image_id,image_url FROM qbank WHERE id=?', id); if (!old) return J({ error: 'غير موجود' }, 404);
+        if (!q.hash && (old.image_id === q.image_id && old.image_url === q.image_url)) q.hash = old.hash;
+        await DB.batch([DB.prepare('UPDATE qbank SET subject=?,skill_id=?,difficulty=?,source=?,stem=?,passage=?,image_id=?,image_url=?,options=?,correct=?,multi=?,explanation=?,status=?,hash=?,updated_at=? WHERE id=?').bind(q.subject, q.skill_id, q.difficulty, q.source, q.stem, q.passage, q.image_id, q.image_url, q.options, q.correct, q.multi, q.explanation, q.status, q.hash, iso, id), audit(A, 'bank_edit', 'qbank', id, (q.source || '') + ' #' + id)]);
+        return J({ ok: 1, id });
+      }
+      const r = await DB.prepare('INSERT INTO qbank (subject,skill_id,difficulty,source,stem,passage,image_id,image_url,options,correct,multi,explanation,status,hash,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(q.subject, q.skill_id, q.difficulty, q.source, q.stem, q.passage, q.image_id, q.image_url, q.options, q.correct, q.multi, q.explanation, q.status, q.hash, A.name, iso, iso).run();
+      return J({ ok: 1, id: r.meta.last_row_id });
+    }
+    if (p === 'admin/bank/bulk' && m === 'POST') {
+      if (!can('bank.edit')) return deny();
+      const b = await body(), ids = (Array.isArray(b.ids) ? b.ids : []).map(int).filter(x => x > 0).slice(0, 2000), set = b.set || {}, sets = [], vals = [];
+      if ('skill_id' in set) { sets.push('skill_id=?'); vals.push(set.skill_id ? int(set.skill_id) : null); }
+      if ('difficulty' in set) { sets.push('difficulty=?'); vals.push(Math.max(0, Math.min(3, int(set.difficulty) || 0))); }
+      if ('status' in set && ['active', 'draft'].includes(set.status)) { sets.push('status=?'); vals.push(set.status); }
+      if ('source' in set) { sets.push('source=?'); vals.push(txt(set.source, 120).trim() || null); }
+      if (!ids.length || !sets.length) return J({ error: 'لا يوجد ما يُحدَّث' }, 400);
+      const st = []; for (let i = 0; i < ids.length; i += 90) { const part = ids.slice(i, i + 90); st.push(DB.prepare('UPDATE qbank SET ' + sets.join(',') + ',updated_at=? WHERE id IN (' + part.map(() => '?').join(',') + ')').bind(...vals, iso, ...part)); }
+      await DB.batch(st.concat(audit(A, 'bank_bulk', 'qbank', null, ids.length + ' سؤال: ' + Object.keys(set).join('، '))));
+      return J({ ok: 1, n: ids.length });
+    }
+    if (p === 'admin/bank/sethash' && m === 'POST') {
+      if (!can('bank.edit') && !can('bank.import')) return deny();
+      const b = await body(), list = (Array.isArray(b.items) ? b.items : []).filter(x => x && int(x.id) > 0 && /^[0-9a-f]{16}$/.test(x.hash || '')).slice(0, 500);
+      if (list.length) await DB.batch(list.map(x => DB.prepare('UPDATE qbank SET hash=? WHERE id=?').bind(x.hash, int(x.id))));
+      return J({ ok: 1, n: list.length });
+    }
+    if (p === 'admin/bank/delete' && m === 'POST') {
+      if (!can('bank.delete')) return deny();
+      const b = await body(), ids = (Array.isArray(b.ids) ? b.ids : []).map(int).filter(x => x > 0).slice(0, 2000);
+      const st = []; for (let i = 0; i < ids.length; i += 90) { const part = ids.slice(i, i + 90); st.push(DB.prepare('DELETE FROM qbank WHERE id IN (' + part.map(() => '?').join(',') + ')').bind(...part)); }
+      if (st.length) await DB.batch(st.concat(audit(A, 'bank_delete', 'qbank', null, ids.length + ' سؤال')));
+      return J({ ok: 1, n: ids.length });
+    }
+    // نقل أسئلة الصفحات الحالية للبنك (مرة واحدة، والتكرار يُتجاهل) مع تصنيفات المهارات
+    if (p === 'admin/bank/legacy' && m === 'POST') {
+      if (!isSuper) return deny('من صلاحيات الإدارة العامة');
+      const b = await body(), slug = String(b.course || ''); if (!SKILL_BANKS[slug]) return J({ error: 'البنك غير معروف' }, 400);
+      const items = await bankItems(env, request, DB, slug), sub = SKILL_BANKS[slug];
+      const tags = Object.fromEntries((await all('SELECT qkey,skill_id FROM question_skills WHERE course=?', slug)).map(r => [r.qkey, r.skill_id]));
+      const lafzi = slug === 'aksam lafzi', st = [], from = int(b.from) || 0, part = items.slice(from, from + 400);
+      for (const it of part) {
+        const opts = lafzi ? it.o : ['أ', 'ب', 'ج', 'د'];
+        const src = COURSE[slug].title + (it.sec ? ' – ' + it.sec : '');
+        st.push(DB.prepare('INSERT INTO qbank (subject,skill_id,difficulty,source,stem,passage,image_id,image_url,options,correct,multi,explanation,status,hash,ext_ref,created_by,created_at,updated_at) VALUES (?,?,0,?,?,?,NULL,?,?,?,0,NULL,?,?,?,?,?,?) ON CONFLICT(ext_ref) DO NOTHING')
+          .bind(sub, tags[it.key] || null, src, lafzi ? it.s : null, lafzi ? (it.p || null) : null, lafzi ? null : it.img, JSON.stringify(opts), JSON.stringify(it.c >= 0 ? [it.c] : []), it.c >= 0 ? 'active' : 'draft', lafzi ? await textHash(it.s, it.o) : null, slug + ':' + it.key, A.name, iso, iso));
+      }
+      let added = 0; if (st.length) for (const r of await DB.batch(st)) added += r.meta && r.meta.changes ? 1 : 0;
+      return J({ ok: 1, total: items.length, done: Math.min(items.length, from + part.length), added });
+    }
+    return J({ error: 'not found' }, 404);
+  }
+
   // ---------- تصنيف الأسئلة حسب المهارات ----------
   if (p.startsWith('admin/skills')) {
     await ensureSkillsSchema(DB); await ensureStaffSchema(DB);

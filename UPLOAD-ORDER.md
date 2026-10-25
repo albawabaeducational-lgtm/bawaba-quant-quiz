@@ -1,13 +1,12 @@
-تحديث 3.2 (تصنيف المهارات):
+تحديث 3.3 (بنك الأسئلة):
 
-skills.html                         ← جديد
+bw-bank.js                          ← جديد
 admin.html
-index.html
 functions/api/[[path]].js
+_routes.json
 schema.sql
-migrations/009_skills.sql           ← جديد (اختياري، الجداول تُنشأ تلقائيًا)
+migrations/010_question_bank.sql    ← جديد (اختياري، الجدول يُنشأ تلقائيًا)
 CHANGELOG.md
 UPLOAD-ORDER.md
 
-(ومعها تحديث 3.1: aktar kamy.html وفولدر mt بعد فك الضغط — امسح mt.zip.)
 قبل الرفع: Pull ثم Commit ثم Push.

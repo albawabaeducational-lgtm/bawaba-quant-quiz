@@ -34,6 +34,7 @@ code{direction:ltr;display:inline-block;background:#f3f8fc;padding:2px 8px;borde
 @media(max-width:980px){.shell{grid-template-columns:1fr;padding:10px;gap:10px}.side{position:relative;top:0;height:auto;padding:12px}.brand{padding-bottom:10px}.nav{display:flex;margin-top:10px;overflow-x:auto;padding-bottom:4px}.nav a{white-space:nowrap}.nav a.on{box-shadow:inset 0 -3px 0 #4dd9c0}.me{display:none}.two{grid-template-columns:1fr}}
 @media(max-width:560px){.top h1{font-size:20px}.kpi strong{font-size:23px}.card{padding:14px;border-radius:15px}}
 </style></head><body><div id="app"><div class="loading">جارٍ التحميل…</div></div><div class="toasts" id="toasts"></div>
+<script src="/bw-bank.js"></script>
 <script>
 'use strict';
 var NM={'aksam kamy':'أقسام الكمي','aksam lafzi':'أقسام اللفظي','muhaky mohawsab':'المحاكي المحوسب','muhaky warky1':'الورقي – النموذج الأول','muhaky warky2':'الورقي – النموذج الثاني','tasis lafzi':'تأسيس اللفظي','waraqi':'المحاكيات الورقية','home':'الصفحة الرئيسية','index':'الصفحة الرئيسية'};
@@ -85,6 +86,7 @@ var SECTIONS=[
  {id:'settings',icon:'⚙',title:'إعدادات المنصة',sub:'نمط الدخول والباقات والتواصل والحماية',show:function(){return canAny(['settings.access','settings.plans','settings.contact','settings.guard'])},draw:drawSettings},
  {id:'staff',icon:'♚',title:'فريق العمل والصلاحيات',sub:'حسابات المعلمين والمشرفين وصلاحيات كل حساب',show:function(){return D.actor.role==='super_admin'},draw:drawStaff,count:function(){return D.staff?D.staff.length:0}},
  {id:'courses',icon:'▣',title:'المقررات',sub:'الاختبارات بأنواعها، والمعلمون المسندون لكل مقرر وصلاحياتهم',show:function(){return D.actor.role==='super_admin'||D.actor.role==='teacher'||!!(D.courses&&D.courses.length)},draw:drawCourses},
+ {id:'bank',icon:'▦',title:'بنك الأسئلة',sub:'كل الأسئلة في مكان واحد: إضافة بالجملة من مودل والصور والإكسيل والنص، وتعديل وتصنيف وتصدير',show:function(){return can('bank.view')&&!!window.BWBANK},draw:function(){return window.BWBANK.draw()},after:function(){window.BWBANK.after()}},
  {id:'skills',icon:'◈',title:'تصنيف المهارات',sub:'صنّف كل سؤال تحت مهارته، ثم استدعِ أسئلة أي مهارة في الشرح والتدريب',show:function(){return D.actor.role==='super_admin'||(D.courses||[]).some(function(c){return SKB[c.slug]})},draw:drawSkills},
  {id:'versions',icon:'⟲',title:'النسخ والتراجع',sub:'كل تحديث يُرفع للموقع نسخة؛ علّم النسخ الجيدة وارجع لأي نسخة بضغطة',show:function(){return D.actor.role==='super_admin'},draw:drawVersions},
  {id:'audit',icon:'☰',title:'سجل العمليات',sub:'من فعل ماذا ومتى',show:function(){return can('audit.view')},draw:drawAudit},
@@ -264,24 +266,29 @@ function drawSkills(){
   :'<div style="background:#f6f9fc;border-radius:12px;padding:14px;line-height:2"><span class="b in">'+esc(TYN[it.t]||'')+'</span>'+(it.p?'<p class="m" style="white-space:pre-wrap;max-height:180px;overflow:auto">'+esc(it.p)+'</p>':'')+'<p style="font-size:18px;font-weight:700;margin:8px 0">'+esc(it.s)+'</p><div>'+(it.o||[]).map(function(o,i){return'<div'+(i===it.c?' style="color:#17633f;font-weight:700"':'')+'>'+LT[i]+') '+esc(o)+'</div>'}).join('')+'</div></div>';
  h+='<div class="two" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start"><div class="card">'+body+'</div>'
   +'<div class="card"><p class="m" style="margin:0 0 6px">سؤال '+(st.skPos+1)+' من '+L.length+' · رقم '+esc(it.key)+' · '+esc(it.sec||'')+' · الإجابة: <b>'+LT[it.c]+'</b></p>'
-  +(cur?'<p style="margin:8px 0 0;font-size:15px">✓ مصنف تحت: <b style="color:#17633f">'+esc(SN[cur]||'')+'</b> <button class="g sm" data-act="skClear">إلغاء</button></p>':'<p class="m" style="margin-top:8px">لم يُصنف بعد · الاختيار يُحفظ فورًا</p>')
-  +(d.canTag?skPicker(d.subject,sk,cur):'')
-  +'<details style="margin-top:10px"><summary class="m" style="cursor:pointer">القائمة المنسدلة الكاملة</summary><select id="skSel" style="width:100%;font-size:15px;padding:8px;margin-top:6px"'+(d.canTag?'':' disabled')+'><option value="">— اختر المهارة —</option>'+sk.map(function(x){return'<option value="'+x.id+'"'+(cur===x.id?' selected':'')+'>'+esc(x.name)+'</option>'}).join('')+'</select></details>'
-  +'<div class="row" style="margin-top:14px"><button class="g" data-act="skPrev"'+(st.skPos?'':' disabled')+'>→ السابق</button><button data-act="skNext"'+(st.skPos<L.length-1?'':' disabled')+'>التالي ←</button></div>'
+  +(cur?'<div style="margin:10px 0;padding:12px;border-radius:12px;background:#e1f4ea;border:1px solid #9fd6b9"><div style="font-size:15px">✓ هذا السؤال مضاف إلى مهارة:</div><div style="font-size:17px;font-weight:800;color:#17633f;margin:4px 0 8px">'+esc(SN[cur]||'')+'</div>'+(d.canTag?'<button class="r" data-act="skClear" style="width:100%">✕ إزالة السؤال من هذه المهارة</button>':'')+'</div>':'<div style="margin:10px 0;padding:12px;border-radius:12px;background:#f3f6f9;border:1px dashed #c9d6e2;font-size:15px">هذا السؤال <b>لم يُضف لأي مهارة</b> بعد.</div>')
+  +(d.canTag?skPicker(d.subject,sk,cur):'<p class="m">عرض فقط: صلاحيتك على هذا البنك لا تشمل التصنيف.</p>')
+  +'<div class="row" style="margin-top:14px"><button class="g" data-act="skPrev"'+(st.skPos?'':' disabled')+'>→ السؤال السابق</button><button class="g" data-act="skNext"'+(st.skPos<L.length-1?'':' disabled')+'>تخطَّ هذا السؤال ←</button></div>'
   +'<div class="row" style="margin-top:10px"><label class="m">اذهب لسؤال رقم <input id="skGo" type="number" min="1" max="'+L.length+'" style="width:90px"></label></div>'
-  +'<p class="m" style="margin-top:12px">⌨ <b>/</b> للبحث · <b>Enter</b> نفس مهارة السؤال السابق · <b>1–8</b> المهارات الأخيرة · الأسهم للتنقل.'+(d.canTag?'':' (عرض فقط: صلاحيتك على هذا البنك لا تشمل التعديل)')+'</p></div></div>';
+  +'<p class="m" style="margin-top:12px">اختصار للخبراء: زر <b>Enter</b> يضغط زر «أضف السؤال» · الأسهم للتنقل بين الأسئلة.</p></div></div>';
  return h}
 // اختيار المهارة بسرعة: بحث فوري + آخر المهارات المستخدمة + «نفس مهارة السؤال السابق» + كل المهارات كأزرار
 function skNorm(t){return String(t||'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[\u064B-\u0652ـ]/g,'').replace(/[()–\-]/g,' ').replace(/\s+/g,' ').trim()}
 function skRecent(sub){try{return JSON.parse(localStorage.getItem('bw-sk-recent-'+sub)||'[]')}catch(e){return[]}}
 function skPushRecent(sub,id){var r=skRecent(sub).filter(function(x){return x!==id});r.unshift(id);try{localStorage.setItem('bw-sk-recent-'+sub,JSON.stringify(r.slice(0,8)))}catch(e){}}
 function skResults(sk,q){q=skNorm(q);if(!q)return'';var words=q.split(' '),m=sk.filter(function(x){var n=skNorm(x.name);return words.every(function(w){return n.indexOf(w)>=0})}).map(function(x){var n=skNorm(x.name),sc=n.indexOf(words[0])===0?0:(' '+n).indexOf(' '+words[0])>=0?1:(' '+n).indexOf(' ال'+words[0])>=0?1:2;return{x:x,s:sc*1000+n.length}}).sort(function(a,b){return a.s-b.s}).map(function(o){return o.x});
- return m.length?m.slice(0,12).map(function(x,i){return'<button class="'+(i?'g':'')+' sm" style="margin:3px" data-act="skPick" data-id="'+x.id+'">'+esc(x.name)+'</button>'}).join('')+(m.length>12?'<span class="m"> +'+(m.length-12)+' أخرى، اكتب أكثر</span>':''):'<span class="m">لا توجد مهارة بهذا الاسم</span>'}
-function skPicker(sub,sk,cur){var SN={};sk.forEach(function(x){SN[x.id]=x});var rec=skRecent(sub).filter(function(id){return SN[id]}),last=st.skLast&&SN[st.skLast]?SN[st.skLast]:null,h='';
- if(last)h+='<button data-act="skPick" data-id="'+last.id+'" style="width:100%;margin-top:12px;background:var(--gold, #e3a92b);color:#0c2440;font-size:15px">⚡ نفس مهارة السؤال السابق: '+esc(last.name)+' <span style="opacity:.6">(Enter)</span></button>';
- h+='<label style="display:block;font-weight:700;margin:12px 0 6px">ابحث عن المهارة</label><input id="skQ" autocomplete="off" placeholder="اكتب جزءًا من الاسم… مثل: نسب، دائرة، سرعة" style="width:100%;font-size:16px;padding:10px" value="'+esc(st.skQ||'')+'"><div id="skRes" style="margin-top:6px">'+skResults(sk,st.skQ||'')+'</div>';
- if(rec.length)h+='<div style="margin-top:10px"><span class="m">آخر ما استخدمته:</span><div style="margin-top:4px">'+rec.map(function(id,i){return'<button class="g sm" style="margin:3px'+(cur===id?';background:#d7f0e2;color:#17633f':'')+'" data-act="skPick" data-id="'+id+'"><b>'+(i+1)+'</b> · '+esc(SN[id].name)+'</button>'}).join('')+'</div></div>';
- h+='<details style="margin-top:10px"'+(st.skAll?' open':'')+' id="skAllBox"><summary class="m" style="cursor:pointer">عرض كل المهارات كأزرار ('+sk.length+')</summary><div style="margin-top:6px;max-height:340px;overflow:auto">'+sk.map(function(x){return'<button class="g sm" style="margin:2px'+(cur===x.id?';background:#d7f0e2;color:#17633f':'')+'" data-act="skPick" data-id="'+x.id+'">'+esc(x.name)+'</button>'}).join('')+'</div></details>';
+ return m.length?m.slice(0,12).map(function(x,i){return'<button class="'+(st.skChosen===x.id?'':'g')+' sm" style="margin:3px" data-act="skPick" data-id="'+x.id+'">'+esc(x.name)+'</button>'}).join('')+(m.length>12?'<span class="m"> +'+(m.length-12)+' أخرى، اكتب أكثر</span>':''):'<span class="m">لا توجد مهارة بهذا الاسم</span>'}
+function skPicker(sub,sk,cur){var SN={};sk.forEach(function(x){SN[x.id]=x});var rec=skRecent(sub).filter(function(id){return SN[id]}),ch=st.skChosen&&SN[st.skChosen]?SN[st.skChosen]:null,h='';
+ h+='<div style="padding:10px 12px;border-radius:12px;background:#eef6fc;border:1px solid #cfe3f3;font-size:13.5px;line-height:1.9;margin-bottom:10px"><b>طريقة التصنيف:</b><br>١. اختر المهارة: ابحث باسمها، أو اضغط واحدة من «آخر المهارات».<br>٢. اضغط الزر الأخضر «أضف السؤال إلى المهارة»، فيظهر لك السؤال التالي.<br>٣. لإلغاء تصنيف سؤال: اضغط «إزالة السؤال من هذه المهارة».</div>';
+ h+='<div style="font-weight:800;color:var(--navy);margin-top:4px">١. اختر المهارة</div>'
+  +'<div style="margin:8px 0;padding:10px;border-radius:12px;border:2px solid '+(ch?'var(--navy)':'#dbe5ee')+';background:'+(ch?'#f1f6fb':'#fff')+'"><span class="m">المهارة المختارة:</span> '+(ch?'<b style="font-size:16px;color:var(--navy)">'+esc(ch.name)+'</b>':'<span class="m">لم تختر مهارة بعد</span>')+'</div>'
+  +'<input id="skQ" autocomplete="off" placeholder="🔍 ابحث عن المهارة… مثل: نسب، دائرة، سرعة" style="width:100%;font-size:16px;padding:10px" value="'+esc(st.skQ||'')+'"><div id="skRes" style="margin-top:6px">'+skResults(sk,st.skQ||'')+'</div>';
+ if(rec.length)h+='<div style="margin-top:8px"><span class="m">آخر المهارات التي استخدمتها:</span><div style="margin-top:4px">'+rec.map(function(id){return'<button class="'+(st.skChosen===id?'':'g ')+'sm" style="margin:3px" data-act="skPick" data-id="'+id+'">'+esc(SN[id].name)+'</button>'}).join('')+'</div></div>';
+ h+='<details style="margin-top:8px"'+(st.skAll?' open':'')+' id="skAllBox"><summary class="m" style="cursor:pointer">أو اعرض كل المهارات ('+sk.length+')</summary><div style="margin-top:6px;max-height:300px;overflow:auto">'+sk.map(function(x){return'<button class="'+(st.skChosen===x.id?'':'g ')+'sm" style="margin:2px" data-act="skPick" data-id="'+x.id+'">'+esc(x.name)+'</button>'}).join('')+'</div></details>';
+ h+='<div style="font-weight:800;color:var(--navy);margin-top:14px">٢. أضف السؤال</div>';
+ if(!ch)h+='<button disabled style="width:100%;margin-top:8px;padding:14px;font-size:16px;opacity:.5">اختر المهارة أولًا</button>';
+ else if(cur===ch.id)h+='<button data-act="skNext" style="width:100%;margin-top:8px;padding:14px;font-size:16px;background:#e1f4ea;color:#17633f">✓ مضاف بالفعل لهذه المهارة — السؤال التالي ←</button>';
+ else h+='<button data-act="skAddQ" style="width:100%;margin-top:8px;padding:14px;font-size:16px;background:#1d8a58;color:#fff">'+(cur?'⇄ انقل السؤال إلى مهارة «':'✓ أضف السؤال إلى مهارة «')+esc(ch.name)+'»</button>';
  return h}
 document.addEventListener('input',function(e){if(e.target.id!=='skQ'||!st.skData)return;st.skQ=e.target.value;var r=document.getElementById('skRes');if(r)r.innerHTML=skResults(skOf(st.skData.subject),st.skQ)});
 document.addEventListener('toggle',function(e){if(e.target.id==='skAllBox')st.skAll=e.target.open},true);
@@ -294,14 +301,12 @@ async function skTag(val){var d=st.skData,L=skList(),it=L[st.skPos];if(!it||!d.c
  try{await api('skills/tag',{course:d.course,key:it.key,skill_id:sid});if(sid===null)delete d.tags[it.key];else{d.tags[it.key]=sid;st.skLast=sid;skPushRecent(d.subject,sid)}
   st.skQ='';st.sk.tagged[d.course]=Object.keys(d.tags).length;
   var f=st.skFilter||'untagged';if(f==='untagged'){skFix()}else if(st.skAuto!==false&&sid!==null&&st.skPos<skList().length-1)st.skPos++;
-  toast('تم الحفظ','ok');$('sec').innerHTML=drawSkills();var q=document.getElementById('skQ');if(q&&window.innerWidth>900)q.focus({preventScroll:true})}catch(e){if(e)toast(e.message,'err')}}
+  var nm=(st.sk.skills.filter(function(x){return x.id===sid})[0]||{}).name;toast(sid===null?'تمت إزالة السؤال من المهارة':'✓ أُضيف السؤال إلى مهارة «'+nm+'»','ok');$('sec').innerHTML=drawSkills();var q=document.getElementById('skQ');if(q&&window.innerWidth>900)q.focus({preventScroll:true})}catch(e){if(e)toast(e.message,'err')}}
 function skMove(id,dir){var L=skOf(st.sk.skills.filter(function(x){return x.id===id})[0].subject).map(function(x){return x.id}),i=L.indexOf(id),j=i+dir;if(j<0||j>=L.length)return;L[i]=L[j];L[j]=id;act(function(){return api('skills/move',{ids:L}).then(function(){st.sk=null})},'تم الترتيب')}
-document.addEventListener('keydown',function(e){if(view!=='skills'||!st.skData)return;
- if(e.target.id==='skQ'){if(e.key==='Enter'){e.preventDefault();var b=document.querySelector('#skRes [data-act="skPick"]');if(b)skTag(b.dataset.id);else if(!e.target.value&&st.skLast)skTag(String(st.skLast))}else if(e.key==='Escape'){e.target.value='';st.skQ='';document.getElementById('skRes').innerHTML='';e.target.blur()}return}
+document.addEventListener('keydown',function(e){if(view!=='skills'||!st.skData||document.querySelector('.ov'))return;
+ if(e.target.id==='skQ'){if(e.key==='Enter'){e.preventDefault();var b=document.querySelector('#skRes [data-act="skPick"]');if(b){st.skChosen=+b.dataset.id;st.skQ='';$('sec').innerHTML=drawSkills()}else if(!e.target.value&&st.skChosen)skTag(String(st.skChosen))}else if(e.key==='Escape'){e.target.value='';st.skQ='';document.getElementById('skRes').innerHTML='';e.target.blur()}return}
  if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))return;
- if(e.key==='/'){var q=document.getElementById('skQ');if(q){e.preventDefault();q.focus()}return}
- if(e.key==='Enter'&&st.skLast){e.preventDefault();skTag(String(st.skLast));return}
- if(/^[1-8]$/.test(e.key)){var rc=skRecent(st.skData.subject)[+e.key-1];if(rc){skTag(String(rc))}return}
+ if(e.key==='Enter'){var ab=document.querySelector('[data-act="skAddQ"]');if(ab){e.preventDefault();ab.click()}return}
  var L=skList();if(e.key==='ArrowLeft'&&st.skPos<L.length-1){st.skPos++;$('sec').innerHTML=drawSkills()}else if(e.key==='ArrowRight'&&st.skPos>0){st.skPos--;$('sec').innerHTML=drawSkills()}});
 // النسخ والتراجع: قائمة نسخ الموقع على Cloudflare Pages، وتعليم النسخ الجيدة، والرجوع لأي نسخة
 function drawVersions(){
@@ -365,8 +370,9 @@ app.addEventListener('click',async function(e){var t=e.target.closest('[data-act
  if(a==='skBank'){st.skBank=id;st.skFilter='untagged';st.skData=null;$('sec').innerHTML=drawSkills();return}
  if(a==='skPrev'){if(st.skPos>0)st.skPos--;$('sec').innerHTML=drawSkills();return}
  if(a==='skNext'){if(st.skPos<skList().length-1)st.skPos++;$('sec').innerHTML=drawSkills();return}
- if(a==='skPick'){skTag(id);return}
- if(a==='skClear'){skTag('');return}
+ if(a==='skPick'){st.skChosen=+id;st.skQ='';$('sec').innerHTML=drawSkills();return}
+ if(a==='skAddQ'){if(st.skChosen)skTag(String(st.skChosen));return}
+ if(a==='skClear'){if(await confirmBox('إزالة هذا السؤال من مهارته؟ (السؤال نفسه لا يُحذف)'))skTag('');return}
  if(a==='skAutoType'){var d=st.skData,sk=skOf('lafzi'),map={};TYN.forEach(function(n,i){var x=sk.filter(function(z){return z.name===n})[0];if(x)map[i]=x.id});
   var todo={};d.items.forEach(function(it){if(!d.tags[it.key]&&map[it.t]){(todo[map[it.t]]=todo[map[it.t]]||[]).push(it.key)}});var tot=0;for(var k in todo)tot+=todo[k].length;
   if(!tot){toast('لا توجد أسئلة غير مصنفة تطابق أنواع المهارات','err');return}

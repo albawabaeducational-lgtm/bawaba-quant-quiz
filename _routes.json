@@ -27,6 +27,7 @@
     "/bw-shell.js",
     "/*.css",
     "/bw-sync.js",
-    "/mt/*"
+    "/mt/*",
+    "/bw-bank.js"
   ]
 }
