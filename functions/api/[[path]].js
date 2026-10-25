@@ -134,6 +134,8 @@ const extractBase = (course, html) => {
 };
 
 let schemaReady = false, leadsReady = false, moodleReady = false;
+// معرّف تطبيق جوجل (ليس سرًا) — يمكن تغييره من لوحة التحكم
+const GOOGLE_CLIENT_ID = '1017687433947-oscl9bci17amtnqp8hlrgogk1p29ub23.apps.googleusercontent.com';
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
 const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist'];
@@ -384,7 +386,7 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
   // الصفحة الرئيسية تعرض «تفاصيل الدورات» من نفس رسالة واتساب التي تُرسل للمهتمين (تُعدَّل من لوحة التحكم ← الإعدادات)
-  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0', hidden: hiddenOf(await setting('hidden_courses')) });
+  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0', google: env.MOODLE_TOKEN ? ((await setting('google_client_id')) || GOOGLE_CLIENT_ID) : '', hidden: hiddenOf(await setting('hidden_courses')) });
 
   if (p === 'login' && m === 'POST') {
     if (await tooMany(ip)) return J({ error: 'محاولات خاطئة كثيرة. حاول بعد ربع ساعة.' }, 429);
@@ -399,6 +401,30 @@ export async function onRequest({ request, env, params }) {
   // ===================== الدخول بحساب منصة الدورات (Moodle) =====================
   // يتحقق من اسم المستخدم وكلمة المرور عبر خدمة تطبيق مودل الرسمية، ثم من تسجيل الطالب في الدورات المسموح بها.
   // كلمة المرور لا تُحفظ عندنا، ولا يُغيَّر أي شيء في مودل.
+  // حساب مودل تم التحقق منه (بكلمة المرور أو بجوجل): نتأكد أنه مسجّل في دورة، ثم نربطه بحساب الطالب ونُدخله
+  const admitMoodle = async (info, username, courses) => {
+      const allowed = String((await setting('moodle_courses')) || '').split(/[^0-9]+/).filter(Boolean).map(Number);
+      const mine = Array.isArray(courses) ? courses.map(x => +x.id) : [];
+      if (allowed.length ? !mine.some(id => allowed.includes(id)) : !mine.length) return J({ error: 'حسابك على منصة الدورات لا يشمل اشتراكًا في دورات الاختبارات. تواصل مع المنصة للاشتراك.', moodle: 1 }, 403);
+      await ensureMoodleSchema(DB);
+      const name = String(info.fullname || username).slice(0, 80), link = await DB.prepare('SELECT * FROM moodle_links WHERE moodle_id=?').bind(+info.userid).first();
+      let s = link ? await DB.prepare('SELECT * FROM students WHERE id=?').bind(link.student_id).first() : null;
+      const exp = new Date(now + 30 * 864e5).toISOString();
+      if (!s) {
+        let c = '', r = null;
+        for (let i = 0; i < 5 && !r; i++) { c = 'M' + newCode().slice(1); try { r = await DB.prepare('INSERT INTO students (name,code,created_at,kind,max_devices,expires_at) VALUES (?,?,?,?,?,?)').bind(name, c, iso, 'single', 3, exp).run(); } catch (e) { r = null; } }
+        if (!r) return J({ error: 'تعذّر إنشاء حسابك، حاول مرة أخرى' }, 500);
+        await DB.prepare('INSERT OR REPLACE INTO moodle_links (moodle_id,student_id,username,courses,created_at,checked_at) VALUES (?,?,?,?,?,?)').bind(+info.userid, r.meta.last_row_id, username, mine.join(','), iso, iso).run();
+        s = await DB.prepare('SELECT * FROM students WHERE id=?').bind(r.meta.last_row_id).first();
+      } else {
+        if (s.status !== 'active') return J({ error: 'تم إيقاف حسابك على منصة الاختبارات. تواصل مع المنصة.' }, 403);
+        // التسجيل في مودل ما زال ساريًا: نجدد الصلاحية ٣٠ يومًا من الآن (ما لم تكن دائمة)
+        await DB.batch([DB.prepare('UPDATE students SET name=?,expires_at=CASE WHEN expires_at IS NULL THEN NULL WHEN expires_at>? THEN expires_at ELSE ? END WHERE id=?').bind(name, exp, exp, s.id), DB.prepare('UPDATE moodle_links SET username=?,courses=?,checked_at=? WHERE moodle_id=?').bind(username, mine.join(','), iso, +info.userid)]);
+        s = await DB.prepare('SELECT * FROM students WHERE id=?').bind(s.id).first();
+      }
+      if ((s.pause_until || 0) > now) await endPause(s);
+      return admit(s, s.code);
+  };
   if (p === 'login/moodle' && m === 'POST') {
     if (await setting('moodle_enabled') === '0') return J({ error: 'الدخول بحساب منصة الدورات غير مفعّل حاليًا' }, 403);
     if (await tooMany('m|' + ip)) return J({ error: 'محاولات خاطئة كثيرة. حاول بعد ربع ساعة.' }, 429);
@@ -416,27 +442,30 @@ export async function onRequest({ request, env, params }) {
     try { info = await ws('core_webservice_get_site_info'); courses = await ws('core_enrol_get_users_courses', { userid: String(info.userid) }); }
     catch (e) { return J({ error: 'تعذّر قراءة بيانات حسابك من منصة الدورات' }, 502); }
     if (!info || !info.userid) return J({ error: 'تعذّر قراءة بيانات حسابك من منصة الدورات' }, 502);
-    const allowed = String((await setting('moodle_courses')) || '').split(/[^0-9]+/).filter(Boolean).map(Number);
-    const mine = Array.isArray(courses) ? courses.map(x => +x.id) : [];
-    if (allowed.length ? !mine.some(id => allowed.includes(id)) : !mine.length) return J({ error: 'حسابك على منصة الدورات لا يشمل اشتراكًا في دورات الاختبارات. تواصل مع المنصة للاشتراك.', moodle: 1 }, 403);
-    await ensureMoodleSchema(DB);
-    const name = String(info.fullname || username).slice(0, 80), link = await DB.prepare('SELECT * FROM moodle_links WHERE moodle_id=?').bind(+info.userid).first();
-    let s = link ? await DB.prepare('SELECT * FROM students WHERE id=?').bind(link.student_id).first() : null;
-    const exp = new Date(now + 30 * 864e5).toISOString();
-    if (!s) {
-      let c = '', r = null;
-      for (let i = 0; i < 5 && !r; i++) { c = 'M' + newCode().slice(1); try { r = await DB.prepare('INSERT INTO students (name,code,created_at,kind,max_devices,expires_at) VALUES (?,?,?,?,?,?)').bind(name, c, iso, 'single', 3, exp).run(); } catch (e) { r = null; } }
-      if (!r) return J({ error: 'تعذّر إنشاء حسابك، حاول مرة أخرى' }, 500);
-      await DB.prepare('INSERT OR REPLACE INTO moodle_links (moodle_id,student_id,username,courses,created_at,checked_at) VALUES (?,?,?,?,?,?)').bind(+info.userid, r.meta.last_row_id, username, mine.join(','), iso, iso).run();
-      s = await DB.prepare('SELECT * FROM students WHERE id=?').bind(r.meta.last_row_id).first();
-    } else {
-      if (s.status !== 'active') return J({ error: 'تم إيقاف حسابك على منصة الاختبارات. تواصل مع المنصة.' }, 403);
-      // التسجيل في مودل ما زال ساريًا: نجدد الصلاحية ٣٠ يومًا من الآن (ما لم تكن دائمة)
-      await DB.batch([DB.prepare('UPDATE students SET name=?,expires_at=CASE WHEN expires_at IS NULL THEN NULL WHEN expires_at>? THEN expires_at ELSE ? END WHERE id=?').bind(name, exp, exp, s.id), DB.prepare('UPDATE moodle_links SET username=?,courses=?,checked_at=? WHERE moodle_id=?').bind(username, mine.join(','), iso, +info.userid)]);
-      s = await DB.prepare('SELECT * FROM students WHERE id=?').bind(s.id).first();
-    }
-    if ((s.pause_until || 0) > now) await endPause(s);
-    return admit(s, s.code);
+    return admitMoodle(info, username, courses);
+  }
+  // الدخول بحساب جوجل: نتحقق من جوجل، ثم نبحث عن نفس الإيميل في مودل ونتأكد من اشتراكه في دورة
+  if (p === 'login/google' && m === 'POST') {
+    if (await setting('moodle_enabled') === '0') return J({ error: 'الدخول بحساب منصة الدورات غير مفعّل حاليًا' }, 403);
+    if (!env.MOODLE_TOKEN) return J({ error: 'الدخول بجوجل لم يُجهَّز بعد. ادخل باسم المستخدم وكلمة المرور.' }, 503);
+    if (await tooMany('g|' + ip, 20)) return J({ error: 'محاولات كثيرة. حاول بعد ربع ساعة.' }, 429);
+    const b = await body(), cred = String(b.credential || '').slice(0, 4000), cid = (await setting('google_client_id')) || GOOGLE_CLIENT_ID;
+    if (!cred) return J({ error: 'تعذّر الدخول بجوجل' }, 400);
+    let g;
+    try { g = await (await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(cred))).json(); }
+    catch (e) { return J({ error: 'تعذّر الاتصال بجوجل الآن. حاول بعد قليل.' }, 502); }
+    if (!g || g.aud !== cid || !['accounts.google.com', 'https://accounts.google.com'].includes(g.iss) || !(+g.exp * 1000 > now) || String(g.email_verified) !== 'true' || !g.email) { await addFail('g|' + ip); return J({ error: 'تعذّر التحقق من حساب جوجل' }, 401); }
+    const email = String(g.email).toLowerCase(), base = ((await setting('moodle_url')) || MOODLE_URL).replace(/\/+$/, '');
+    const ws = async (fn, params = {}) => { const r = await fetch(base + '/webservice/rest/server.php', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ wstoken: env.MOODLE_TOKEN, wsfunction: fn, moodlewsrestformat: 'json', ...params }) }); return r.json(); };
+    let users, courses;
+    try { users = await ws('core_user_get_users_by_field', { field: 'email', 'values[0]': email }); }
+    catch (e) { return J({ error: 'تعذّر الاتصال بمنصة الدورات الآن. حاول بعد قليل.' }, 502); }
+    if (users && users.exception) return J({ error: 'إعداد الربط مع منصة الدورات غير مكتمل (' + String(users.errorcode || '').slice(0, 60) + ')' }, 502);
+    const u = Array.isArray(users) ? users.find(x => !x.suspended && String(x.email || '').toLowerCase() === email) : null;
+    if (!u) { await addFail('g|' + ip); return J({ error: 'الإيميل ' + email + ' غير مسجّل على منصة الدورات. أنشئ حسابًا بنفس الإيميل أولًا ثم اشترك في دورة.', signup: 1 }, 404); }
+    try { courses = await ws('core_enrol_get_users_courses', { userid: String(u.id) }); }
+    catch (e) { return J({ error: 'تعذّر قراءة بيانات حسابك من منصة الدورات' }, 502); }
+    return admitMoodle({ userid: u.id, fullname: u.fullname || g.name }, String(u.username || email).toLowerCase(), courses);
   }
   if (p === 'logout') return J({ ok: 1 }, 200, { 'set-cookie': 'bw_code=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' });
 
@@ -1181,7 +1210,7 @@ export async function onRequest({ request, env, params }) {
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;
     const settings = {};
-    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.free_count = +S.free_count || 10; settings.vis = VIS; }
+    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
     if (can('settings.contact') || can('leads.manage')) settings.lead_message = S.lead_message || DEFAULT_LEAD_MSG;
@@ -1272,6 +1301,7 @@ export async function onRequest({ request, env, params }) {
     else if (b.key === 'moodle_enabled') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
     else if (b.key === 'moodle_courses') { if (!can('settings.access')) return deny(); v = String(b.value || '').split(/[^0-9]+/).filter(Boolean).slice(0, 50).join(','); }
     else if (b.key === 'moodle_url') { if (!can('settings.access')) return deny(); v = String(b.value || '').trim().replace(/\/+$/, ''); if (!/^https:\/\/[^\s]+$/.test(v)) return J({ error: 'اكتب رابط منصة الدورات يبدأ بـ https://' }, 400); }
+    else if (b.key === 'google_client_id') { if (!can('settings.access')) return deny(); v = String(b.value || '').trim(); if (v && !/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/.test(v)) return J({ error: 'Client ID غير صحيح؛ لازم ينتهي بـ .apps.googleusercontent.com' }, 400); }
     else if (b.key === 'free_mode') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
     else if (b.key === 'free_count') { if (!can('settings.access')) return deny(); v = String(Math.max(1, Math.min(50, int(b.value) || 10))); }
     else if (b.key === 'hidden_courses') { if (!can('settings.access')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
