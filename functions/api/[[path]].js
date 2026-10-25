@@ -1104,8 +1104,10 @@ export async function onRequest({ request, env, params }) {
     const configured = !!(env.CF_API_TOKEN && env.CF_ACCOUNT_ID);
     const goodRow = await one("SELECT value FROM settings WHERE key='good_versions'");
     let good = {}; try { good = JSON.parse(goodRow && goodRow.value || '{}') || {}; } catch (e) { good = {}; }
+    // تنظيف المفتاح من مسافات أو أسطر زائدة قد تدخل مع النسخ واللصق
+    const CFT = String(env.CF_API_TOKEN || '').trim(), CFA = String(env.CF_ACCOUNT_ID || '').trim();
     const cf = async (path, method = 'GET') => {
-      const r = await fetch('https://api.cloudflare.com/client/v4/accounts/' + encodeURIComponent(env.CF_ACCOUNT_ID) + '/pages/projects/' + encodeURIComponent(proj) + path, { method, headers: { authorization: 'Bearer ' + env.CF_API_TOKEN } });
+      const r = await fetch('https://api.cloudflare.com/client/v4/accounts/' + encodeURIComponent(CFA) + '/pages/projects/' + encodeURIComponent(proj) + path, { method, headers: { authorization: 'Bearer ' + CFT } });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.success) throw new Error(((d.errors || [])[0] || {}).message || ('Cloudflare ' + r.status));
       return d.result;
@@ -1116,7 +1118,18 @@ export async function onRequest({ request, env, params }) {
       try {
         const [info, list] = await Promise.all([cf(''), cf('/deployments?env=production&per_page=25')]);
         return J({ configured: true, project: proj, current: info && info.canonical_deployment ? info.canonical_deployment.id : null, list: (list || []).map(shape) });
-      } catch (e) { return J({ configured: true, project: proj, error: 'تعذّر الاتصال بـ Cloudflare: ' + e.message, list: [] }); }
+      } catch (e) {
+        // تشخيص واضح: هل المفتاح نفسه سليم؟ وهل له صلاحية على هذا الحساب؟
+        let why = '';
+        try {
+          const vr = async u => { const r = await fetch('https://api.cloudflare.com/client/v4' + u, { headers: { authorization: 'Bearer ' + CFT } }); const d = await r.json().catch(() => ({})); return d && d.success && d.result ? d.result.status : ''; };
+          const st = (await vr('/user/tokens/verify')) || (await vr('/accounts/' + encodeURIComponent(CFA) + '/tokens/verify'));
+          if (!st) why = 'المفتاح CF_API_TOKEN غير صحيح (غالبًا اتنسخ ناقص أو اتمسح). اعمل Roll للمفتاح وانسخه كاملًا وحطه تاني، ثم Retry deployment.';
+          else if (st !== 'active') why = 'المفتاح موجود لكن حالته: ' + st + '. فعّله أو اعمل مفتاحًا جديدًا.';
+          else why = 'المفتاح سليم لكن ليس له صلاحية «Cloudflare Pages: Edit» على الحساب ' + CFA + '. عدّل صلاحيات المفتاح وتأكد أن Account Resources فيها هذا الحساب، أو أن CF_ACCOUNT_ID صحيح.';
+        } catch (e2) { }
+        return J({ configured: true, project: proj, error: 'تعذّر الاتصال بـ Cloudflare: ' + e.message + (why ? ' — ' + why : ''), list: [] });
+      }
     }
     if (p === 'admin/versions/mark' && m === 'POST') {
       const b = await body(), id = txt(b.id, 64); if (!/^[0-9a-f-]{8,64}$/i.test(id)) return J({ error: 'نسخة غير صحيحة' }, 400);
