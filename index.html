@@ -451,7 +451,9 @@
     [].forEach.call(ex.querySelectorAll('.exam-list'), function (l) { l.style.display = [].some.call(l.children, function (a) { return a.style.display !== 'none'; }) ? '' : 'none'; });
     ex.classList.toggle('filtered', !!f); }); })();
 // تسجيل خروج الطالب
-(function () { var o = document.getElementById('bwOut'); if (o) o.onclick = function (e) { e.preventDefault(); fetch('/api/logout', { method: 'POST' }).catch(function () { }).then(function () { location.href = '/login'; }); }; })();
+(function () { var o = document.getElementById('bwOut'); if (o) o.onclick = function (e) { e.preventDefault(); o.textContent = 'جارٍ تسجيل الخروج…'; fetch('/api/logout', { method: 'POST' }).catch(function () { }).then(function () { try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (_) { } location.replace('/?out=1'); }); }; })();
+  // بعد تسجيل الخروج: الرئيسية كزائر + رسالة تأكيد
+  if (/[?&]out=1/.test(location.search)) { var ob = document.createElement('div'); ob.textContent = '✓ تم تسجيل الخروج'; ob.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:999;background:#0c2440;color:#fff;border:2px solid #e3a92b;border-radius:12px;padding:10px 18px;font-weight:600'; document.body.appendChild(ob); setTimeout(function () { ob.remove(); }, 3500); history.replaceState(null, '', location.pathname + location.hash); }
 // الطالب العائد: الزر الرئيسي يصبح «أكمل تدريبي»
 (function () { try { var ls = localStorage, back = ['bw-stats-v1', 'bwv-stats-v1', 'bw-place-v1', 'bw-run', 'bwv-run'].some(function (k) { return ls.getItem(k); }); if (!back) return;
   var a = document.getElementById('heroMain'), b = document.getElementById('heroSec'); if (!a || !b) return;
