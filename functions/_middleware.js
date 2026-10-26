@@ -14,7 +14,9 @@ const COURSES = {
   'muhaky mohawsab': { title: 'المحاكي المحوسب', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] },
   'muhaky warky1': { title: 'المحاكي الورقي – النموذج الأول', model: 'key' },
   'muhaky warky2': { title: 'المحاكي الورقي – النموذج الثاني', model: 'key' },
-  'tasis lafzi': { title: 'تأسيس اللفظي', model: 'raw' }
+  'tasis lafzi': { title: 'تأسيس اللفظي', model: 'raw' },
+  // بنك صور ثابت: يعدّل المعلم الإجابة والإرشاد وصورة السؤال، أو يخفي السؤال
+  'aktar kamy': { title: 'الأسئلة الأكثر تكرارًا – كمي', model: 'static', img: true, hints: true, url: '/aktar kamy' }
 };
 // صفحات ليست مقررات لكنها تقرأ أسئلة المقررات (مع تعديلات المعلمين): اختبار تحديد المستوى
 const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'] };
@@ -120,7 +122,7 @@ export async function onRequest({ request, env, next }) {
   let head = (course || links.length) ? `<script>window.__BWX=${safeJson({ c: course || slug, p: patches, linked })}</script><script src="/bw-content.js"></script>` + links.map(l => `<script src="/api/exam/data?c=${encodeURIComponent(l)}"></script>`).join('') : '';
   // الأكثر تكرارًا (بنك صور ثابت): تصحيحات مفاتيح الإجابات المعتمدة من «مراجعة الإجابات» في لوحة التحكم
   if (slug === 'aktar kamy') {
-    try { const ak = {}, ah = {}; for (const r of ((await env.DB.prepare("SELECT kind,key,data FROM exam_patch WHERE course='aktar kamy' AND kind IN ('ak','ah') AND deleted=0").all()).results || [])) (r.kind === 'ah' ? ah : ak)[r.key] = JSON.parse(r.data); if (Object.keys(ak).length) head += `<script>window.__BWAK=${safeJson(ak)}</script>`; if (Object.keys(ah).length) head += `<script>window.__BWAH=${safeJson(ah)}</script>`; } catch (e) { }
+    try { const P = { ak: {}, ah: {}, ai: {}, ax: {} }; for (const r of ((await env.DB.prepare("SELECT kind,key,data FROM exam_patch WHERE course='aktar kamy' AND kind IN ('ak','ah','ai','ax') AND deleted=0").all()).results || [])) P[r.kind][r.key] = JSON.parse(r.data); for (const k of Object.keys(P)) if (Object.keys(P[k]).length) head += `<script>window.__BW${k.toUpperCase()}=${safeJson(P[k])}</script>`; } catch (e) { }
   }
   const paused = !!st && (st.pause_until || 0) > now;
   const valid = !!st && st.status === 'active' && (!st.expires_at || st.expires_at > iso) && !paused;

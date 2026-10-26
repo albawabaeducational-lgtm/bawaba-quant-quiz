@@ -4,7 +4,7 @@
   'use strict';
   var C = window.__BWE; if (!C) return;
   var R = C.rights || {}, L = ['أ', 'ب', 'ج', 'د'];
-  var KN = { q: 'سؤال', s: 'قسم', p: 'قطعة', o: 'ترتيب قسم', qq: 'إجابة سؤال كمي', qh: 'إرشاد سؤال كمي', r: 'سؤال', k: 'إجابة سؤال' };
+  var KN = { ak: 'إجابة سؤال', ah: 'إرشاد سؤال', ai: 'صورة سؤال', ax: 'إخفاء سؤال', q: 'سؤال', s: 'قسم', p: 'قطعة', o: 'ترتيب قسم', qq: 'إجابة سؤال كمي', qh: 'إرشاد سؤال كمي', r: 'سؤال', k: 'إجابة سؤال' };
   var TYN = (typeof window.TYN !== 'undefined' && window.TYN) || (function () { try { return eval('typeof TYN!=="undefined"?TYN:null'); } catch (e) { return null; } })() || ['التناظر اللفظي', 'إكمال الجمل', 'الخطأ السياقي', 'استيعاب المقروء', 'المفردة الشاذة'];
   function g(name) { try { return eval('typeof ' + name + '!=="undefined"?' + name + ':undefined'); } catch (e) { return undefined; } }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -20,6 +20,7 @@
   function load() {
     if (M === 'bank') { var db = g('DB'); D = db ? clone(db) : null; }
     else if (M === 'raw') { var r = g('RAW'); D = r ? clone(r) : null; RAWK = (window.__bwRawKeys || (D || []).map(function (_, i) { return String(i); })).slice(); }
+    else if (M === 'static') { var mt = window.__bwMT; D = mt ? clone(mt) : null; }
     else if (M === 'key') { var k = g('KEY'); D = k ? Array.from(k) : null; KEYS = Array.from(B.key || k || ''); }
   }
   var baseQ = {}; (B.q || []).forEach(function (id) { baseQ[id] = 1; });
@@ -106,6 +107,7 @@
     else if (E.view === 'reps') h += viewReps();
     else if (M === 'bank') h += E.view === 'q' ? viewQ() : E.view === 'sec' ? viewSec() : viewHome();
     else if (M === 'raw') h += E.view === 'q' ? viewRawQ() : viewRaw();
+    else if (M === 'static') h += E.view === 'q' ? viewStQ() : E.view === 'sec' ? viewStSec() : viewStHome();
     else h += viewKey();
     root.innerHTML = h + '</div>';
     if (E.view === 'q' && M === 'bank') prevQ();
@@ -222,7 +224,8 @@
     try {
       var data = await new Promise(function (res, rej) { var im = new Image(); im.onload = function () { var s = Math.min(1, 1400 / im.naturalWidth), c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * s); c.height = Math.round(im.naturalHeight * s); var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); var d = c.toDataURL('image/webp', 0.85); if (d.indexOf('data:image/webp') !== 0) d = c.toDataURL('image/jpeg', 0.85); res(d); }; im.onerror = rej; im.src = URL.createObjectURL(file); });
       var r = await api('exam/upload', { course: C.course, data: data });
-      syncQ(); E.q.img = r.src; draw(); toast('تم رفع الصورة ✓ لا تنسَ حفظ السؤال', 'ok');
+      if (M === 'static') { var cc = root.querySelector('input[name=bwe-c]:checked'); if (cc) E.q.c = +cc.value; var hh = root.querySelector('#bwe-h'); if (hh) E.q.h = hh.value; } else syncQ();
+      E.q.img = r.src; draw(); toast('تم رفع الصورة ✓ لا تنسَ حفظ السؤال', 'ok');
     } catch (e) { toast(e.message || 'تعذّر رفع الصورة', 'err'); }
   }
   function viewQQ() {
@@ -234,6 +237,59 @@
         return '<div class="q' + (p ? ' mod' : '') + '" data-qq="' + a[0] + '"><div class="row"><b>صورة رقم ' + a[0] + '</b>' + (p ? '<span class="b mod">معدّل</span>' : '') + '</div><img class="th" style="max-height:220px" loading="lazy" src="img/' + a[0] + '.webp" alt=""><div class="ans">' + L.map(function (l, i) { return '<label class="' + (i === a[2] ? 'on' : '') + '"><input type="radio" name="qq' + a[0] + '" value="' + i + '"' + (i === a[2] ? ' checked' : '') + (R.edit ? '' : ' disabled') + '>' + l + '</label>'; }).join('') + '</div>'
           + '<label class="f">💡 إرشاد</label><input data-qh="' + a[0] + '" value="' + esc(QH[a[0]] || '') + '"' + (R.edit ? '' : ' readonly') + '>' + (R.edit ? '<div class="row" style="margin-top:8px"><button class="sm" data-a="saveqq" data-id="' + a[0] + '">حفظ</button>' + (p ? '<button class="g sm" data-a="revertqq" data-id="' + a[0] + '">↶ رجوع للأصل</button>' : '') + '</div>' : '') + '</div>';
       }).join('');
+  }
+
+  // ---------- بنك صور ثابت (الأكثر تكرارًا): الإجابة والإرشاد وصورة السؤال وإخفاؤه ----------
+  var SAI = clone(window.__BWAI || {}), SAX = clone(window.__BWAX || {});
+  var stImg = function (id) { return SAI[id] || 'mt/' + String(id).padStart(4, '0') + '.webp'; };
+  var stMod = function (id) { return ['ak', 'ah', 'ai', 'ax'].some(function (k) { return patched[k + '|' + id] === 1; }); };
+  var stModel = function (id) { var m = (D.models || []).filter(function (x) { return x.id === id; })[0]; return m ? m.name : 'نموذج ' + id; };
+  function stRow(a, withModel) {
+    var id = a[0], hid = !!SAX[id];
+    return '<div class="q' + (hid ? '' : stMod(id) ? ' mod' : '') + '"' + (hid ? ' style="opacity:.6"' : '') + '><div class="row"><b>سؤال رقم ' + id + '</b>' + (hid ? '<span class="b mod">مخفي عن الطلاب</span>' : stMod(id) ? '<span class="b mod">معدّل</span>' : '') + (withModel ? '<span class="m">' + esc(stModel(a[1])) + '</span>' : '') + '</div>'
+      + '<img class="th" loading="lazy" src="' + esc(stImg(id)) + '" alt=""><div>✓ الإجابة الصحيحة: <b>' + L[a[2]] + '</b>' + (a[3] ? ' · 💡 ' + esc(short(a[3], 90)) : ' · <span class="m">بدون إرشاد</span>') + '</div>'
+      + '<div class="row" style="margin-top:6px">' + (R.edit ? '<button class="sm" data-a="stedit" data-id="' + id + '">✏ تعديل</button>' : '') + (stMod(id) && R.edit ? '<button class="g sm" data-a="strev" data-id="' + id + '">↶ رجوع للأصل</button>' : '') + '</div></div>';
+  }
+  function viewStHome() {
+    var f = E.f.trim(), h = '<div class="card"><div class="row"><input id="bwe-f" placeholder="🔎 اكتب رقم السؤال أو كلمة من الإرشاد…" value="' + esc(E.f) + '" style="flex:1;min-width:200px"></div><p class="m" style="margin:8px 0 0">أسئلة هذا المقرر صور؛ يمكنك تعديل الإجابة الصحيحة والإرشاد، واستبدال صورة السؤال بصورة مصححة، أو إخفاء السؤال عن الطلاب.</p>';
+    if (f) {
+      var res = D.qs.filter(function (a) { return String(a[0]) === f.replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }) || (f.length >= 2 && String(a[3] || '').indexOf(f) >= 0); }).slice(0, 30);
+      h += '<h3 style="margin-top:12px">نتائج البحث (' + res.length + ')</h3>' + (res.map(function (a) { return stRow(a, true); }).join('') || '<p class="m">لا توجد نتائج.</p>');
+    }
+    h += '</div><div class="card"><h2>النماذج (' + (D.models || []).length + ') · ' + D.qs.length + ' سؤال</h2><div class="grid">' + (D.models || []).map(function (m) {
+      var qs = D.qs.filter(function (a) { return a[1] === m.id; }), mod = qs.some(function (a) { return stMod(a[0]); });
+      return '<button class="sec" data-sec="' + m.id + '">' + esc(m.name) + (mod ? ' <span class="b mod">✎</span>' : '') + '<small>' + qs.length + ' سؤال</small></button>';
+    }).join('') + '</div></div>';
+    return h;
+  }
+  function viewStSec() {
+    var qs = D.qs.filter(function (a) { return a[1] === E.sec; });
+    return '<div class="row" style="margin-bottom:10px"><button class="g" data-a="home">→ كل النماذج</button><h2 style="margin:0">' + esc(stModel(E.sec)) + ' (' + qs.length + ' سؤال)</h2></div><div class="card">' + qs.map(function (a) { return stRow(a, false); }).join('') + '</div>';
+  }
+  function startSt(id) {
+    var a = D.qs.filter(function (x) { return x[0] === id; })[0]; if (!a) return toast('السؤال غير موجود', 'err');
+    E.sec = a[1]; E.q = { id: id, c: a[2], h: a[3] || '', img: stImg(id), hid: !!SAX[id] }; E.view = 'q'; draw(); host.scrollTop = 0;
+  }
+  function viewStQ() {
+    var q = E.q, h = '<div class="row" style="margin-bottom:10px"><button class="g" data-a="backsec">→ رجوع</button><h2 style="margin:0">تعديل السؤال رقم ' + q.id + '</h2><span class="m">' + esc(stModel(E.sec)) + '</span></div><div class="card">';
+    if (q.hid) h += '<div class="note">هذا السؤال مخفي عن الطلاب الآن.</div>';
+    h += '<label class="f">صورة السؤال</label><div class="imgbox"><img id="bwe-im" src="' + esc(q.img) + '" alt=""><input type="file" id="bwe-file" accept="image/*" style="display:none"><button class="g" data-a="pick">📷 استبدال الصورة بصورة مصححة</button><div class="m" style="margin-top:6px">صوّر السؤال بعد تصحيحه (أو عدّله في أي برنامج صور) ثم ارفعه هنا، أو الصق الصورة (Ctrl+V). الصورة تُضغط تلقائيًا.</div></div>';
+    h += '<label class="f">الإجابة الصحيحة</label><div class="ans">' + L.map(function (l, i) { return '<label class="' + (i === q.c ? 'on' : '') + '"><input type="radio" name="bwe-c" value="' + i + '"' + (i === q.c ? ' checked' : '') + '>' + l + '</label>'; }).join('') + '</div>';
+    h += '<label class="f">💡 إرشاد للطالب (سطر واحد يوجّهه دون أن يعطيه الحل)</label><textarea id="bwe-h" style="min-height:60px" maxlength="400">' + esc(q.h) + '</textarea>';
+    h += '<div class="row" style="margin-top:14px"><button data-a="stsave">💾 حفظ السؤال</button><button class="g" data-a="backsec">إلغاء</button><span style="flex:1"></span>'
+      + (q.hid ? '<button class="o" data-a="stshow">👁 إظهار السؤال للطلاب</button>' : R.delete ? '<button class="r" data-a="sthide">🚫 إخفاء السؤال عن الطلاب</button>' : '') + '</div></div>';
+    return h;
+  }
+  async function saveSt() {
+    var q = E.q, a = D.qs.filter(function (x) { return x[0] === q.id; })[0], c = root.querySelector('input[name=bwe-c]:checked'), ops = [];
+    q.c = c ? +c.value : q.c; q.h = root.querySelector('#bwe-h').value.replace(/\s+/g, ' ').trim();
+    if (q.c !== a[2]) ops.push({ kind: 'ak', key: String(q.id), act: 'edit', data: q.c });
+    if (q.h !== (a[3] || '')) ops.push({ kind: 'ah', key: String(q.id), act: 'edit', data: q.h });
+    if (q.img !== stImg(q.id)) ops.push({ kind: 'ai', key: String(q.id), act: 'edit', data: q.img });
+    if (!ops.length) return toast('لا توجد تغييرات');
+    if (!(await save(ops, 'تم حفظ السؤال ✓'))) return;
+    a[2] = q.c; a[3] = q.h; if (/^\/api\//.test(q.img)) SAI[q.id] = q.img;
+    E.view = 'sec'; draw();
   }
 
   // ---------- أسئلة نصية (تأسيس) ----------
@@ -284,7 +340,7 @@
     if (!REPS) { api('exam/reports?course=' + encodeURIComponent(C.course)).then(function (r) { REPS = r.reports; draw(); }).catch(function (e) { toast(e.message, 'err'); }); return '<div class="card"><p class="m">جارٍ التحميل…</p></div>'; }
     return '<div class="row" style="margin-bottom:10px"><button class="g" data-a="home">→ رجوع</button><h2 style="margin:0">بلاغات الطلاب على هذا المقرر (' + REPS.length + ')</h2></div><div class="card">' + (REPS.length ? REPS.map(function (r) {
       var lbl = M === 'raw' ? (RAWK.indexOf(r.qkey) >= 0 ? 'سؤال ' + (RAWK.indexOf(r.qkey) + 1) : '') : r.qkey ? 'سؤال رقم ' + r.qkey : 'بدون رقم سؤال';
-      var canOpen = r.qkey && ((M === 'bank' && D.qs.some(function (q) { return String(q[0]) === r.qkey; })) || (M === 'raw' && RAWK.indexOf(r.qkey) >= 0));
+      var canOpen = r.qkey && ((M === 'static' && D.qs.some(function (q) { return String(q[0]) === r.qkey; })) || (M === 'bank' && D.qs.some(function (q) { return String(q[0]) === r.qkey; })) || (M === 'raw' && RAWK.indexOf(r.qkey) >= 0));
       return '<div class="q"><div class="row"><span class="b mod">' + esc(RN[r.reason] || r.reason) + '</span><b>' + esc(lbl) + '</b><span class="m">' + esc(r.student || 'زائر') + ' · ' + ago(r.created_at) + '</span></div>' + (r.note ? '<p style="margin:6px 0">' + esc(r.note) + '</p>' : '') + '<div class="row">' + (canOpen && R.edit ? '<button class="sm" data-a="repopen" data-id="' + esc(r.qkey) + '">✏ افتح السؤال</button>' : '') + '<button class="o sm" data-a="repclose" data-id="' + r.id + '">✓ تمت المراجعة</button></div></div>';
     }).join('') : '<p class="m">لا توجد بلاغات مفتوحة. 👍</p>') + '</div>';
   }
@@ -294,7 +350,7 @@
   function viewHist() {
     if (!HIST) { api('exam/history?course=' + encodeURIComponent(C.course)).then(function (r) { HIST = r.history; draw(); }).catch(function (e) { toast(e.message, 'err'); }); return '<div class="card"><p class="m">جارٍ التحميل…</p></div>'; }
     return '<div class="row" style="margin-bottom:10px"><button class="g" data-a="home">→ رجوع</button><h2 style="margin:0">سجل التعديلات على هذا المقرر</h2></div><div class="card">' + (HIST.length ? HIST.map(function (r) {
-      var added = !inBase(r.kind, r.key), canRev = ['q', 's', 'r', 'qq', 'qh', 'k', 'p', 'o'].indexOf(r.kind) >= 0 && (added ? R.delete : R.edit);
+      var added = !inBase(r.kind, r.key), canRev = ['q', 's', 'r', 'qq', 'qh', 'k', 'p', 'o', 'ak', 'ah', 'ai', 'ax'].indexOf(r.kind) >= 0 && (added ? R.delete : R.edit);
       return '<div class="row" style="padding:8px 0;border-bottom:1px solid #eef3f8"><span class="b ' + (r.deleted ? 'mod' : added ? 'new' : 't') + '">' + (r.deleted ? 'حذف' : added ? 'إضافة' : 'تعديل') + '</span><b>' + (KN[r.kind] || r.kind) + ' ' + esc(r.kind === 'r' && /^\d+$/.test(r.key) ? +r.key + 1 : r.key) + '</b><span class="m">· ' + esc(r.updated_by || '') + ' · ' + ago(r.updated_at) + '</span><span style="flex:1"></span>' + (canRev ? '<button class="g sm" data-a="revert" data-k="' + esc(r.kind) + '" data-id="' + esc(r.key) + '">↶ رجوع للأصل</button>' : '') + '</div>';
     }).join('') : '<p class="m">لا توجد تعديلات على هذا المقرر بعد.</p>') + '</div>';
   }
@@ -313,7 +369,7 @@
     if (a === 'hist') { HIST = null; E.view = 'hist'; return draw(); }
     if (a === 'reps') { REPS = null; E.view = 'reps'; return draw(); }
     if (a === 'repclose') { try { await api('exam/report-close', { id: +id }); REPS = REPS.filter(function (r) { return r.id !== +id; }); toast('تم إغلاق البلاغ', 'ok'); draw(); } catch (err) { toast(err.message, 'err'); } return; }
-    if (a === 'repopen') { if (M === 'bank') { var rq = D.qs.filter(function (q) { return String(q[0]) === id; })[0]; E.sec = rq[1]; return startQ(rq[0]); } if (M === 'raw') { var ri = RAWK.indexOf(id); E.q = { a: clone(D[ri]), isNew: false, i: ri }; E.view = 'q'; return draw(); } return; }
+    if (a === 'repopen') { if (M === 'static') return startSt(+id); if (M === 'bank') { var rq = D.qs.filter(function (q) { return String(q[0]) === id; })[0]; E.sec = rq[1]; return startQ(rq[0]); } if (M === 'raw') { var ri = RAWK.indexOf(id); E.q = { a: clone(D[ri]), isNew: false, i: ri }; E.view = 'q'; return draw(); } return; }
     if (a === 'home') { E.view = 'home'; return draw(); }
     if (a === 'tab') { E.tab = t.dataset.v; return draw(); }
     if (a === 'backsec') { E.view = E.sec ? 'sec' : 'home'; return draw(); }
@@ -344,6 +400,14 @@
       }
       if (a === 'revertqq') { try { if (patched['qq|' + id]) await api('exam/revert', { course: C.course, kind: 'qq', key: id }); if (patched['qh|' + id]) await api('exam/revert', { course: C.course, kind: 'qh', key: id }); E.changed = true; toast('تم — سيتم تحديث الصفحة', 'ok'); setTimeout(reload, 700); } catch (err) { toast(err.message, 'err'); } return; }
     }
+    if (M === 'static') {
+      if (a === 'stedit') return startSt(+id);
+      if (a === 'stsave') return saveSt();
+      if (a === 'pick') return root.querySelector('#bwe-file').click();
+      if (a === 'strev') { if (!ask('إلغاء كل تعديلات السؤال رقم ' + id + ' والرجوع للأصل (الإجابة والإرشاد والصورة والإخفاء)؟')) return; try { for (var kk of ['ak', 'ah', 'ai', 'ax']) if (patched[kk + '|' + id] === 1) await api('exam/revert', { course: C.course, kind: kk, key: id }); E.changed = true; toast('تم — سيتم تحديث الصفحة', 'ok'); setTimeout(reload, 700); } catch (err) { toast(err.message, 'err'); } return; }
+      if (a === 'sthide') { if (!ask('إخفاء السؤال رقم ' + E.q.id + ' عن الطلاب؟ يمكنك إظهاره مرة أخرى في أي وقت.')) return; if (await save([{ kind: 'ax', key: String(E.q.id), act: 'edit', data: 1 }], 'تم إخفاء السؤال')) { SAX[E.q.id] = 1; E.view = 'sec'; draw(); } return; }
+      if (a === 'stshow') { try { await api('exam/revert', { course: C.course, kind: 'ax', key: String(E.q.id) }); delete SAX[E.q.id]; patched['ax|' + E.q.id] = 0; E.changed = true; toast('أصبح السؤال ظاهرًا للطلاب', 'ok'); E.view = 'sec'; draw(); } catch (err) { toast(err.message, 'err'); } return; }
+    }
     if (M === 'raw') {
       if (a === 'addr') { E.q = { a: ['', '', '', '', '', 0], isNew: true }; E.view = 'q'; return draw(); }
       if (a === 'editr') { E.q = { a: clone(D[+id]), isNew: false, i: +id }; E.view = 'q'; draw(); host.scrollTop = 0; return; }
@@ -363,6 +427,7 @@
     if (t.id === 'bwe-file') { upload(t.files[0]); t.value = ''; return; }
     if (t.id === 'bwe-qqs') { E.qqSec = +t.value; return draw(); }
     if (t.dataset && t.dataset.k !== undefined && M === 'key') { D[+t.dataset.k] = t.value; t.parentNode.classList.toggle('ch', t.value !== KEYS[+t.dataset.k]); return; }
+    if (E.view === 'q' && M === 'static' && t.name === 'bwe-c') { root.querySelectorAll('.ans label').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); }); return; }
     if (E.view === 'q' && M === 'bank') {
       if (t.id === 'bwe-pm' || t.id === 'bwe-s') { syncQ(); if (t.id === 'bwe-pm') E.q.ptext = E.q.pmode === 'new' ? '' : E.q.pmode === 'none' ? '' : D.ps[+E.q.pmode]; draw(); return; }
       if (t.name === 'bwe-c') { syncQ(); root.querySelectorAll('.ans label,.opt').forEach(function (l) { var r = l.querySelector('input[name=bwe-c]'); if (r) l.classList.toggle('on', r.checked); }); prevQ(); }
@@ -374,7 +439,7 @@
     if (e.target.id === 'bwe-f') { E.f = e.target.value; E.page = 0; var pos = e.target.selectionStart; draw(); var n = root.querySelector('#bwe-f'); n.focus(); n.setSelectionRange(pos, pos); }
   }
   document.addEventListener('paste', function (e) {
-    if (!root || host.style.display === 'none' || E.view !== 'q' || !C.img) return;
+    if (!root || host.style.display === 'none' || E.view !== 'q' || !(C.img || M === 'static')) return;
     var it = [].slice.call((e.clipboardData || {}).items || []).filter(function (i) { return /^image\//.test(i.type); })[0];
     if (it) { e.preventDefault(); upload(it.getAsFile()); }
   });
@@ -382,6 +447,6 @@
   if (/[?&](edit|admin)\b/.test(location.search)) {
     var u = new URL(location.href), oq = u.searchParams.get('q'); u.searchParams.delete('edit'); u.searchParams.delete('admin'); u.searchParams.delete('q'); history.replaceState(null, '', u.toString());
     // ?edit=1&q=رقم يفتح السؤال مباشرة (من تقارير المقرر: «الأسئلة الأكثر خطأ»)
-    setTimeout(function () { open(); if (oq && D && M === 'bank' && R.edit) { var rq = D.qs.filter(function (q) { return String(q[0]) === oq; })[0]; if (rq) { E.sec = rq[1]; startQ(rq[0]); } } }, 0);
+    setTimeout(function () { open(); if (oq && D && M === 'static' && R.edit) startSt(+oq); if (oq && D && M === 'bank' && R.edit) { var rq = D.qs.filter(function (q) { return String(q[0]) === oq; })[0]; if (rq) { E.sec = rq[1]; startQ(rq[0]); } } }, 0);
   }
 })();

@@ -154,7 +154,8 @@
     if (window.__bwFreeData) DB = window.__bwFreeData('aktar', DB); // النسخة المجانية (يضيفها الخادم لغير المشترك)
   if (window.__BWAK) DB.qs.forEach(function (a) { var v = window.__BWAK[a[0]]; if (v !== undefined) a[2] = v; });
   if (window.__BWAH) DB.qs.forEach(function (a) { var v = window.__BWAH[a[0]]; if (v !== undefined) a[3] = v; });
-  var Q = DB.qs.map(function (a) { return { id: a[0], m: a[1], c: a[2], h: a[3] || '' }; });
+  window.__bwMT = DB; // لوضع التحرير (المعلم)
+  var Q = DB.qs.filter(function (a) { return !(window.__BWAX && window.__BWAX[a[0]]); }).map(function (a) { return { id: a[0], m: a[1], c: a[2], h: a[3] || '' }; });
   var BY = {}; Q.forEach(function (q) { BY[q.id] = q; });
   var MN = {}; DB.models.forEach(function (m) { MN[m.id] = m.name; });
   var L = ['أ', 'ب', 'ج', 'د'], SIZES = [10, 20, 50, 55];
@@ -164,7 +165,7 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   function get(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
-  function img(id) { return 'mt/' + String(id).padStart(4, '0') + '.webp'; }
+  function img(id) { return (window.__BWAI && window.__BWAI[id]) || 'mt/' + String(id).padStart(4, '0') + '.webp'; }
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function fmt(s) { s = Math.max(0, Math.round(s)); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return AR((h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0')); }
   function cnt(n, one, two, few, many) { return n === 1 ? one : n === 2 ? two : AR(n) + ' ' + (n <= 10 ? few : many); }

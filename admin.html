@@ -44,7 +44,7 @@ var VD=[[0,'دائم (بدون انتهاء)'],[7,'٧ أيام'],[30,'٣٠ يو�
 var LS={new:['in','جديد'],contacted:['wn','تم التواصل'],added:['ok','أُضيف للمجموعة'],subscribed:['ok','مشترك'],not_interested:['mu','غير مهتم']};
 var AU={login:'تسجيل دخول',create:'إنشاء',update:'تعديل',delete:'حذف',block:'حظر',unblock:'تفعيل',resetdev:'تصفير الأجهزة',setting:'إعدادات',unban:'رفع حظر',reset:'تصفير',password:'كلمة المرور',member_add:'إضافة أعضاء',member_remove:'إزالة أعضاء',content:'تعديل أسئلة',revert:'رجوع للأصل',course_assign:'إسناد مقرر',course_remove:'إلغاء إسناد مقرر'};
 var AT={staff:'حساب عامل',student:'طالب',group:'مجموعة',lead:'مهتم',settings:'المنصة',course:'مقرر'};
-var MODEL={static:'بنك صور (تصنيف المهارات)',bank:'بنك أسئلة بأقسام',raw:'أسئلة نصية',key:'مفتاح إجابات (اختبار ورقي)',linked:'مرتبط بالكمي واللفظي'};
+var MODEL={static:'بنك صور (الإجابة والإرشاد والصورة)',bank:'بنك أسئلة بأقسام',raw:'أسئلة نصية',key:'مفتاح إجابات (اختبار ورقي)',linked:'مرتبط بالكمي واللفظي'};
 var D=null,view='',PL=[],st={q:'',status:'',group:'',pg:'',lf:'',lq:''},app=document.getElementById('app'),auditRows=null;
 
 /* ---------- أدوات ---------- */
@@ -120,7 +120,7 @@ function drawReview(){
    if(C.edit&&!x.gone)h+='<div class="rvl">'+[0,1,2,3].map(function(i){var c=pk!==undefined?(pk===i?'pick':''):(cur===i?'cur':'');return'<button type="button" class="'+c+'" data-act="rvPick" data-id="'+i+'" data-c="'+esc(x.course)+'" data-k="'+esc(x.key)+'">'+L[i]+'</button>'}).join('')+'</div>'
     +'<div class="row" style="gap:6px;flex-wrap:wrap"><button class="sm" data-act="rvOk" data-c="'+esc(x.course)+'" data-k="'+esc(x.key)+'">✓ الإجابة الحالية صحيحة</button>'+(pk!==undefined&&pk!==cur?'<button class="sm" style="background:#1a7f4b" data-act="rvFix" data-c="'+esc(x.course)+'" data-k="'+esc(x.key)+'">حفظ الإجابة '+L[pk]+'</button>':'')+'</div>';
    else h+='<div class="m" style="margin-top:8px">ليست لديك صلاحية تعديل هذا المقرر.</div>';
-   h+='<div style="margin-top:8px"><a class="m" href="'+esc(C.url||'#')+'" target="_blank" rel="noopener">فتح المقرر لتعديل السؤال كاملًا ↗</a></div>';
+   h+='<div style="margin-top:8px"><a class="m" href="'+esc((C.url||'#')+'?edit=1&q='+encodeURIComponent(x.key))+'" target="_blank" rel="noopener">✏ تعديل السؤال كاملًا (الصورة والإجابة والإرشاد) ↗</a></div>';
   }else{
    h+='<div style="margin:8px 0"><span class="b '+(x.status==='fixed'?'wn':'ok')+'">'+(x.status==='fixed'?'صُحّحت من '+L[x.old_c]+' إلى '+L[x.new_c]:'اعتُمدت الإجابة كما هي')+'</span></div><div class="m">'+esc(x.by||'')+' · '+ago(x.at)+'</div>'
     +(C.edit?'<button class="g sm" style="margin-top:8px" data-act="rvReopen" data-c="'+esc(x.course)+'" data-k="'+esc(x.key)+'">إعادة للمراجعة</button>':'');
