@@ -114,7 +114,11 @@ const COURSES = [
   { slug: 'aktar kamy', title: 'الأسئلة الأكثر تكرارًا – كمي', file: '/aktar kamy.html', model: 'static' } // بنك صور: تصنيف المهارات والتقارير فقط
 ];
 const COURSE = Object.fromEntries(COURSES.map(c => [c.slug, c]));
-const KINDS = { bank: ['q', 's', 'p', 'o'], raw: ['r'], key: ['k'], linked: [], static: [] };
+const KINDS = { bank: ['q', 's', 'p', 'o'], raw: ['r'], key: ['k'], linked: [], static: ['ak'] };
+// @@REVIEW_SEED@@ (يُولَّد تلقائيًا: أسئلة يُشك في مفتاح إجابتها)
+const REVIEW_SEED = {"aksam kamy": {"12": "مجموع ٣ أعداد متتالية = ١٨ → الأصغر ٥ (أ) لكن المفتاح د", "59": "جدول الساق والأوراق: عدد طلاب ٣/١ لا يطابق ٢٠ (المفتاح د)", "72": "مجموع زوايا المثلث ١٨٠ والمربع ٣٦٠ → القيمة الثانية أكبر (ب) لكن المفتاح د", "274": "الأوراق ٥ و١٠ و١٠ و٢٠ → المبالغ مضاعفات ٥، والاختيار ١٠ (ج) ممكن لكن المفتاح ب (٩)", "357": "الزاويتان متقابلتان أو متجاورتان، وفي الحالتين س لا تعطي قيمتين متساويتين (المفتاح ج)", "477": "الناتج تقريبًا ٢٧٠ وأقرب اختيار ٢٤٠ (د) لكن المفتاح أ (٣٦٠)", "498": "لو الجذر تربيعي فالناتج ١٦ (د) والمفتاح أ (٤) — راجع دليل الجذر في الصورة", "504": "تكرار العدد ٣ هو ٢ من ٢٠ أي ٠٫١ (د) لكن المفتاح ب", "549": "تحت ٣٠٠٠ شركتان (أو ثلاث) لكن المفتاح أ (١)", "560": "الفرق بين عددي ١٤٣٤ و ١٤٣٥ يبدو ٧٠ (ج) لكن المفتاح أ (٩٠)", "577": "بالتعويض ص = ٢س القيمتان متساويتان دائمًا (ج) لكن المفتاح د", "578": "الشرط يحدد أن س و ص موجبان، فالمقارنة محددة (ليست د) — راجع اتجاه العلامة", "599": "س موجبة فالقيمتان متساويتان (ج) لكن المفتاح د", "691": "الضلعان عند ص يوازيان ضلعي الزاوية ١٠٠، فالمتوقع ١٠٠ (ب) لكن المفتاح د (٣٦٠)", "703": "قطاع الألعاب ١٥٠ وهو الأكبر (ج) لكن المفتاح أ (إكسسوارات)", "868": "نفس السؤال ٨٦٧ والإجابة ٥٫٩ (ج) لكن المفتاح د (٨)", "943": "مساحة المثلث ٣ س تربيع ناقص المربع س تربيع = ٢ س تربيع (ب) لكن المفتاح د", "1077": "لا يوجد نوع عدده أكبر من ٢٠ (البرونزية ١٨)، والمفتاح ج", "1079": "الناتج ٥ جذر ٣ على ٩ (ب) لكن المفتاح د", "1083": "كل كسر ثلاثة أرباع فالمجموع تسعة أرباع (ج) لكن المفتاح أ", "1087": "٣ سم × ٤٠٠ = ١٢ مترًا (ب) لكن المفتاح ج (١٦)", "1088": "أحرف ١ و ٢ و ٣: الفرق ٢٧ − ١ = ٢٦ (ج) لكن المفتاح ب (٧)", "1121": "٢س + ١ = ٩ تعطي س = ٤ وليست ضمن الاختيارات (المفتاح ب ٦)", "1138": "ثلاثة أثمان المبلغ = ٣٠ فالمبلغ ٨٠ (ج) لكن المفتاح ب (٧٤)", "1142": "ارتفاع المثلث ٢ فمساحة المستطيل ٥ × ٢ = ١٠ (ب) لكن المفتاح أ (١٥)", "1147": "الصياغة غامضة (أربعة أخماس العدد = ٢ والسؤال عن أربعة أخماسه)، المفتاح ب (٣)", "1158": "٦٣ × (١٠٠ على ٣) تربيع × (١٠٠ على ٧) = مليون (ب) لكن المفتاح ج", "1182": "بقي ٥ ثم اشترى ٣ فالناتج ٨ وليس ضمن الاختيارات (المفتاح ج ١٣)", "1192": "النمط غير واضح؛ المفتاح ب (٤٥)"}, "aktar kamy": {"307": "س = ستة وثلاثون على ٢٥ و ص مقلوبها، فحاصل الضرب ١ (ج) لكن المفتاح أ", "379": "المكيف ١٠٠٠ − الثلاجة والغسالة ٩٥٠ − الثلاجة، فالمكيف أكبر (أ) لكن المفتاح ب", "432": "كل التعبيرات ممكنة بحسب الحدود المكتوبة (حاصل الضرب بين ٦ و ٤٢) — راجع نص الحدود والمفتاح ب", "509": "لو الشرط ١ على ٣ أس (ن − ٢) أكبر من ١ على ٢٧ فـ ن أقل من ٥ ولا يمكن المقارنة بـ سالب ١ (د) والمفتاح أ — راجع اتجاه العلامة", "781": "نفس سؤال ٥٠٩ لكن المفتاح مختلف (ب هنا و أ هناك)", "988": "إجابة المفتاح ٩٧٦ لا تطابق الحساب المباشر (نصف السائحين نزل ونصفهم ركب)", "1058": "المحيط متساوٍ فضلع المربع (المحيط على ٤) أكبر دائمًا من ضلع الخماسي، والمفتاح د", "1066": "بمساواة الضلعين ٢س − ١ = س + ٥ يكون المحيط ٣٣ لا ٤٢، والمفتاح ج (راجع قراءة الشكل)", "1099": "بقراءة مباشرة قيمة الحدث ٥٠ وسعر ٥٥ تذكرة أقل منها، والمفتاح أ (صياغة غامضة)", "1156": "أحد عشر عددًا مجموعها ٤٤ لا يعطي أيًا من الخيارات بشكل واضح؛ النص يحتاج مراجعة", "1268": "٣٦٪ من ٥٠ = ١٨ فلا يوجد نوع يزيد على ٢٠ ميدالية، والمفتاح أ", "1331": "(−٢)(٦) + (−١٦)÷(−١٦) − (−٣٢) = ٢١ (الخيار أ)، والمفتاح ج (−٤٣) يفترض طرح ٣٢ موجبة", "1338": "بقراءة الشكل (مماس ١٠ ونصف قطر ٦) لا تخرج س = ٢؛ راجع الأرقام", "1392": "٤س + ٦ص = ٣٦٠ لا تحدد س + ص بدون معطى إضافي", "1430": "الطول ضعف العرض فالمحيط ٦ × العرض = ١٢س² + ٣٠س + ٤٢، والمفتاح أ يساوي نصفه", "1436": "بنصف قطر ١٫٥ وزاوية ١٢٠ تكون المساحة ٠٫٧٥ط، وهي ليست بين الخيارات", "1445": "بالتناسب من الجدول ٣٤٠ سعرة تقابل نحو ٩٧ كم، والمفتاح ج (٨٥)"}};
+// @@END_REVIEW_SEED@@
+
 const LETTERS = ['أ', 'ب', 'ج', 'د'];
 const txt = (v, n) => String(v == null ? '' : v).replace(/\r/g, '').slice(0, n);
 const int = v => { const n = Math.trunc(+v); return Number.isFinite(n) ? n : NaN; };
@@ -257,7 +261,8 @@ const bankItems = async (env, request, DB, slug) => {
   const D = JSON.parse(html.slice(a + 40, z)); let items = [];
   if (c.model === 'static') {
     const MN = Object.fromEntries((D.models || []).map(m => [m.id, m.name]));
-    items = D.qs.map(q => ({ key: String(q[0]), sec: MN[q[1]] || '', img: '/mt/' + String(q[0]).padStart(4, '0') + '.webp', c: q[2] }));
+    const AK = {}; try { for (const r of ((await DB.prepare("SELECT key,data FROM exam_patch WHERE course=? AND kind='ak' AND deleted=0").bind(slug).all()).results || [])) AK[r.key] = JSON.parse(r.data); } catch (e) { }
+    items = D.qs.map(q => ({ key: String(q[0]), sec: MN[q[1]] || '', img: '/mt/' + String(q[0]).padStart(4, '0') + '.webp', c: AK[q[0]] !== undefined ? AK[q[0]] : q[2] }));
   } else {
     let secs = D.secs.slice(), qs = D.qs.slice();
     let rows = []; try { rows = (await DB.prepare('SELECT kind,key,data,deleted FROM exam_patch WHERE course=? ORDER BY created_at,rowid').bind(slug).all()).results || []; } catch (e) { }
@@ -773,6 +778,7 @@ export async function onRequest({ request, env, params }) {
     if (kind === 'o') { if (!(int(key) > 0) || !Array.isArray(d)) bad(); return d.slice(0, 5000).map(int).filter(x => x > 0); }
     if (kind === 'qq') { const n = int(key), cor = int(d && d[2]); if (!(n > 0) || !(cor >= 0 && cor < 4)) bad(); return [n, int(d[1]) || 0, cor]; }
     if (kind === 'qh') return txt(d, 2000).trim();
+    if (kind === 'ak') { const n = int(key), cor = int(d); if (!(n > 0) || !(cor >= 0 && cor < 4)) bad(); return cor; }
     if (kind === 'r') { if (!Array.isArray(d)) bad(); const stem = txt(d[0], 2000).trim(), o = [1, 2, 3, 4].map(i => txt(d[i], 600).trim()), cor = int(d[5]); if (!stem) bad('اكتب نص السؤال'); if (o.some(x => !x)) bad('اكتب الاختيارات الأربعة'); if (!(cor >= 0 && cor < 4)) bad('اختر الإجابة الصحيحة'); return [stem, ...o, cor]; }
     if (kind === 'k') { if (!(int(key) > 0) || !LETTERS.includes(d)) bad(); return d; }
     bad();
@@ -849,7 +855,7 @@ export async function onRequest({ request, env, params }) {
         const kind = String(o.kind || ''), key = txt(o.key, 40);
         if (!KINDS[c.model].includes(kind) || !key) return J({ error: 'عملية غير صالحة' }, 400);
         let act = (o.data === null || o.act === 'delete') ? 'delete' : o.act === 'add' ? 'add' : 'edit';
-        if (['o', 'qh', 'k'].includes(kind) && act !== 'edit') act = 'edit';
+        if (['o', 'qh', 'k', 'ak'].includes(kind) && act !== 'edit') act = 'edit';
         if (kind === 'qq' && act === 'add') return J({ error: 'لا يمكن إضافة أسئلة لهذا الجزء' }, 400);
         const ex = exists(kind, key);
         if (act === 'add' && ex === true) return J({ error: 'الرقم ' + key + ' مستخدم بالفعل. حدّث الصفحة وحاول مرة أخرى.' }, 409);
@@ -978,6 +984,62 @@ export async function onRequest({ request, env, params }) {
     if (!id || (A.type === 'staff' && id === A.id)) return J({ error: 'لا يمكن حذف الحساب الحالي' }, 400);
     await DB.batch([DB.prepare('DELETE FROM staff_sessions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_perms WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_permissions WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM course_staff WHERE staff_id=?').bind(id), DB.prepare('DELETE FROM staff_users WHERE id=?').bind(id), audit(A, 'delete', 'staff', id, u ? u.username : '')]);
     return J({ ok: 1 });
+  }
+  // ---------- مراجعة مفاتيح الإجابات: أسئلة يُشك في إجابتها، تُعتمد كما هي أو تُصحَّح من مكان واحد ----------
+  if (p.startsWith('admin/review')) {
+    await DB.prepare("CREATE TABLE IF NOT EXISTS qreview (course TEXT NOT NULL, qkey TEXT NOT NULL, note TEXT, status TEXT NOT NULL DEFAULT 'open', old_c INTEGER, new_c INTEGER, added_by TEXT, resolved_by TEXT, created_at TEXT NOT NULL, resolved_at TEXT, PRIMARY KEY (course, qkey))").run();
+    const RC = ['aksam kamy', 'aktar kamy'], mine = {};
+    for (const c of RC) { const r = await courseRights(c); if (r) mine[c] = r; }
+    if (!Object.keys(mine).length) return deny('لا توجد مقررات مسندة لك');
+    if (p === 'admin/review' && m === 'GET') {
+      const st0 = [];
+      for (const c of Object.keys(REVIEW_SEED)) for (const k of Object.keys(REVIEW_SEED[c])) st0.push(DB.prepare("INSERT OR IGNORE INTO qreview (course,qkey,note,status,added_by,created_at) VALUES (?,?,?,'open','مراجعة آلية',?)").bind(c, k, REVIEW_SEED[c][k], iso));
+      for (let i = 0; i < st0.length; i += 90) await DB.batch(st0.slice(i, i + 90));
+      const rows = await all('SELECT * FROM qreview WHERE course IN (' + Object.keys(mine).map(() => '?').join(',') + ') ORDER BY CASE status WHEN \'open\' THEN 0 ELSE 1 END, course, CAST(qkey AS INTEGER)', ...Object.keys(mine));
+      const cur = {};
+      for (const c of Object.keys(mine)) { const its = await bankItems(env, request, DB, c); cur[c] = Object.fromEntries(its.map(x => [x.key, x])); }
+      const hints = {}; // الإرشاد الحالي يُعرض للمساعدة في الحكم
+      return J({ courses: Object.keys(mine).map(c => ({ slug: c, title: COURSE[c].title, edit: !!mine[c].edit, url: '/' + c })), items: rows.map(r => { const it = (cur[r.course] || {})[r.qkey]; return { course: r.course, key: r.qkey, note: r.note, status: r.status, old_c: r.old_c, new_c: r.new_c, by: r.resolved_by || r.added_by, at: r.resolved_at || r.created_at, c: it ? it.c : null, img: it ? it.img : null, sec: it ? it.sec : '', gone: !it }; }) });
+    }
+    const b = await body(), c = String(b.course || ''), key = String(int(b.key) || ''), R = mine[c];
+    if (!R) return deny('ليس لديك صلاحية على هذا المقرر');
+    if (!key) return J({ error: 'رقم السؤال غير صحيح' }, 400);
+    if (p === 'admin/review/add' && m === 'POST') {
+      const its = await bankItems(env, request, DB, c); if (!its.some(x => x.key === key)) return J({ error: 'السؤال رقم ' + key + ' غير موجود في هذا المقرر' }, 404);
+      await DB.batch([DB.prepare("INSERT INTO qreview (course,qkey,note,status,added_by,created_at) VALUES (?,?,?,'open',?,?) ON CONFLICT(course,qkey) DO UPDATE SET note=excluded.note,status='open',resolved_by=NULL,resolved_at=NULL").bind(c, key, txt(b.note, 400).trim() || null, A.name, iso), audit(A, 'review_add', 'question', int(key), COURSE[c].title + ' #' + key)]);
+      return J({ ok: 1 });
+    }
+    if (p === 'admin/review/resolve' && m === 'POST') {
+      if (!R.edit) return deny('صلاحيتك في هذا المقرر لا تشمل التعديل');
+      const its = await bankItems(env, request, DB, c), it = its.find(x => x.key === key);
+      if (!it) return J({ error: 'السؤال غير موجود' }, 404);
+      const want = b.correct === undefined || b.correct === null ? null : int(b.correct);
+      const st = [];
+      if (b.status === 'open') {
+        st.push(DB.prepare("UPDATE qreview SET status='open',resolved_by=NULL,resolved_at=NULL WHERE course=? AND qkey=?").bind(c, key));
+      } else if (want === null || want === it.c) {
+        st.push(DB.prepare("UPDATE qreview SET status='ok',old_c=?,new_c=?,resolved_by=?,resolved_at=? WHERE course=? AND qkey=?").bind(it.c, it.c, A.name, iso, c, key));
+        st.push(audit(A, 'review_ok', 'question', int(key), COURSE[c].title + ' #' + key + ' — الإجابة معتمدة'));
+      } else {
+        if (!(want >= 0 && want < 4)) return J({ error: 'اختر الإجابة الصحيحة' }, 400);
+        let kind = 'ak', data = want;
+        if (COURSE[c].model === 'bank') {
+          const res = await fetchAsset(env, request, COURSE[c].file), html = res ? await res.text() : '', a0 = html.indexOf('<script id="db" type="application/json">'), z0 = a0 < 0 ? -1 : html.indexOf('</script>', a0);
+          if (a0 < 0 || z0 < 0) return J({ error: 'تعذّر قراءة أسئلة المقرر' }, 500);
+          let row = JSON.parse(html.slice(a0 + 40, z0)).qs.find(x => String(x[0]) === key) || null;
+          const pr = await one("SELECT data,deleted FROM exam_patch WHERE course=? AND kind='q' AND key=?", c, key);
+          if (pr && !pr.deleted && pr.data) row = JSON.parse(pr.data);
+          if (!row) return J({ error: 'السؤال غير موجود' }, 404);
+          row = row.slice(); row[6] = want; kind = 'q'; data = cleanOp(COURSE[c], 'q', key, row);
+        }
+        st.push(DB.prepare('INSERT INTO exam_patch (course,kind,key,data,deleted,created_at,updated_at,updated_by) VALUES (?,?,?,?,0,?,?,?) ON CONFLICT(course,kind,key) DO UPDATE SET data=excluded.data,deleted=0,updated_at=excluded.updated_at,updated_by=excluded.updated_by').bind(c, kind, key, JSON.stringify(data), iso, iso, A.name));
+        st.push(DB.prepare("UPDATE qreview SET status='fixed',old_c=?,new_c=?,resolved_by=?,resolved_at=? WHERE course=? AND qkey=?").bind(it.c, want, A.name, iso, c, key));
+        st.push(audit(A, 'review_fix', 'question', int(key), COURSE[c].title + ' #' + key + ' — الإجابة من ' + 'أبجد'[it.c] + ' إلى ' + 'أبجد'[want]));
+      }
+      await DB.batch(st);
+      return J({ ok: 1 });
+    }
+    return J({ error: 'not found' }, 404);
   }
   // ---------- بنك الأسئلة الموحد ----------
   if (p.startsWith('admin/bank')) {
