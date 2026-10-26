@@ -120,7 +120,7 @@ export async function onRequest({ request, env, next }) {
   let head = (course || links.length) ? `<script>window.__BWX=${safeJson({ c: course || slug, p: patches, linked })}</script><script src="/bw-content.js"></script>` + links.map(l => `<script src="/api/exam/data?c=${encodeURIComponent(l)}"></script>`).join('') : '';
   // الأكثر تكرارًا (بنك صور ثابت): تصحيحات مفاتيح الإجابات المعتمدة من «مراجعة الإجابات» في لوحة التحكم
   if (slug === 'aktar kamy') {
-    try { const ak = {}; for (const r of ((await env.DB.prepare("SELECT key,data FROM exam_patch WHERE course='aktar kamy' AND kind='ak' AND deleted=0").all()).results || [])) ak[r.key] = JSON.parse(r.data); if (Object.keys(ak).length) head += `<script>window.__BWAK=${safeJson(ak)}</script>`; } catch (e) { }
+    try { const ak = {}, ah = {}; for (const r of ((await env.DB.prepare("SELECT kind,key,data FROM exam_patch WHERE course='aktar kamy' AND kind IN ('ak','ah') AND deleted=0").all()).results || [])) (r.kind === 'ah' ? ah : ak)[r.key] = JSON.parse(r.data); if (Object.keys(ak).length) head += `<script>window.__BWAK=${safeJson(ak)}</script>`; if (Object.keys(ah).length) head += `<script>window.__BWAH=${safeJson(ah)}</script>`; } catch (e) { }
   }
   const paused = !!st && (st.pause_until || 0) > now;
   const valid = !!st && st.status === 'active' && (!st.expires_at || st.expires_at > iso) && !paused;
