@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0c2440">
+  <meta name="theme-color" content="#071a31">
   <title>البوابة التعليمية | تدريب القدرات المحوسب والورقي</title>
   <meta name="description" content="منصة البوابة التعليمية للتدريب على اختبار القدرات العامة: أقسام الكمي واللفظي المحدثة، محاكي الاختبار المحوسب، والمحاكيات الورقية، مع شرح ومتابعة.">
   <meta property="og:title" content="البوابة التعليمية — حيث تصنع الإنجازات وتتحقق الأحلام">
@@ -15,204 +15,351 @@
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --night: #0c2440;
+      --night: #071a31;
+      --deep: #0b2547;
       --navy: #12345a;
-      --sea: #1d5c8f;
-      --gold: #e3a92b;
-      --gold-soft: #fbefd2;
-      --paper: #f5f8fb;
+      --sea: #1d6fb8;
+      --sky: #4aa8ff;
+      --gold: #f2b632;
+      --gold-2: #ffd36b;
+      --gold-soft: #fff1cf;
+      --teal: #14b8a6;
+      --violet: #7c5cff;
+      --rose: #e0518f;
+      --paper: #eaf1fa;
+      --paper-2: #dfeaf7;
       --white: #ffffff;
-      --ink: #142338;
-      --muted: #5a6b80;
-      --line: #dbe5ee;
+      --ink: #0f2037;
+      --muted: #566a82;
+      --line: #d3e0ee;
       --right: #1d8a58;
       --right-soft: #e2f4ea;
       --wrong: #c2412f;
       --wrong-soft: #fbe6e2;
       --display: "Readex Pro", "IBM Plex Sans Arabic", Tahoma, sans-serif;
       --body: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
-      --wrap: min(1120px, calc(100% - 32px));
+      --wrap: min(1160px, calc(100% - 32px));
+      --r: 22px;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.75; }
-    img, video { max-width: 100%; display: block; }
+    body { margin: 0; background: var(--night); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased; }
+    img, video, svg { max-width: 100%; }
+    img { display: block; }
     a { color: inherit; }
-    :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; border-radius: 6px; }
-    h1, h2, h3 { font-family: var(--display); line-height: 1.35; margin: 0; }
+    :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; border-radius: 8px; }
+    h1, h2, h3, h4 { font-family: var(--display); line-height: 1.35; margin: 0; }
     .wrap { width: var(--wrap); margin-inline: auto; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    [hidden] { display: none !important; }
+    html.bw-in .guest-only { display: none !important; }
+    html:not(.bw-in) .member-only { display: none !important; }
 
-    /* ---------- الشريط العلوي ---------- */
-    .top { position: sticky; top: 0; z-index: 40; background: rgba(12, 36, 64, .96); backdrop-filter: blur(10px); color: #fff; }
-    .top .wrap { display: flex; align-items: center; gap: 20px; min-height: 66px; }
-    .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
-    .brand img { width: 42px; height: 42px; border-radius: 12px; background: #fff; padding: 3px; object-fit: contain; }
-    .brand b { font-family: var(--display); font-size: 17px; font-weight: 700; line-height: 1.25; }
-    .brand b small { display: block; font-size: 12px; font-weight: 600; color: var(--gold); letter-spacing: .2px; }
-    /* شريط منصة الدورات أعلى الصفحة: يوضح أن الاختبارات والدورات منصة واحدة بجزأين */
-    .lms-strip { background: linear-gradient(90deg, #e3a92b, #f0c25a); color: #0c2440; font-weight: 700; font-size: 14.5px; }
+    /* ---------- شريط منصة الدورات + الشريط العلوي ---------- */
+    .lms-strip { background: linear-gradient(90deg, #e9a41b, #ffd36b 50%, #e9a41b); color: #0c2440; font-weight: 700; font-size: 14.5px; }
     .lms-strip .wrap { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; text-align: center; }
-    .lms-strip a { color: #fff; background: #0c2440; text-decoration: none; border-radius: 999px; padding: 5px 14px; white-space: nowrap; }
-    .lms-strip a:hover { background: #163a63; }
-    .btn-lms { background: #fff1d1; color: #0c2440; box-shadow: inset 0 0 0 1.5px var(--gold); }
+    .lms-strip a { color: #fff; background: #0c2440; text-decoration: none; border-radius: 999px; padding: 5px 14px; white-space: nowrap; transition: background .2s, transform .2s; }
+    .lms-strip a:hover { background: #163a63; transform: translateY(-1px); }
+    .top { position: sticky; top: 0; z-index: 40; background: rgba(7, 26, 49, .88); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); color: #fff; border-bottom: 1px solid #ffffff14; }
+    .top .wrap { display: flex; align-items: center; gap: 20px; min-height: 68px; }
+    .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+    .brand img { width: 44px; height: 44px; border-radius: 13px; background: #fff; padding: 3px; object-fit: contain; box-shadow: 0 0 0 2px #f2b63255; }
+    .brand b { font-family: var(--display); font-size: 17px; font-weight: 700; line-height: 1.25; white-space: nowrap; }
+    .brand b small { display: block; font-size: 12px; font-weight: 600; color: var(--gold); letter-spacing: .2px; }
     .top nav { display: flex; gap: 4px; margin-inline-start: auto; }
-    .top nav a { text-decoration: none; color: #c9d8e8; font-size: 14.5px; font-weight: 500; padding: 7px 12px; border-radius: 10px; }
-    .top nav a:hover { color: #fff; background: #ffffff14; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 15px var(--body); text-decoration: none; border: 0; border-radius: 12px; padding: 12px 20px; cursor: pointer; white-space: nowrap; }
-    .btn-gold { background: var(--gold); color: var(--night); }
-    .btn-gold:hover { background: #efb73c; }
-    .btn-line { background: transparent; color: #fff; box-shadow: inset 0 0 0 1.5px #ffffff55; }
-    .btn-line:hover { box-shadow: inset 0 0 0 1.5px #fff; }
-    .btn-navy { background: var(--navy); color: #fff; }
-    .btn-navy:hover { background: var(--sea); }
+    .top nav a { text-decoration: none; color: #c9d8e8; font-size: 14.5px; font-weight: 500; padding: 7px 13px; border-radius: 10px; white-space: nowrap; transition: background .2s, color .2s; }
+    .top nav a:hover { color: #fff; background: #ffffff1a; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 15px var(--body); text-decoration: none; border: 0; border-radius: 13px; padding: 12px 22px; cursor: pointer; white-space: nowrap; transition: transform .2s, box-shadow .2s, background .2s; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-gold { background: linear-gradient(180deg, #ffd36b, #f2b632); color: #1a2433; box-shadow: 0 8px 22px #f2b63240; }
+    .btn-gold:hover { box-shadow: 0 12px 28px #f2b63266; }
+    .btn-line { background: #ffffff0f; color: #fff; box-shadow: inset 0 0 0 1.5px #ffffff4d; }
+    .btn-line:hover { box-shadow: inset 0 0 0 1.5px #fff; background: #ffffff1c; }
+    .btn-navy { background: linear-gradient(180deg, #1d4c85, #12345a); color: #fff; box-shadow: 0 8px 20px #12345a40; }
+    .btn-lms { background: #fff1d1; color: #0c2440; box-shadow: inset 0 0 0 1.5px var(--gold); }
+    .btn-wa { background: #1fa855; color: #fff; }
+    .btn-wa:hover { background: #22b85d; }
     .top .btn { padding: 9px 16px; font-size: 14px; }
+    header.top nav a, header.top .brand b { white-space: nowrap; }
 
     /* ---------- الواجهة ---------- */
-    .hero { background: var(--night); color: #fff; position: relative; overflow: hidden; }
-    .hero::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(circle at 1.5px 1.5px, #ffffff12 1.5px, transparent 0); background-size: 26px 26px; pointer-events: none; }
-    .hero .wrap { position: relative; display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; padding: 72px 0 84px; }
-    .hero h1 { font-size: clamp(32px, 4.6vw, 54px); font-weight: 700; letter-spacing: -.5px; }
-    .slogan { color: var(--gold); font-family: var(--display); font-weight: 600; font-size: 18px; margin: 0 0 14px; }
-    .lead { color: #c3d3e4; font-size: 18px; max-width: 34em; margin: 18px 0 30px; }
-    .hero .cta { display: flex; gap: 12px; flex-wrap: wrap; }
-    .facts { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 40px 0 0; padding: 0; list-style: none; color: #c3d3e4; font-size: 14.5px; }
-    .facts b { display: block; color: #fff; font-family: var(--display); font-size: 24px; font-weight: 700; line-height: 1.3; }
+    .hero { position: relative; overflow: hidden; color: #fff; background:
+        radial-gradient(900px 420px at 85% -10%, #1d6fb866, transparent 70%),
+        radial-gradient(700px 380px at 8% 10%, #f2b63230, transparent 70%),
+        radial-gradient(600px 420px at 50% 110%, #14b8a638, transparent 70%),
+        linear-gradient(180deg, #071a31 0%, #0b2547 100%); }
+    .hero::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(circle at 1.5px 1.5px, #ffffff14 1.5px, transparent 0); background-size: 28px 28px; pointer-events: none; mask-image: linear-gradient(180deg, #000 30%, transparent 95%); -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 95%); }
+    .hero .wrap.intro-hero { position: relative; display: block; padding: 58px 0 130px; text-align: center; }
+    .slogan { display: inline-flex; align-items: center; gap: 10px; color: var(--gold-2); font-family: var(--display); font-weight: 600; font-size: 16.5px; margin: 0 0 16px; padding: 6px 18px; border-radius: 999px; background: #f2b6321c; box-shadow: inset 0 0 0 1px #f2b63255; }
+    .slogan::before, .slogan::after { content: "✦"; font-size: 12px; opacity: .85; }
+    .hero h1 { font-size: clamp(34px, 5vw, 58px); font-weight: 700; letter-spacing: -.5px; max-width: 18em; margin-inline: auto; background: linear-gradient(180deg, #fff 30%, #bcd6f2); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+    .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 34px 0 0; padding: 0; list-style: none; }
+    .facts li { position: relative; flex: 1 1 170px; max-width: 224px; min-width: 0; padding: 16px 12px 14px; border-radius: 20px; text-align: center; display: grid; justify-items: center; gap: 2px; border: 1px solid #ffffff26; background: linear-gradient(155deg, #ffffff1f, #ffffff08); box-shadow: inset 0 1px 0 #ffffff26, 0 14px 30px #00000030; overflow: hidden; transition: transform .25s, box-shadow .25s; }
+    .facts li::after { content: ""; position: absolute; inset: auto -30% -60% auto; width: 140px; height: 140px; border-radius: 50%; background: var(--fc, #4aa8ff); opacity: .22; filter: blur(24px); }
+    .facts li:hover { transform: translateY(-4px); box-shadow: inset 0 1px 0 #ffffff33, 0 20px 40px #00000040; }
+    .facts li:nth-child(1) { --fc: #f2b632; } .facts li:nth-child(2) { --fc: #4aa8ff; } .facts li:nth-child(3) { --fc: #a78bfa; } .facts li:nth-child(4) { --fc: #14b8a6; } .facts li:nth-child(5) { --fc: #ff7aa8; }
+    .facts .fi { position: relative; z-index: 1; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(145deg, var(--fc), #ffffff00 160%); background-color: #ffffff14; color: #fff; font-family: var(--display); font-size: 19px; font-weight: 700; margin-bottom: 6px; box-shadow: inset 0 0 0 1px #ffffff33; }
+    .facts .fi svg { width: 22px; height: 22px; fill: currentColor; }
+    .facts b { position: relative; z-index: 1; display: block; color: #fff; font-family: var(--display); font-size: 29px; font-weight: 700; line-height: 1.25; font-variant-numeric: tabular-nums; }
+    .facts .fl { position: relative; z-index: 1; font-size: 13.5px; line-height: 1.4; color: #c3d3e4; }
+    .hero .cta { margin: 28px 0 0; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
-    /* ورقة الإجابة: سؤال حقيقي يجربه الطالب */
-    .sheet { background: var(--white); color: var(--ink); border-radius: 22px; padding: 26px 26px 22px; box-shadow: -12px 12px 0 var(--gold), 0 30px 60px #00000040; position: relative; }
-    .sheet-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13.5px; margin-bottom: 14px; }
+    /* ---------- قسم الاختبارات (يصعد فوق الواجهة) ---------- */
+    .tests-up { position: relative; z-index: 2; margin-top: -92px; padding-bottom: 84px; background: linear-gradient(180deg, transparent 0, transparent 92px, #0b2547 92px, #0a2240 100%); }
+    .tests-up::before { content: ""; position: absolute; inset: 92px 0 0; background:
+        radial-gradient(700px 360px at 10% 30%, #7c5cff1c, transparent 70%),
+        radial-gradient(700px 360px at 90% 70%, #14b8a61a, transparent 70%); pointer-events: none; }
+    .tests-up .wrap { position: relative; }
+    .tests-featured { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 20px; align-items: stretch; margin-bottom: 26px; }
+    .tests-featured:has(.exam-main[hidden]) { grid-template-columns: 1fr; }
+    html.bw-in .tests-featured { grid-template-columns: 1fr; }
+    .exam-main { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 270px; padding: 28px; border-radius: 26px; text-decoration: none; color: #fff; overflow: hidden; background:
+        radial-gradient(520px 260px at 100% 0%, #f2b63238, transparent 70%),
+        radial-gradient(420px 260px at 0% 100%, #4aa8ff2e, transparent 70%),
+        linear-gradient(145deg, #15396a, #0c2a52 55%, #0a2240); border: 1px solid #ffffff26; box-shadow: 0 24px 50px #00000045, inset 0 1px 0 #ffffff26; transition: transform .3s, box-shadow .3s; }
+    .exam-main:hover { transform: translateY(-4px); box-shadow: 0 30px 60px #00000055, 0 0 0 1px #f2b63266, inset 0 1px 0 #ffffff33; }
+    .exam-main::before { content: "أ ب ج د"; position: absolute; left: -10px; bottom: -40px; font-family: var(--display); font-size: 130px; font-weight: 700; color: #ffffff0b; letter-spacing: 6px; white-space: nowrap; pointer-events: none; }
+    .exam-main h3 { font-size: 27px; }
+    .exam-main p { color: #c3d3e4; margin: 10px 0 0; max-width: 30em; }
+    .exam-main .copy { margin: 14px 0 0; color: #fff; font-family: var(--display); font-weight: 700; font-size: clamp(24px, 3vw, 32px); line-height: 1.5; max-width: none; }
+    .exam-main .copy mark { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; line-height: 1; background: linear-gradient(180deg, #ffd36b, #f2b632); color: #1a2433; border-radius: 12px; padding: .28em .5em .36em; box-shadow: 0 0 0 4px #f2b63240, 0 0 30px #f2b63290; }
+    .exam-main .copy2 { margin: 8px 0 0; color: #fff; font-weight: 600; }
+    .exam-main .go { align-self: flex-start; margin-top: 24px; }
+    .exam-main .tag { display: inline-block; background: #f2b6321f; color: var(--gold-2); box-shadow: inset 0 0 0 1px #f2b63266; font-weight: 600; font-size: 13px; border-radius: 99px; padding: 2px 14px; margin-bottom: 12px; }
+    .quick-try { background: linear-gradient(180deg, #ffffff, #eef4fc); border: 1px solid #ffffff; border-radius: 26px; padding: 22px; box-shadow: 0 24px 50px #00000040; position: relative; overflow: hidden; }
+    .quick-try::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; background: linear-gradient(90deg, var(--gold), var(--sky), var(--teal)); }
+    .quick-try h2 { color: var(--navy); font-size: 23px; margin: 0 0 7px; }
+    .quick-try p { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+    .sheet { background: var(--white); color: var(--ink); border-radius: 16px; border: 1px solid var(--line); padding: 14px; position: relative; }
+    .sheet-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
     .sheet-head span:first-child { font-weight: 600; color: var(--sea); }
-    .stem { font-family: var(--display); font-size: clamp(26px, 3vw, 32px); font-weight: 700; color: var(--navy); text-align: center; padding: 14px 0 18px; border-bottom: 1px dashed var(--line); margin-bottom: 14px; }
-    .choices { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
-    .choice { width: 100%; display: flex; align-items: center; gap: 14px; text-align: right; font: 500 17px var(--body); color: var(--ink); background: var(--paper); border: 1.5px solid transparent; border-radius: 14px; padding: 10px 12px; cursor: pointer; }
-    .choice:hover:not(:disabled) { border-color: #b7cbe0; background: #fff; }
-    .bubble { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #9fb3c8; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--sea); background: #fff; transition: background .25s, color .25s, border-color .25s, transform .25s; }
+    .stem { font-family: var(--display); font-size: 21px; font-weight: 700; color: var(--navy); text-align: center; padding: 8px 0 12px; border-bottom: 1px dashed var(--line); margin-bottom: 12px; }
+    .choices { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .choice { width: 100%; display: flex; align-items: center; gap: 12px; text-align: right; font: 500 14px var(--body); color: var(--ink); background: var(--paper); border: 1.5px solid transparent; border-radius: 13px; padding: 7px 9px; cursor: pointer; transition: border-color .2s, background .2s; }
+    .choice:hover:not(:disabled) { border-color: #9fc0e0; background: #fff; }
+    .bubble { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #9fb3c8; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--sea); background: #fff; transition: background .25s, color .25s, border-color .25s, transform .25s; }
     .choice.right { background: var(--right-soft); border-color: var(--right); }
     .choice.right .bubble { background: var(--right); border-color: var(--right); color: #fff; transform: scale(1.08); }
     .choice.wrong { background: var(--wrong-soft); border-color: var(--wrong); }
     .choice.wrong .bubble { background: var(--wrong); border-color: var(--wrong); color: #fff; }
     .choice:disabled { cursor: default; }
-    .verdict { min-height: 54px; margin-top: 12px; font-size: 14.5px; color: var(--muted); }
+    .verdict { min-height: 34px; margin-top: 8px; font-size: 13px; color: var(--muted); }
     .verdict strong { color: var(--ink); }
     .verdict .next { margin-top: 8px; display: flex; gap: 14px; flex-wrap: wrap; }
-    .verdict .next a, .verdict .next button { font: 600 14.5px var(--body); color: var(--sea); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+    .verdict .next a, .verdict .next button { font: 600 14px var(--body); color: var(--sea); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
 
-    /* ---------- الأقسام ---------- */
-    section.block { padding: 84px 0; }
-    .block-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 30px; }
-    .block-head h2 { font-size: clamp(26px, 3.2vw, 36px); color: var(--navy); font-weight: 700; }
-    .block-head p { margin: 6px 0 0; color: var(--muted); max-width: 38em; }
+    /* ---------- مسارات القدرات (بطاقات المقررات) ---------- */
+    .pathways { display: grid; gap: 24px; }
+    .pathway { position: relative; border-radius: 28px; padding: 26px; background: linear-gradient(160deg, #ffffff17, #ffffff07); border: 1px solid #ffffff24; box-shadow: 0 24px 50px #00000030, inset 0 1px 0 #ffffff1f; }
+    .pathway-head { display: block; text-align: center; margin-bottom: 18px; }
+    .pathway-head h2 { color: #fff; font-size: clamp(26px, 3vw, 34px); }
+    .pathway-head p { margin: 4px 0 10px; color: #b8cde3; font-size: 14.5px; }
+    .pathway-badge { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; background: #f2b6321f; color: var(--gold-2); box-shadow: inset 0 0 0 1px #f2b63255; font-size: 13px; font-weight: 700; padding: 5px 14px; }
+    .pathway-tabs { display: flex; justify-content: center; gap: 6px; margin: 0 auto 20px; padding: 5px; width: fit-content; max-width: 100%; border-radius: 999px; background: #00000030; box-shadow: inset 0 0 0 1px #ffffff1a; }
+    .pathway-tabs button { border: 0; border-radius: 999px; background: transparent; color: #c9d8e8; font: 600 17px var(--body); padding: 9px 38px; cursor: pointer; transition: background .25s, color .25s, box-shadow .25s; }
+    .pathway-tabs button:hover { color: #fff; }
+    .pathway-tabs button[aria-selected="true"] { background: linear-gradient(180deg, #ffd36b, #f2b632); color: #1a2433; box-shadow: 0 6px 16px #f2b63240; }
+    .track-panel[hidden] { display: none; }
+    .pathway-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .pathway-group { border-radius: 20px; padding: 16px; background: #00000022; border: 1px solid #ffffff17; }
+    .pathway-group h4 { color: #fff; font-size: 17px; margin: 0 0 12px; display: flex; align-items: center; gap: 9px; }
+    .pathway-group h4 small { color: #9fb6cc; font-size: 12px; font-weight: 600; }
+    .pathway-group h4::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px #f2b63233; flex: none; }
+    .pathway-links { display: grid; gap: 11px; }
+    .pathway-link { --a: #1e40af; --b: #2563eb; --fg: #fff; --sub: #ffffffcc; position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 76px; padding: 12px 16px; border-radius: 18px; background: linear-gradient(135deg, var(--a), var(--b)); color: var(--fg); text-decoration: none; overflow: hidden; border: 1px solid #ffffff2e; box-shadow: 0 12px 24px #00000030, inset 0 1px 0 #ffffff33; transition: transform .25s, box-shadow .25s, filter .25s; isolation: isolate; }
+    .pathway-link::before { content: attr(data-glyph); position: absolute; left: -6px; bottom: -34px; font-family: var(--display); font-size: 96px; font-weight: 700; color: #fff; opacity: .1; line-height: 1; z-index: -1; pointer-events: none; }
+    .pathway-link::after { content: "←"; flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #ffffff26; color: inherit; font-size: 18px; line-height: 1; transition: transform .25s, background .25s; }
+    .pathway-link:hover { transform: translateY(-4px); box-shadow: 0 20px 34px #00000045, inset 0 1px 0 #ffffff44; filter: saturate(1.1) brightness(1.05); }
+    .pathway-link:hover::after { transform: translateX(-4px); background: #ffffff40; }
+    .pathway-link:active { transform: translateY(-1px); }
+    .pathway-link .shine { position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, #ffffff30 50%, transparent 65%); transform: translateX(120%); transition: transform .7s; pointer-events: none; z-index: -1; }
+    .pathway-link:hover .shine { transform: translateX(-120%); }
+    .pl-main { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .pl-ic { flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: #ffffff26; box-shadow: inset 0 0 0 1px #ffffff3d; color: inherit; font-family: var(--display); font-size: 21px; font-weight: 700; }
+    .pl-tx { min-width: 0; display: grid; line-height: 1.45; }
+    .pl-tx strong { font-family: var(--display); font-size: 16px; font-weight: 600; color: var(--fg); }
+    .pl-tx small { font-size: 12.5px; font-weight: 500; color: var(--sub); }
+    .pl-new { font-style: normal; font-size: 11px; font-weight: 700; background: #fff; color: #1d6b3f; border-radius: 99px; padding: 1px 9px; margin-inline-start: 8px; vertical-align: middle; box-shadow: 0 2px 8px #0003; }
+    .t-kamy { --a: #1b3f9f; --b: #2a6bdc; }
+    .t-kamy2 { --a: #3730a3; --b: #2f7fe0; }
+    .t-aktar { --a: #f3a712; --b: #ffd36b; --fg: #1a2433; --sub: #3d3a2a; }
+    .t-lafzi { --a: #5b21b6; --b: #8b5cf6; }
+    .t-tasis { --a: #9d174d; --b: #d6468a; }
+    .t-skills { --a: #0b6e66; --b: #15a99a; }
+    .t-aktar .pl-ic, .t-aktar::after { background: #1a243324; box-shadow: inset 0 0 0 1px #1a24333d; }
+    .t-aktar::before { color: #1a2433; opacity: .09; }
+    .pathway-link.pending { cursor: default; min-height: 62px; background: #ffffff0a; border: 1.5px dashed #ffffff40; box-shadow: none; color: #b8cde3; }
+    .pathway-link.pending:hover { transform: none; filter: none; box-shadow: none; }
+    .pathway-link.pending::before { content: none; }
+    .pathway-link.pending::after { content: "قريبًا"; width: auto; height: auto; padding: 2px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f2b63226; color: var(--gold-2); }
+    .paper-pathway { background: linear-gradient(160deg, #f2b63224, #f2b63208); border-color: #f2b63255; }
+    .paper-action { margin-top: 18px; display: flex; justify-content: center; }
+    .paper-action .pathway-link { max-width: 520px; width: 100%; --a: #f3a712; --b: #ffd36b; --fg: #1a2433; --sub: #3d3a2a; }
+    .paper-action .pathway-link .pl-ic { background: #1a243324; box-shadow: inset 0 0 0 1px #1a24333d; }
+    .paper-action .pathway-link::after { background: #1a243324; }
+    .paper-action .pathway-link::before { color: #1a2433; opacity: .09; }
 
-    /* قائمة الاختبارات بشكل صفوف */
-    .tfilter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-    .tfilter button { font: 600 14px var(--body, inherit); font-family: inherit; border: 0; background: #ffffff1f; color: #fff; border-radius: 99px; padding: 7px 16px; cursor: pointer; box-shadow: inset 0 0 0 1.5px #ffffff40; }
-    .tfilter button.on { background: var(--gold); color: var(--night); box-shadow: none; }
-    .exams.filtered { grid-template-columns: 1fr; }
+    /* ---------- أقسام عامة ---------- */
+    section.block { position: relative; padding: 84px 0; }
+    .sec-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 30px; }
+    .sec-head h2 { font-size: clamp(27px, 3.3vw, 38px); font-weight: 700; }
+    .sec-head p { margin: 6px 0 0; max-width: 40em; }
+    .eyebrow { display: inline-block; font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: .3px; padding: 3px 14px; border-radius: 99px; margin-bottom: 10px; }
+    .light { background: linear-gradient(180deg, #eaf1fa, #dfeaf7); color: var(--ink); }
+    .light .sec-head h2 { color: var(--navy); }
+    .light .sec-head p { color: var(--muted); }
+    .light .eyebrow { background: #1d6fb81a; color: var(--sea); }
+    .dark { background: linear-gradient(180deg, #0a2240, #071a31); color: #fff; }
+    .dark .sec-head p { color: #b8cde3; }
+    .dark .eyebrow { background: #f2b6321f; color: var(--gold-2); }
+
+    /* كيف تتدرب */
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: s; margin: 0; padding: 0; list-style: none; }
+    .steps li { counter-increment: s; position: relative; padding: 24px 20px 20px; border-radius: 22px; background: linear-gradient(180deg, #fff, #f5f9ff); border: 1px solid #c9dbed; box-shadow: 0 10px 26px #12345a14; overflow: hidden; transition: transform .25s, box-shadow .25s; }
+    .steps li:hover { transform: translateY(-4px); box-shadow: 0 18px 34px #12345a22; }
+    .steps li::before { content: counter(s, arabic-indic); display: grid; place-items: center; width: 46px; height: 46px; border-radius: 15px; font-family: var(--display); font-weight: 700; font-size: 22px; color: #fff; margin-bottom: 12px; background: linear-gradient(135deg, #1d6fb8, #4aa8ff); box-shadow: 0 8px 18px #1d6fb855; }
+    .steps li:nth-child(2)::before { background: linear-gradient(135deg, #7c5cff, #a78bfa); box-shadow: 0 8px 18px #7c5cff55; }
+    .steps li:nth-child(3)::before { background: linear-gradient(135deg, #e0518f, #ff8fb5); box-shadow: 0 8px 18px #e0518f55; }
+    .steps li:nth-child(4)::before { background: linear-gradient(135deg, #14b8a6, #5eead4); box-shadow: 0 8px 18px #14b8a655; }
+    .steps b { font-family: var(--display); font-size: 18px; color: var(--navy); display: block; margin-bottom: 4px; }
+    .steps p { margin: 0; color: var(--muted); font-size: 15px; }
+    .steps a { color: var(--sea); font-weight: 600; }
     .sample { display: grid; grid-template-columns: 1fr 1.1fr; gap: 32px; align-items: center; margin-top: 46px; }
     .sample h3 { font-size: clamp(22px, 2.6vw, 28px); color: var(--navy); margin: 0 0 8px; }
     .sample > div > p { color: var(--muted); margin: 0 0 14px; }
-    .sample-card { background: #fff; border: 1px solid var(--line); border-inline-start: 4px solid var(--gold); border-radius: 20px; padding: 20px 22px; position: relative; }
+    .sample-card { background: #fff; border: 1px solid var(--line); border-inline-start: 5px solid var(--gold); border-radius: 22px; padding: 22px; position: relative; box-shadow: 0 14px 30px #12345a14; }
     .sample-card .ex { position: absolute; top: 14px; left: 16px; font-size: 12px; font-weight: 600; color: #7a5300; background: var(--gold-soft); border-radius: 99px; padding: 1px 10px; }
     .sample-card b.t { display: block; color: var(--navy); font-size: 17px; margin-bottom: 8px; }
     .sample-card ul { margin: 0 0 10px; padding-inline-start: 20px; color: #3b4b60; font-size: 14.5px; line-height: 1.9; }
     .sample-card .r { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
     .sample-card .r em { font-style: normal; background: #eaf2f9; color: var(--navy); font-weight: 600; font-size: 13px; border-radius: 10px; padding: 4px 10px; }
-    @media (max-width: 860px) { .sample { grid-template-columns: 1fr; } }
-    .exams { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
-    .exam-main { grid-row: span 2; display: flex; flex-direction: column; justify-content: space-between; background: var(--navy); color: #fff; border-radius: 22px; padding: 30px; text-decoration: none; min-height: 300px; position: relative; overflow: hidden; }
-    .exam-main::before { content: "أ ب ج د"; position: absolute; left: -10px; bottom: -36px; font-family: var(--display); font-size: 120px; font-weight: 700; color: #ffffff0d; letter-spacing: 6px; white-space: nowrap; pointer-events: none; }
-    .exam-main h3 { font-size: 28px; }
-    .exam-main p { color: #c3d3e4; margin: 10px 0 0; max-width: 28em; }
-    .exam-main .copy { margin: 14px 0 0; color: #fff; font-family: var(--display); font-weight: 700; font-size: clamp(24px, 3vw, 32px); line-height: 1.4; max-width: none; }
-    .exam-main .copy mark, .exam-row .claim mark { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; line-height: 1; background: var(--gold); color: var(--night); border-radius: 12px; padding: .28em .5em .36em; box-shadow: 0 0 0 4px #e3a92b40, 0 0 26px #e3a92b80; }
-    .exam-main .copy2 { margin: 8px 0 0; color: #fff; font-weight: 600; }
-    .exam-row .claim { display: block; margin-top: 6px; font-size: 13px; font-weight: 700; color: #7a5300; }
-    .exam-row .claim mark { padding: .3em .6em .38em; border-radius: 8px; box-shadow: 0 0 0 3px #e3a92b33; margin-inline-end: 4px; }
-    .exam-main .go { align-self: flex-start; margin-top: 26px; }
-    .exam-main .tag { display: inline-block; background: var(--gold); color: var(--night); font-weight: 600; font-size: 13px; border-radius: 99px; padding: 2px 12px; margin-bottom: 14px; }
-    .exam-list { display: grid; gap: 0; background: var(--white); border-radius: 22px; border: 1px solid var(--line); overflow: hidden; }
-    .exam-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 14px; align-items: center; padding: 18px 20px; text-decoration: none; border-bottom: 1px solid var(--line); }
-    .exam-row:last-child { border-bottom: 0; }
-    .exam-row:hover { background: #f0f6fb; }
-    .exam-row .ic { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--gold-soft); color: #9a6a00; font-family: var(--display); font-size: 22px; font-weight: 700; }
-    .exam-row strong { display: block; font-family: var(--display); color: var(--navy); font-size: 17.5px; font-weight: 600; }
-    .exam-row span.d { display: block; color: var(--muted); font-size: 14px; }
-    .mode { display: inline-block; vertical-align: middle; margin-inline-start: 8px; font-style: normal; font-size: 12px; font-weight: 600; border-radius: 99px; padding: 1px 10px; }
-    .mode.tr { background: #e4f3ea; color: #17633f; }
-    .mode.sm { background: #fbefd2; color: #7a5300; }
     .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 34px; }
-    .modes > div { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px; }
+    .modes > div { border-radius: 22px; padding: 22px 24px; border: 1px solid #c9dbed; background: #fff; box-shadow: 0 10px 26px #12345a10; }
+    .modes > div:first-child { background: linear-gradient(135deg, #e4f6ee, #fff 70%); }
+    .modes > div:last-child { background: linear-gradient(135deg, #fff1d1, #fff 70%); }
     .modes h3 { margin: 0 0 6px; color: var(--navy); font-size: 19px; display: flex; align-items: center; gap: 8px; }
     .modes p { margin: 0; color: var(--muted); }
-    .faq { display: grid; gap: 10px; }
-    .faq details { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 4px 20px; }
-    .faq summary { cursor: pointer; font-weight: 600; color: var(--navy); padding: 14px 0; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
-    .faq summary::-webkit-details-marker { display: none; }
-    .faq summary::after { content: "+"; color: var(--gold); font-size: 22px; line-height: 1; }
-    .faq details[open] summary::after { content: "−"; }
-    .faq details p { margin: 0 0 16px; color: var(--muted); }
-    @media (max-width: 760px) { .modes { grid-template-columns: 1fr; } }
-    .exam-row .cnt { color: var(--sea); font-weight: 600; font-size: 13.5px; white-space: nowrap; }
+    .mode { display: inline-block; vertical-align: middle; margin-inline-start: 8px; font-style: normal; font-size: 12px; font-weight: 600; border-radius: 99px; padding: 1px 10px; }
+    .mode.tr { background: #cdeedd; color: #17633f; }
+    .mode.sm { background: #fbe3a8; color: #7a5300; }
 
-    /* (أُزيل قسم الشرح مؤقتًا) */
-    .watch { background: var(--white); border-block: 1px solid var(--line); }
-    .videos { display: grid; grid-template-columns: 1.5fr 1fr; gap: 22px; align-items: start; }
-    .player { background: var(--night); border-radius: 20px; overflow: hidden; }
-    .player video { width: 100%; aspect-ratio: 16 / 9; background: #000; }
-    .player .cap { color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
-    .player .cap b { font-family: var(--display); font-weight: 600; }
-    .player .cap span { color: #9fb6cc; font-size: 14px; }
-    .playlist { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-    .playlist button { width: 100%; display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; text-align: right; font: inherit; color: var(--ink); background: var(--paper); border: 1.5px solid var(--line); border-radius: 16px; padding: 12px 14px; cursor: pointer; }
-    .playlist button:hover { border-color: #b7cbe0; }
-    .playlist button[aria-current="true"] { border-color: var(--navy); background: #eaf2f9; }
-    .playlist .pl { width: 44px; height: 44px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: 15px; }
-    .playlist button[aria-current="true"] .pl { background: var(--gold); color: var(--night); }
-    .playlist b { display: block; font-family: var(--display); font-weight: 600; color: var(--navy); }
-    .playlist small { color: var(--muted); font-size: 13.5px; }
+    /* الأوائل هذا الأسبوع */
+    .toppers { background:
+        radial-gradient(700px 320px at 90% 0%, #f2b63226, transparent 70%),
+        radial-gradient(600px 320px at 0% 100%, #4aa8ff22, transparent 70%),
+        linear-gradient(180deg, #0a2240, #0d2c52 60%, #0a2240); color: #fff; }
+    .top-week { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; background: #ffffff14; box-shadow: inset 0 0 0 1px #ffffff26; border-radius: 99px; padding: 3px 14px; font-size: 13.5px; color: #dbe8f6; }
+    .tbl-wrap { border-radius: 24px; overflow: hidden; border: 1px solid #ffffff22; background: linear-gradient(180deg, #ffffff12, #ffffff06); box-shadow: 0 24px 50px #00000038; }
+    .toppers-table { width: 100%; border-collapse: collapse; }
+    .toppers-table th { text-align: right; font-family: var(--display); font-weight: 600; font-size: 13.5px; color: var(--gold-2); padding: 14px 18px; background: #00000026; border-bottom: 1px solid #ffffff1c; white-space: nowrap; }
+    .toppers-table td { padding: 14px 18px; border-bottom: 1px solid #ffffff12; vertical-align: middle; }
+    .toppers-table tbody tr { transition: background .2s; }
+    .toppers-table tbody tr:hover { background: #ffffff0d; }
+    .toppers-table tbody tr:last-child td { border-bottom: 0; }
+    .rk { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; font-family: var(--display); font-weight: 700; font-size: 17px; background: #ffffff14; color: #dbe8f6; box-shadow: inset 0 0 0 1px #ffffff26; }
+    .r1 .rk { background: linear-gradient(145deg, #ffe08a, #f2b632); color: #3b2a00; box-shadow: 0 6px 18px #f2b63266; }
+    .r2 .rk { background: linear-gradient(145deg, #f1f5f9, #aebccb); color: #2a3a4c; box-shadow: 0 6px 18px #aebccb44; }
+    .r3 .rk { background: linear-gradient(145deg, #f4c9a0, #cd8442); color: #3b2108; box-shadow: 0 6px 18px #cd844244; }
+    .r1 td:first-child { box-shadow: inset -4px 0 0 var(--gold); } .r2 td:first-child { box-shadow: inset -4px 0 0 #aebccb; } .r3 td:first-child { box-shadow: inset -4px 0 0 #cd8442; }
+    .stu { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .av { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 17px; color: #fff; overflow: hidden; background: linear-gradient(135deg, var(--c1, #1d6fb8), var(--c2, #4aa8ff)); box-shadow: 0 0 0 2px #ffffff30; }
+    .av img { width: 100%; height: 100%; object-fit: cover; }
+    .stu b { font-family: var(--display); font-weight: 600; font-size: 16px; color: #fff; }
+    .stu small { display: block; color: #9fb6cc; font-size: 12.5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; font-size: 12.5px; font-weight: 600; padding: 3px 12px; border-radius: 99px; background: #ffffff14; color: #e6effa; box-shadow: inset 0 0 0 1px #ffffff2a; }
+    .chip.k { background: #2a6bdc33; color: #bcd8ff; box-shadow: inset 0 0 0 1px #4aa8ff66; }
+    .chip.l { background: #8b5cf633; color: #ddd0ff; box-shadow: inset 0 0 0 1px #a78bfa66; }
+    .chip.m { background: #f2b63229; color: var(--gold-2); box-shadow: inset 0 0 0 1px #f2b63266; }
+    .chip.s { background: #14b8a62b; color: #a7f3e8; box-shadow: inset 0 0 0 1px #14b8a666; }
+    .rate { display: grid; gap: 6px; min-width: 150px; }
+    .rate b { font-family: var(--display); font-size: 17px; color: #fff; font-variant-numeric: tabular-nums; }
+    .rate .bar { height: 8px; border-radius: 99px; background: #ffffff1c; overflow: hidden; }
+    .rate .bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #14b8a6, #4aa8ff 50%, #f2b632); transition: width 1.1s cubic-bezier(.2, .7, .2, 1); }
+    .solved { font-family: var(--display); font-weight: 600; color: #dbe8f6; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .top-note { margin: 14px 4px 0; color: #9fb6cc; font-size: 13.5px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 
-    /* طريقة التدريب: خطوات متتابعة فعلًا */
-    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; counter-reset: s; margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--navy); }
-    .steps li { counter-increment: s; padding: 22px 20px 6px 18px; border-inline-start: 1px solid var(--line); }
-    .steps li:first-child { border-inline-start: 0; padding-inline-start: 0; }
-    .steps li::before { content: counter(s, arabic-indic); display: block; font-family: var(--display); font-weight: 700; font-size: 40px; color: var(--gold); line-height: 1.1; margin-bottom: 8px; }
-    .steps b { font-family: var(--display); font-size: 18px; color: var(--navy); display: block; margin-bottom: 4px; }
-    .steps p { margin: 0; color: var(--muted); font-size: 15px; }
+    /* قالوا عنا */
+    .reviews { background:
+        radial-gradient(600px 300px at 15% 0%, #f2b6322e, transparent 70%),
+        radial-gradient(600px 300px at 90% 100%, #4aa8ff1f, transparent 70%),
+        linear-gradient(180deg, #fff6df, #fdeec6); color: var(--ink); overflow: hidden; }
+    .reviews .sec-head h2 { color: var(--navy); }
+    .reviews .sec-head p { color: #6a5a33; }
+    .reviews .eyebrow { background: #12345a14; color: var(--navy); }
+    .mq-ctl { display: flex; gap: 8px; }
+    .mq-ctl button { width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; background: var(--navy); color: #fff; font-size: 20px; line-height: 1; box-shadow: 0 8px 18px #12345a33; transition: transform .2s, background .2s; }
+    .mq-ctl button:hover { background: var(--sea); transform: translateY(-2px); }
+    .marquee { position: relative; overflow: hidden; touch-action: pan-y; cursor: grab; padding: 10px 0 18px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); user-select: none; -webkit-user-select: none; }
+    .marquee.drag { cursor: grabbing; }
+    .mq-track { display: flex; gap: 18px; width: max-content; will-change: transform; padding-inline: 0; }
+    .marquee.static { -webkit-mask-image: none; mask-image: none; cursor: default; }
+    .marquee.static .mq-track { width: auto; justify-content: center; flex-wrap: wrap; }
+    .rv { flex: none; width: min(86vw, 350px); display: flex; flex-direction: column; gap: 12px; padding: 22px 22px 18px; border-radius: 24px; background: #fff; border: 1px solid #f0dfb2; box-shadow: 0 14px 30px #7a530026; position: relative; }
+    .rv::before { content: "”"; position: absolute; top: 4px; left: 18px; font-family: Georgia, serif; font-size: 78px; line-height: 1; color: var(--gold); opacity: .45; }
+    .rv .stars { color: #f2a300; letter-spacing: 2px; font-size: 16px; }
+    .rv .stars i { color: #e3d3a9; font-style: normal; }
+    .rv p { margin: 0; color: #28384e; font-size: 15.5px; line-height: 1.9; flex: 1; }
+    .rv .who { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px dashed #e7d6a5; }
+    .rv .who b { display: block; font-family: var(--display); font-weight: 600; color: var(--navy); font-size: 15px; line-height: 1.3; }
+    .rv .who small { color: #7a6a43; font-size: 12.5px; }
 
-    /* الدورات على منصة الدورات */
-    .courses { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
-    .course { background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; }
+    /* باقات الدورات */
+    .courses-sec { background: linear-gradient(180deg, #dfeaf7, #eaf1fa); }
+    .courses { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .course { position: relative; background: linear-gradient(180deg, #fff, #f6faff); border: 1px solid #c9dbed; border-radius: 24px; padding: 26px; display: flex; flex-direction: column; box-shadow: 0 12px 28px #12345a14; transition: transform .25s, box-shadow .25s; overflow: hidden; }
+    .course::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; background: linear-gradient(90deg, var(--sea), var(--sky)); }
+    .course:nth-child(2)::before { background: linear-gradient(90deg, #2a6bdc, #4aa8ff); }
+    .course:nth-child(3)::before { background: linear-gradient(90deg, #7c5cff, #c084fc); }
+    .course:nth-child(4)::before { background: linear-gradient(90deg, #14b8a6, #5eead4); }
+    .course:hover { transform: translateY(-5px); box-shadow: 0 22px 40px #12345a24; }
     .course h3 { font-size: 20px; color: var(--navy); }
     .course p { color: var(--muted); font-size: 15px; margin: 8px 0 16px; flex: 1; }
-    .course .gift { font-size: 14px; background: var(--gold-soft); color: #7a5300; border-radius: 12px; padding: 8px 12px; margin-bottom: 16px; }
     .course .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .price { font-family: var(--display); font-weight: 700; font-size: 26px; color: var(--navy); }
+    .course.featured { border: 2px solid var(--gold); background: linear-gradient(180deg, #fffaf0, #fff); box-shadow: 0 18px 38px #f2b63230; }
+    .course.featured::before { background: linear-gradient(90deg, #f2b632, #ffd36b, #f2b632); }
+    .pkg-tag { display: inline-block; align-self: flex-start; background: linear-gradient(180deg, #ffd36b, #f2b632); color: #1a2433; font-weight: 700; font-size: 12.5px; border-radius: 99px; padding: 2px 12px; margin-bottom: 10px; }
+    .price { font-family: var(--display); font-weight: 700; font-size: 28px; color: var(--navy); }
     .price small { font-size: 14px; color: var(--muted); font-weight: 400; }
-    .platform { margin-top: 22px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--navy); color: #fff; border-radius: 20px; padding: 20px 24px; }
+    .platform { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; color: #fff; border-radius: 24px; padding: 22px 26px; background: radial-gradient(500px 200px at 0% 0%, #f2b63230, transparent 70%), linear-gradient(135deg, #12345a, #0a2240); box-shadow: 0 18px 36px #0a224045; }
     .platform p { margin: 0; color: #c3d3e4; }
     .platform b { color: #fff; font-family: var(--display); font-size: 18px; display: block; }
     .platform .links { display: flex; gap: 10px; flex-wrap: wrap; }
 
-    /* المجتمع والتواصل */
-    .community { background: var(--night); color: #fff; }
+    /* أسئلة شائعة */
+    .faq-sec { background: linear-gradient(180deg, #eaf1fa, #e2ecf8); }
+    .faq { display: grid; gap: 12px; }
+    .faq details { background: #fff; border: 1px solid #c9dbed; border-radius: 18px; padding: 4px 22px; box-shadow: 0 6px 16px #12345a0d; transition: box-shadow .2s, border-color .2s; }
+    .faq details[open] { border-color: #8fb5dc; box-shadow: 0 12px 26px #12345a1a; }
+    .faq summary { cursor: pointer; font-weight: 600; color: var(--navy); padding: 15px 0; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary::after { content: "+"; display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--gold-soft); color: #8a5d00; font-size: 20px; line-height: 1; transition: transform .25s; }
+    .faq details[open] summary::after { content: "−"; background: var(--gold); color: #1a2433; }
+    .faq details p { margin: 0 0 16px; color: var(--muted); }
+
+    /* المجتمع */
+    .community { background:
+        radial-gradient(700px 360px at 100% 0%, #229ed933, transparent 70%),
+        radial-gradient(600px 360px at 0% 100%, #f2b63226, transparent 70%),
+        linear-gradient(180deg, #0a2240, #071a31); color: #fff; }
     .community .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-    .community h2 { font-size: clamp(26px, 3.2vw, 36px); }
+    .community h2 { font-size: clamp(27px, 3.2vw, 38px); }
     .community p.lead2 { color: #c3d3e4; font-size: 17px; margin: 12px 0 22px; }
-    .tg-channel { display: inline-flex; align-items: center; gap: 10px; background: #229ed9; color: #fff; text-decoration: none; font-weight: 600; border-radius: 12px; padding: 12px 20px; }
-    .tg-channel:hover { background: #2aaeea; }
+    .tg-channel { display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(180deg, #2aaeea, #229ed9); color: #fff; text-decoration: none; font-weight: 600; border-radius: 13px; padding: 13px 22px; box-shadow: 0 10px 24px #229ed955; transition: transform .2s; }
+    .tg-channel:hover { transform: translateY(-2px); }
     .tg-channel svg { width: 22px; height: 22px; fill: #fff; }
-    .lead-form { background: var(--white); color: var(--ink); border-radius: 22px; padding: 24px; display: grid; gap: 12px; }
-    .lead-form h3 { font-size: 19px; color: var(--navy); }
+    .lead-form { background: #fff; color: var(--ink); border-radius: 26px; padding: 26px; display: grid; gap: 12px; box-shadow: 0 24px 50px #00000045; }
+    .lead-form h3 { font-size: 20px; color: var(--navy); }
     .lead-form label { font-size: 14px; font-weight: 600; color: var(--muted); display: grid; gap: 5px; }
-    .lead-form input { font: inherit; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); width: 100%; }
-    .lead-form input:focus { outline: none; border-color: var(--sea); background: #fff; }
+    .lead-form input { font: inherit; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 13px; background: var(--paper); color: var(--ink); width: 100%; }
+    .lead-form input:focus { outline: none; border-color: var(--sea); background: #fff; box-shadow: 0 0 0 4px #1d6fb81f; }
     .lead-form button { margin-top: 4px; }
     .lead-form button:disabled { opacity: .6; cursor: wait; }
     .lead-msg { min-height: 22px; font-size: 14.5px; color: var(--sea); }
     .lead-msg.ok { color: var(--right); font-weight: 600; }
     .lead-msg.bad { color: var(--wrong); }
 
-    footer { background: #081a2f; color: #9fb6cc; padding: 44px 0 30px; font-size: 14.5px; }
+    footer { background: #04101f; color: #9fb6cc; padding: 48px 0 30px; font-size: 14.5px; border-top: 1px solid #ffffff12; }
     footer .wrap { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 30px; }
     footer h4 { margin: 0 0 10px; color: #fff; font-family: var(--display); font-weight: 600; font-size: 16px; }
     footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -221,128 +368,62 @@
     footer .copy { grid-column: 1 / -1; border-top: 1px solid #ffffff1a; padding-top: 20px; margin-top: 6px; }
     .wa { direction: ltr; unicode-bidi: isolate; }
 
+    /* ---------- استجابة ---------- */
+    @media (max-width: 1280px) { .hide-sm { display: none !important; } }
     @media (max-width: 960px) {
-      .hero .wrap, .community .wrap { grid-template-columns: 1fr; gap: 40px; }
-      .exams, .videos { grid-template-columns: 1fr; }
-      .exam-main { grid-row: auto; min-height: 240px; }
+      .community .wrap { grid-template-columns: 1fr; gap: 40px; }
+      .tests-featured { grid-template-columns: 1fr; }
+      .exam-main { min-height: 240px; }
       .steps { grid-template-columns: 1fr 1fr; }
-      .steps li:nth-child(3) { border-inline-start: 0; padding-inline-start: 0; }
-      .courses { grid-template-columns: 1fr; }
+      .sample { grid-template-columns: 1fr; }
       footer .wrap { grid-template-columns: 1fr 1fr; }
       .top nav { display: none; }
-      .top .wrap > .btn { margin-inline-start: auto; }
+      .top .wrap > .btn:first-of-type { margin-inline-start: auto; }
     }
+    @media (max-width: 760px) {
+      .modes { grid-template-columns: 1fr; }
+      .pathway { padding: 18px; border-radius: 24px; }
+      .pathway-groups { grid-template-columns: 1fr; }
+      .pathway-tabs button { padding: 9px 30px; }
+      /* جدول الأوائل يتحول لبطاقات */
+      .toppers-table thead { display: none; }
+      .toppers-table, .toppers-table tbody, .toppers-table tr, .toppers-table td { display: block; width: 100%; }
+      .toppers-table tbody tr { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px 12px; padding: 14px 16px; border-bottom: 1px solid #ffffff1a; }
+      .toppers-table tbody tr:last-child { border-bottom: 0; }
+      .toppers-table td { padding: 0; border: 0; }
+      .toppers-table td:nth-child(1) { grid-row: 1; grid-column: 1; }
+      .toppers-table td:nth-child(2) { grid-row: 1; grid-column: 2; }
+      .toppers-table td:nth-child(3), .toppers-table td:nth-child(4), .toppers-table td:nth-child(5) { grid-column: 1 / -1; }
+      .r1 td:first-child, .r2 td:first-child, .r3 td:first-child { box-shadow: none; }
+      .toppers-table td[data-l]::before { content: attr(data-l); display: block; font-size: 11.5px; color: #9fb6cc; margin-bottom: 3px; }
+    }
+    @media (max-width: 600px) { .facts { gap: 10px; } .facts li { flex: 1 1 42%; max-width: none; padding: 13px 8px 11px; } .facts b { font-size: 25px; } .exam-main { min-height: 230px; padding: 22px; } }
     @media (max-width: 560px) {
       body { font-size: 15.5px; }
-      .hero .wrap { padding: 44px 0 60px; }
-      .sheet { padding: 20px 16px 16px; }
-      .sheet { box-shadow: -8px 8px 0 var(--gold), 0 20px 40px #00000040; }
-      .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-size: 12.5px; } .facts b { font-size: 19px; }
+      .hero .wrap.intro-hero { padding: 40px 0 112px; }
+      .tests-up { margin-top: -80px; }
       section.block { padding: 60px 0; }
       .steps { grid-template-columns: 1fr; }
-      .steps li { border-inline-start: 0; padding-inline-start: 0; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
-      .exam-row { grid-template-columns: 44px 1fr; }
-      .exam-row .ic { width: 44px; height: 44px; font-size: 19px; }
-      .exam-row .cnt { grid-column: 2; }
       footer .wrap { grid-template-columns: 1fr; }
       .brand b { font-size: 15px; }
+      .pathway-link { padding: 11px 13px; }
+      .pl-ic { width: 42px; height: 42px; }
     }
-    @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
-    /* تنظيم مسارات القدرات */
-    .pathways { margin-top: 22px; display: grid; gap: 22px; }
-    .pathway { background: linear-gradient(145deg, #ffffff 0%, #f4f8fc 100%); border: 1.5px solid #b8ccdf; border-top: 5px solid var(--sea); border-radius: 22px; padding: 24px; box-shadow: 0 14px 30px #12345a18, inset 0 1px 0 #fff; }
-    .pathway-head { display: block; text-align: center; margin-bottom: 18px; }
-    .pathway-head h3 { color: var(--navy); font-size: 30px; }
-    .pathway-head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
-    .pathway-badge { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; background: var(--gold-soft); color: #7a5300; font-size: 13px; font-weight: 700; padding: 6px 12px; }
-    .pathway-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 18px; }
-    .pathway-tabs button { border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--navy); font: 600 17px var(--body); padding: 9px 34px; cursor: pointer; }
-    .pathway-tabs button[aria-selected="true"] { background: var(--navy); border-color: var(--navy); color: #fff; box-shadow: 0 5px 12px #12345a25; }
-    .track-panel[hidden] { display: none; }
-    .pathway-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .pathway-group { border: 1.5px solid #b9ccdd; border-radius: 16px; background: linear-gradient(145deg, #ffffff 0%, #edf4fa 100%); padding: 16px; box-shadow: 0 6px 16px #12345a10, inset 0 1px 0 #fff; }
-    .pathway-group h4 { color: var(--navy); font-size: 17px; margin: 0 0 11px; display: flex; align-items: center; gap: 8px; }
-    .pathway-group h4 small { color: var(--muted); font-size: 12px; font-weight: 600; }
-    .pathway-group h4::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: none; }
-    .pathway-links { display: grid; gap: 8px; }
-    .pathway-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 46px; padding: 9px 12px; border-radius: 12px; background: #fff; border: 1.5px solid #c5d5e3; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; box-shadow: 0 3px 8px #12345a0a; transition: border-color .2s, transform .2s, background .2s; }
-    .pathway-link:hover { border-color: #9fb9d2; background: #f8fbfe; transform: translateY(-1px); }
-    .pathway-link::after { content: "←"; color: var(--sea); font-size: 18px; line-height: 1; }
-    .pathway-link.pending { cursor: default; color: var(--muted); background: #f8fafc; border-style: dashed; }
-    .pathway-link.pending:hover { transform: none; background: #f8fafc; }
-    .pathway-link.pending::after { content: "قريبًا"; font-size: 11px; color: #92702a; background: var(--gold-soft); border-radius: 999px; padding: 2px 7px; }
-    .paper-pathway { background: linear-gradient(135deg, #fff 0%, #fffaf0 100%); border-color: #d8bf7a; border-top-color: var(--gold); }
-    .paper-pathway .pathway-group { background: linear-gradient(145deg, #fff 0%, #fff8e9 100%); border-color: #dcc98f; }
-    .paper-action { margin-top: 16px; display: flex; justify-content: center; }
-    .paper-action .pathway-link { max-width: 420px; width: 100%; justify-content: center; background: var(--navy); color: #fff; border-color: var(--navy); }
-    .paper-action .pathway-link::after { color: var(--gold); }
-    .facts li { text-align: center; display: grid; justify-items: center; gap: 2px; }
-    .facts .fi { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: #ffffff1c; color: var(--gold); font-family: var(--display); font-size: 17px; font-weight: 700; margin-bottom: 4px; }
-    .facts .fl { font-size: 13.5px; line-height: 1.4; }
-    .facts b { font-variant-numeric: tabular-nums; }
-    .pathway-link { min-height: 58px; }
-    .pl-main { display: flex; align-items: center; gap: 11px; min-width: 0; }
-    .pl-ic { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--gold-soft); color: #8a5d00; font-family: var(--display); font-size: 17px; font-weight: 700; }
-    .pl-tx { min-width: 0; display: grid; line-height: 1.45; }
-    .pl-tx strong { font-family: var(--display); font-size: 14.5px; font-weight: 600; color: var(--navy); }
-    .pl-tx small { font-size: 12px; font-weight: 500; color: var(--muted); }
-    .pl-new { font-style: normal; font-size: 11px; font-weight: 700; background: var(--right); color: #fff; border-radius: 99px; padding: 1px 8px; margin-inline-start: 6px; vertical-align: middle; }
-    .pathway-link:hover .pl-ic { background: var(--gold); color: var(--night); }
-    .pathway-tabs button:focus-visible { outline-offset: 2px; }
-    html.bw-in .tests-featured { grid-template-columns: 1fr; }
-    @media (max-width: 700px) { .pathway { padding: 18px; } .pathway-groups { grid-template-columns: 1fr; } .pathway-head h3 { font-size: 21px; } }
-    /* الصفحة تبدأ بالاختبارات: الواجهة قصيرة وقائمة الاختبارات تصعد فوقها */
-    .hero .wrap.intro-hero { display: block; padding: 54px 0 120px; text-align: center; }
-    .intro-hero h1 { max-width: 18em; margin-inline: auto; }
-    .intro-hero .lead { margin-inline: auto; }
-    .intro-hero .facts { justify-content: center; margin-top: 26px; }
-    .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 34px 0 0; }
-    .facts li { min-width: 0; padding: 13px 10px; border: 1px solid #ffffff2b; border-radius: 16px; background: linear-gradient(145deg, #ffffff16, #ffffff08); box-shadow: inset 0 1px 0 #ffffff18, 0 8px 22px #00000018; }
-    .facts li:nth-child(2) { background: linear-gradient(145deg, #1d5c8f66, #ffffff08); }
-    .facts li:nth-child(3) { background: linear-gradient(145deg, #e3a92b40, #ffffff08); }
-    .facts li:nth-child(4) { background: linear-gradient(145deg, #1d8a5848, #ffffff08); }
-    .facts b { font-size: 25px; }
-    .tests-featured { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 18px; align-items: stretch; margin-bottom: 22px; }
-    .tests-featured .exam-main { min-height: 250px; padding: 26px; }
-    .quick-try { background: var(--white); border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 22px; padding: 22px; box-shadow: 0 12px 28px #12345a12; }
-    .quick-try h2 { color: var(--navy); font-size: 23px; margin: 0 0 7px; }
-    .quick-try p { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
-    .quick-try .sheet { border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: none; }
-    .quick-try .stem { font-size: 21px; padding: 8px 0 12px; }
-    .quick-try .choice { font-size: 14px; padding: 7px 9px; }
-    .quick-try .bubble { width: 28px; height: 28px; font-size: 13px; }
-    .quick-try .verdict { min-height: 34px; margin-top: 8px; font-size: 13px; }
-    .tests-up { margin-top: -86px; position: relative; z-index: 2; padding-bottom: 70px; }
-    .try { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-    .try h2 { font-size: clamp(26px, 3.2vw, 36px); color: var(--navy); }
-    .try p { color: var(--muted); max-width: 32em; }
-    .pkg-tag { display: inline-block; background: var(--gold); color: var(--night); font-weight: 600; font-size: 12.5px; border-radius: 99px; padding: 1px 10px; margin-bottom: 8px; }
-    .course.featured { border: 2px solid var(--gold); }
-    .btn-wa { background: #1fa855; color: #fff; }
-    .btn-wa:hover { background: #22b85d; }
-    @media (max-width: 960px) { .try { grid-template-columns: 1fr; gap: 28px; } .tests-featured { grid-template-columns: 1fr; } .courses { grid-template-columns: 1fr; } }
-    @media (max-width: 600px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .facts li { padding: 10px 7px; } .tests-featured .exam-main { min-height: 230px; } }
-    @media (max-width: 560px) { .hero .wrap.intro-hero { padding: 38px 0 104px; } .tests-up { margin-top: -78px; } }
-    /* الطالب المسجّل (بالكود أو بحساب منصة الدورات): لا تظهر له الباقات والاشتراك والتجربة */
-    html.bw-in .guest-only { display: none !important; }
-    html:not(.bw-in) .member-only { display: none !important; }
-    [hidden] { display: none !important; }
-    @media (max-width: 480px) { header.top .brand b { font-size: 13px; line-height: 1.3; max-width: 7.5em; } header.top .brand img { width: 36px; height: 36px; } header.top .btn { padding: 8px 11px; font-size: 13px; } header.top .wrap { gap: 6px; } }
+    @media (max-width: 480px) { header.top .brand b { font-size: 13px; line-height: 1.3; max-width: 7.5em; } header.top .brand img { width: 36px; height: 36px; } header.top .btn { padding: 8px 11px; font-size: 13px; } header.top .wrap { gap: 6px; } .lms-strip .lx { display: none; } .lms-strip { font-size: 13px; } .lms-strip .wrap { gap: 6px; padding: 7px 0; } header.top .brand b small { font-size: 10.5px; } }
     @media (max-width: 350px) { header.top .brand b { display: none; } }
-    @media (max-width: 1280px) { .hide-sm { display: none !important; } }
-    header.top nav a, header.top .brand b { white-space: nowrap; }
-    @media (max-width: 480px) { .lms-strip .lx { display: none; } .lms-strip { font-size: 13px; } .lms-strip .wrap { gap: 6px; padding: 7px 0; } header.top .brand b small { font-size: 10.5px; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; animation: none !important; } .pathway-link .shine { display: none; } }
   </style>
 </head>
 <body>
   <div class="lms-strip"><div class="wrap"><span>🎓 الشروحات والدورات والفيديوهات على <u>منصة الدورات</u><span class="lx"> — وهنا منصة الاختبارات</span></span><a href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">ادخل منصة الدورات ←</a></div></div>
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="/"><img src="/icons/logo.jpg" alt="" width="42" height="42"><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a>
+      <a class="brand" href="/"><img src="/icons/logo.jpg" alt="" width="44" height="44"><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a>
       <nav aria-label="أقسام الصفحة">
         <a href="#tests">الاختبارات</a>
         <a href="/placement.html" data-vis="placement">تحديد المستوى</a>
         <a href="/progress.html">تقدمي</a>
+        <a href="#toppers" id="navTop" hidden>الأوائل</a>
         <a class="guest-only" href="#try">جرّب سؤالًا</a>
         <a class="guest-only" href="#courses">الدورات</a>
         <a href="#join">تواصل معنا</a>
@@ -357,34 +438,29 @@
   <main>
     <section class="hero" aria-labelledby="heroTitle">
       <div class="wrap intro-hero">
-        <p class="slogan">حيث تصنع الإنجازات وتتحقق الأحلام</p>
-        <h1 id="heroTitle">اختبارات القدرات</h1>
-        <ul class="facts" aria-label="محتوى المنصة">
-          <li><span class="fi" aria-hidden="true">∑</span><b><span class="num" data-to="4000" data-plus="1">+٤٠٠٠</span></b><span class="fl">سؤال كمي</span></li>
-          <li><span class="fi" aria-hidden="true">أ</span><b><span class="num" data-to="2800" data-plus="1">+٢٨٠٠</span></b><span class="fl">سؤال لفظي</span></li>
-          <li><span class="fi" aria-hidden="true">▦</span><b><span class="num" data-to="400" data-plus="1">+٤٠٠</span></b><span class="fl">قسم ونموذج تدريب</span></li>
-          <li><span class="fi" aria-hidden="true">✎</span><b><span class="num" data-to="2">٢</span></b><span class="fl">نموذج ورقي كامل</span></li>
-        </ul>
-        <p style="margin:22px 0 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><a class="btn btn-gold" id="heroMain" href="/placement.html">ابدأ اختبار تحديد المستوى</a><a class="btn btn-line" id="heroSec" href="/progress.html">تقدمي وخطوتي التالية</a></p>
+        <p class="slogan" data-edit="slogan" data-label="الشعار أعلى الصفحة" data-group="الواجهة والعدّادات">حيث تصنع الإنجازات وتتحقق الأحلام</p>
+        <h1 id="heroTitle" data-edit="heroTitle" data-label="عنوان الصفحة الرئيسي" data-group="الواجهة والعدّادات">اختبارات القدرات</h1>
+        <ul class="facts" aria-label="محتوى المنصة"><li><span class="fi" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3zM8 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 2c-2.3 0-7 1.2-7 3.5V19h14v-2.5C15 14.2 10.3 13 8 13zm8 0c-.3 0-.6 0-1 .1 1.2.8 2 1.9 2 3.4V19h6v-2.5c0-2.3-4.7-3.5-7-3.5z"/></svg></span><b><span class="num" data-key="students" data-to="981" data-plus="1">+٩٨١</span></b><span class="fl" data-edit="f_students" data-label="عنوان العدّاد: طالب وطالبة يتدرّبون معنا" data-group="الواجهة والعدّادات">طالب وطالبة يتدرّبون معنا</span></li><li><span class="fi" aria-hidden="true">∑</span><b><span class="num" data-key="kamy" data-to="4000" data-plus="1">+٤٠٠٠</span></b><span class="fl" data-edit="f_kamy" data-label="عنوان العدّاد: سؤال كمي" data-group="الواجهة والعدّادات">سؤال كمي</span></li><li><span class="fi" aria-hidden="true">أ</span><b><span class="num" data-key="lafzi" data-to="2800" data-plus="1">+٢٨٠٠</span></b><span class="fl" data-edit="f_lafzi" data-label="عنوان العدّاد: سؤال لفظي" data-group="الواجهة والعدّادات">سؤال لفظي</span></li><li><span class="fi" aria-hidden="true">▦</span><b><span class="num" data-key="secs" data-to="400" data-plus="1">+٤٠٠</span></b><span class="fl" data-edit="f_secs" data-label="عنوان العدّاد: قسم ونموذج تدريب" data-group="الواجهة والعدّادات">قسم ونموذج تدريب</span></li><li><span class="fi" aria-hidden="true">✎</span><b><span class="num" data-key="papers" data-to="2">٢</span></b><span class="fl" data-edit="f_papers" data-label="عنوان العدّاد: نموذج ورقي كامل" data-group="الواجهة والعدّادات">نموذج ورقي كامل</span></li></ul>
+        <p class="cta"><a class="btn btn-gold" id="heroMain" href="/placement.html">ابدأ اختبار تحديد المستوى</a><a class="btn btn-line" id="heroSec" href="/progress.html">تقدمي وخطوتي التالية</a></p>
       </div>
     </section>
 
     <section class="tests-up" id="tests" aria-label="تنظيم اختبارات القدرات">
       <div class="wrap">
         <div class="tests-featured">
-          <a class="exam-main" data-vis="muhaky mohawsab" data-cat="mohawsab" href="muhaky%20mohawsab.html">
+          <a class="exam-main" data-vis="muhaky mohawsab" href="muhaky%20mohawsab.html">
             <div>
-              <span class="tag">كأنك في اختبار حقيقي</span>
-              <h3>محاكي اختبار القدرات المحوسب</h3>
+              <span class="tag" data-edit="sim_tag" data-label="وسم محاكي الاختبار" data-group="محاكي الاختبار المحوسب">كأنك في اختبار حقيقي</span>
+              <h3 data-edit="sim_title" data-label="عنوان بطاقة المحاكي" data-group="محاكي الاختبار المحوسب">محاكي اختبار القدرات المحوسب</h3>
               <p class="copy"><mark>نسخ ولصق</mark> من الاختبار الحقيقي</p>
-              <p class="copy2">ما تراه هنا هو ما ستراه يوم الاختبار: نفس الأسئلة، ونفس الشكل، ونفس الوقت.</p>
-              <p>خمسة أقسام، كل قسم يجمع أسئلة كمي ولفظي بمؤقت مستقل مثل يوم الاختبار، وتقرير نتيجة مفصل في النهاية.</p>
+              <p class="copy2" data-edit="sim_copy2" data-label="سطر التأكيد تحت العنوان" data-group="محاكي الاختبار المحوسب">ما تراه هنا هو ما ستراه يوم الاختبار: نفس الأسئلة، ونفس الشكل، ونفس الوقت.</p>
+              <p data-edit="sim_desc" data-label="وصف محاكي الاختبار" data-group="محاكي الاختبار المحوسب">خمسة أقسام، كل قسم يجمع أسئلة كمي ولفظي بمؤقت مستقل مثل يوم الاختبار، وتقرير نتيجة مفصل في النهاية.</p>
             </div>
-            <span class="btn btn-gold go">ابدأ المحاكاة</span>
+            <span class="btn btn-gold go" data-edit="sim_btn" data-label="نص زر المحاكي" data-group="محاكي الاختبار المحوسب">ابدأ المحاكاة</span>
           </a>
           <section class="quick-try guest-only" id="try" aria-labelledby="tryHead">
-            <h2 id="tryHead">جرّب سؤالًا قبل أن تبدأ</h2>
-            <p>سؤال حقيقي من بنك أسئلة اللفظي. اختر إجابتك وسترى التصحيح وسبب الإجابة فورًا.</p>
+            <h2 id="tryHead" data-edit="try_title" data-label="عنوان «جرّب سؤالًا»" data-group="جرّب سؤالًا">جرّب سؤالًا قبل أن تبدأ</h2>
+            <p data-edit="try_desc" data-label="وصف «جرّب سؤالًا»" data-group="جرّب سؤالًا">سؤال حقيقي من بنك أسئلة اللفظي. اختر إجابتك وسترى التصحيح وسبب الإجابة فورًا.</p>
             <div class="sheet" id="tryQ" aria-labelledby="tryTitle">
               <div class="sheet-head"><span id="tryTitle">جرّب سؤالًا الآن</span><span id="tryType">التناظر اللفظي</span></div>
               <div class="stem" id="tryStem"></div>
@@ -396,42 +472,42 @@
 
         <div class="pathways" aria-label="أقسام القدرات">
           <article class="pathway">
-            <div class="pathway-head"><div><h3>القدرات المحوسبة</h3><p>اختر القسم الذي تريد التدريب عليه</p></div><span class="pathway-badge">كمي ولفظي</span></div>
-            <div class="pathway-tabs" role="tablist" aria-label="أقسام القدرات"><button type="button" role="tab" id="tab-kamy" aria-controls="panel-kamy" aria-selected="true" data-track-tab="kamy">كمي</button><button type="button" role="tab" id="tab-lafzi" aria-controls="panel-lafzi" aria-selected="false" tabindex="-1" data-track-tab="lafzi">لفظي</button></div>
+            <div class="pathway-head"><div><h2 data-edit="p1_title" data-label="عنوان القدرات المحوسبة" data-group="عناوين المسارات">القدرات المحوسبة</h2><p data-edit="p1_sub" data-label="وصف القدرات المحوسبة" data-group="عناوين المسارات">اختر القسم الذي تريد التدريب عليه</p></div><span class="pathway-badge" data-edit="p1_badge" data-label="وسم القدرات المحوسبة" data-group="عناوين المسارات">كمي ولفظي</span></div>
+            <div class="pathway-tabs" role="tablist" aria-label="أقسام القدرات"><button type="button" role="tab" id="tab-kamy" aria-controls="panel-kamy" aria-selected="true" data-track-tab="kamy" data-edit="tab_kamy" data-label="تبويب الكمي" data-group="عناوين المسارات">كمي</button><button type="button" role="tab" id="tab-lafzi" aria-controls="panel-lafzi" aria-selected="false" tabindex="-1" data-track-tab="lafzi" data-edit="tab_lafzi" data-label="تبويب اللفظي" data-group="عناوين المسارات">لفظي</button></div>
             <div class="track-panel" id="panel-kamy" aria-labelledby="tab-kamy" data-track-panel="kamy" role="tabpanel">
               <div class="pathway-groups">
-                <section class="pathway-group"><h4>تأسيس</h4><div class="pathway-links"><a class="pathway-link" href="/skills" data-vis="skills"><span class="pl-main"><span class="pl-ic" aria-hidden="true">◎</span><span class="pl-tx"><strong>اختبارات التأسيس حسب المهارة</strong><small>تدرّب على المهارة التي تحتاجها</small></span></span></a></div></section>
-                <section class="pathway-group"><h4>محوسب <small>(حل التجميعات: أقسام ونماذج)</small></h4><div class="pathway-links"><a class="pathway-link" href="aksam%20kamy.html" data-vis="aksam kamy"><span class="pl-main"><span class="pl-ic" aria-hidden="true">∑</span><span class="pl-tx"><strong>أقسام الكمي المحدثة 2026</strong><small>١١٧ قسمًا · ١٬٢٨٧ سؤالًا</small></span></span></a><a class="pathway-link" href="ak_kamyadd.html" data-vis="ak_kamyadd"><span class="pl-main"><span class="pl-ic" aria-hidden="true">＋</span><span class="pl-tx"><strong>أقسام الكمي الإضافية <em class="pl-new">جديد</em></strong><small>١٢٠ قسمًا · ١٬٣٢٠ سؤالًا</small></span></span></a><a class="pathway-link" href="aktar%20kamy.html" data-vis="aktar kamy"><span class="pl-main"><span class="pl-ic" aria-hidden="true">★</span><span class="pl-tx"><strong>الأسئلة الأكثر تكرارًا</strong><small>٢٨ نموذجًا · ١٬٤٣٧ سؤالًا</small></span></span></a></div></section>
+                <section class="pathway-group"><h4 data-edit="g_tasis" data-label="عنوان مجموعة التأسيس" data-group="عناوين المسارات">تأسيس</h4><div class="pathway-links"><a class="pathway-link t-skills" href="/skills" data-vis="skills" data-glyph="◎"><span class="shine"></span><span class="pl-main"><span class="pl-ic" aria-hidden="true">◎</span><span class="pl-tx"><strong><span data-edit="c_skills_t" data-label="اسم بطاقة: اختبارات التأسيس حسب المهارة" data-group="بطاقات المقررات">اختبارات التأسيس حسب المهارة</span></strong><small data-edit="c_skills_m" data-label="وصف بطاقة: اختبارات التأسيس حسب المهارة" data-group="بطاقات المقررات">تدرّب على المهارة التي تحتاجها</small></span></span></a></div></section>
+                <section class="pathway-group"><h4><span data-edit="g_comp" data-label="عنوان مجموعة المحوسب" data-group="عناوين المسارات">محوسب</span> <small data-edit="g_comp_s" data-label="وصف مجموعة المحوسب" data-group="عناوين المسارات">(حل التجميعات: أقسام ونماذج)</small></h4><div class="pathway-links"><a class="pathway-link t-kamy" href="aksam%20kamy.html" data-vis="aksam kamy" data-glyph="∑"><span class="shine"></span><span class="pl-main"><span class="pl-ic" aria-hidden="true">∑</span><span class="pl-tx"><strong><span data-edit="c_kamy_t" data-label="اسم بطاقة: أقسام الكمي المحدثة 2026" data-group="بطاقات المقررات">أقسام الكمي المحدثة 2026</span></strong><small data-edit="c_kamy_m" data-label="وصف بطاقة: أقسام الكمي المحدثة 2026" data-group="بطاقات المقررات">١١٧ قسمًا · ١٬٢٨٧ سؤالًا</small></span></span></a><a class="pathway-link t-kamy2" href="ak_kamyadd.html" data-vis="ak_kamyadd" data-glyph="＋"><span class="shine"></span><span class="pl-main"><span class="pl-ic" aria-hidden="true">＋</span><span class="pl-tx"><strong><span data-edit="c_kamy2_t" data-label="اسم بطاقة: أقسام الكمي الإضافية" data-group="بطاقات المقررات">أقسام الكمي الإضافية</span><em class="pl-new">جديد</em></strong><small data-edit="c_kamy2_m" data-label="وصف بطاقة: أقسام الكمي الإضافية" data-group="بطاقات المقررات">١٢٠ قسمًا · ١٬٣٢٠ سؤالًا</small></span></span></a><a class="pathway-link t-aktar" href="aktar%20kamy.html" data-vis="aktar kamy" data-glyph="★"><span class="shine"></span><span class="pl-main"><span class="pl-ic" aria-hidden="true">★</span><span class="pl-tx"><strong><span data-edit="c_aktar_t" data-label="اسم بطاقة: الأسئلة الأكثر تكرارًا" data-group="بطاقات المقررات">الأسئلة الأكثر تكرارًا</span></strong><small data-edit="c_aktar_m" data-label="وصف بطاقة: الأسئلة الأكثر تكرارًا" data-group="بطاقات المقررات">٢٨ نموذجًا · ١٬٤٣٧ سؤالًا</small></span></span></a></div></section>
               </div>
             </div>
             <div class="track-panel" id="panel-lafzi" aria-labelledby="tab-lafzi" data-track-panel="lafzi" role="tabpanel" hidden>
               <div class="pathway-groups">
-                <section class="pathway-group"><h4>تأسيس</h4><div class="pathway-links"><a class="pathway-link" href="/skills" data-vis="skills"><span class="pl-main"><span class="pl-ic" aria-hidden="true">◎</span><span class="pl-tx"><strong>اختبارات التأسيس حسب المهارة</strong><small>تدرّب على المهارة التي تحتاجها</small></span></span></a><a class="pathway-link" href="tasis%20lafzi.html.html" data-vis="tasis lafzi"><span class="pl-main"><span class="pl-ic" aria-hidden="true">↔</span><span class="pl-tx"><strong>تأسيس اللفظي</strong><small>التناظر اللفظي · ٩٧٧ سؤالًا</small></span></span></a></div></section>
-                <section class="pathway-group"><h4>محوسب</h4><div class="pathway-links"><a class="pathway-link" href="aksam%20lafzi.html" data-vis="aksam lafzi"><span class="pl-main"><span class="pl-ic" aria-hidden="true">أ</span><span class="pl-tx"><strong>أقسام اللفظي المحدثة 2026</strong><small>١٥١ قسمًا · ١٬٨٥٢ سؤالًا</small></span></span></a></div></section>
+                <section class="pathway-group"><h4>تأسيس</h4><div class="pathway-links"><a class="pathway-link t-skills" href="/skills" data-vis="skills" data-glyph="◎"><span class="shine"></span><span class="pl-main"><span class="pl-ic" aria-hidden="true">◎</span><span class="pl-tx"><strong><span data-edit="c_skills_t" data-label="اسم بطاقة: اختبارات التأسيس حسب المهارة" data-group="بطاقات المقررات">اختبارات التأسيس حسب المهارة</span></strong><small data-edit="c_skills_m" data-label="وصف بطاقة: اختبارات التأسيس حسب المهارة" data-group="بطاقات المقررات">تدرّب على المهارة التي تحتاجها</small></span></span></a><a class="pathway-link t-tasis" href="tasis%20lafzi.html.html" data-vis="tasis lafzi" data-glyph="↔"><span class="shine"></span><span class="pl-main"><span class="pl-ic" aria-hidden="true">↔</span><span class="pl-tx"><strong><span data-edit="c_tasis_t" data-label="اسم بطاقة: تأسيس اللفظي" data-group="بطاقات المقررات">تأسيس اللفظي</span></strong><small data-edit="c_tasis_m" data-label="وصف بطاقة: تأسيس اللفظي" data-group="بطاقات المقررات">التناظر اللفظي · ٩٧٧ سؤالًا</small></span></span></a></div></section>
+                <section class="pathway-group"><h4>محوسب</h4><div class="pathway-links"><a class="pathway-link t-lafzi" href="aksam%20lafzi.html" data-vis="aksam lafzi" data-glyph="أ"><span class="shine"></span><span class="pl-main"><span class="pl-ic" aria-hidden="true">أ</span><span class="pl-tx"><strong><span data-edit="c_lafzi_t" data-label="اسم بطاقة: أقسام اللفظي المحدثة 2026" data-group="بطاقات المقررات">أقسام اللفظي المحدثة 2026</span></strong><small data-edit="c_lafzi_m" data-label="وصف بطاقة: أقسام اللفظي المحدثة 2026" data-group="بطاقات المقررات">١٥١ قسمًا · ١٬٨٥٢ سؤالًا</small></span></span></a></div></section>
               </div>
             </div>
           </article>
 
-          <article class="pathway paper-pathway" aria-labelledby="paperTitle">
-            <div class="pathway-head"><div><h3 id="paperTitle">القدرات الورقية</h3><p>تجميعات ومحاكيات الاختبار الورقي</p></div><span class="pathway-badge">محاكاة</span></div>
+          <article class="pathway paper-pathway" data-vis="waraqi" aria-labelledby="paperTitle">
+            <div class="pathway-head"><div><h2 id="paperTitle" data-edit="p2_title" data-label="عنوان القدرات الورقية" data-group="عناوين المسارات">القدرات الورقية</h2><p data-edit="p2_sub" data-label="وصف القدرات الورقية" data-group="عناوين المسارات">تجميعات ومحاكيات الاختبار الورقي</p></div><span class="pathway-badge" data-edit="p2_badge" data-label="وسم القدرات الورقية" data-group="عناوين المسارات">محاكاة</span></div>
             <div class="pathway-groups">
-              <section class="pathway-group"><h4>كمي</h4><div class="pathway-links"><span class="pathway-link pending">تجميعات الكمي للخمس سنين الفائتة</span></div></section>
-              <section class="pathway-group"><h4>لفظي</h4><div class="pathway-links"><span class="pathway-link pending">تجميعات اللفظي للخمس سنوات الفائتة</span></div></section>
+              <section class="pathway-group"><h4>كمي</h4><div class="pathway-links"><span class="pathway-link pending" data-edit="pk_pending" data-label="بطاقة قريبًا: الكمي الورقي" data-group="بطاقات المقررات">تجميعات الكمي للخمس سنين الفائتة</span></div></section>
+              <section class="pathway-group"><h4>لفظي</h4><div class="pathway-links"><span class="pathway-link pending" data-edit="pl_pending" data-label="بطاقة قريبًا: اللفظي الورقي" data-group="بطاقات المقررات">تجميعات اللفظي للخمس سنوات الفائتة</span></div></section>
             </div>
-            <div class="paper-action"><a class="pathway-link" href="waraqi.html" data-vis="waraqi"><span class="pl-main"><span class="pl-ic" aria-hidden="true">✎</span><span class="pl-tx"><strong>الاختبارات المحاكية للاختبار الورقي</strong><small>نموذجان كاملان بمؤقت وتقرير نتيجة</small></span></span></a></div>
+            <div class="paper-action"><a class="pathway-link t-aktar" href="waraqi.html" data-vis="waraqi" data-glyph="✎"><span class="shine"></span><span class="pl-main"><span class="pl-ic" aria-hidden="true">✎</span><span class="pl-tx"><strong><span data-edit="c_waraqi_t" data-label="اسم بطاقة: الاختبارات المحاكية للاختبار الورقي" data-group="بطاقات المقررات">الاختبارات المحاكية للاختبار الورقي</span></strong><small data-edit="c_waraqi_m" data-label="وصف بطاقة: الاختبارات المحاكية للاختبار الورقي" data-group="بطاقات المقررات">نموذجان كاملان بمؤقت وتقرير نتيجة</small></span></span></a></div>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="block" aria-labelledby="howTitle" style="padding-top:20px">
+    <section class="block light" aria-labelledby="howTitle">
       <div class="wrap">
-        <div class="block-head"><div><h2 id="howTitle">كيف تتدرب معنا</h2></div></div>
+        <div class="sec-head"><div><span class="eyebrow">خطتك للنجاح</span><h2 id="howTitle" data-edit="how_title" data-label="عنوان «كيف تتدرب»" data-group="كيف تتدرب">كيف تتدرب معنا</h2></div></div>
         <ol class="steps">
-          <li><b>حدّد مستواك</b><p>٢٠ سؤالًا من الكمي واللفظي تعطيك مستواك الحالي وخطة تبدأ بها. <a href="/placement.html">ابدأ الآن</a></p></li>
-          <li><b>تدرّب على نقاط ضعفك</b><p>بعد كل اختبار تظهر لك الأقسام الأضعف وزر يعيد التدريب عليها مباشرة.</p></li>
-          <li><b>راجع أخطاءك</b><p>كل سؤال أخطأت فيه يُحفظ في «الأسئلة الخاطئة»، وصفحة «تقدمي» تخبرك بما حان وقت مراجعته.</p></li>
-          <li><b>قِس تحسّنك</b><p>ادخل المحاكي المحوسب أو الورقي، وأعد اختبار تحديد المستوى كل أسبوعين لترى الفرق.</p></li>
+          <li><b data-edit="s1_t" data-label="الخطوة ١: العنوان" data-group="كيف تتدرب">حدّد مستواك</b><p>٢٠ سؤالًا من الكمي واللفظي تعطيك مستواك الحالي وخطة تبدأ بها. <a href="/placement.html">ابدأ الآن</a></p></li>
+          <li><b data-edit="s2_t" data-label="الخطوة ٢: العنوان" data-group="كيف تتدرب">تدرّب على نقاط ضعفك</b><p data-edit="s2_p" data-label="الخطوة ٢: الوصف" data-group="كيف تتدرب">بعد كل اختبار تظهر لك الأقسام الأضعف وزر يعيد التدريب عليها مباشرة.</p></li>
+          <li><b data-edit="s3_t" data-label="الخطوة ٣: العنوان" data-group="كيف تتدرب">راجع أخطاءك</b><p data-edit="s3_p" data-label="الخطوة ٣: الوصف" data-group="كيف تتدرب">كل سؤال أخطأت فيه يُحفظ في «الأسئلة الخاطئة»، وصفحة «تقدمي» تخبرك بما حان وقت مراجعته.</p></li>
+          <li><b data-edit="s4_t" data-label="الخطوة ٤: العنوان" data-group="كيف تتدرب">قِس تحسّنك</b><p data-edit="s4_p" data-label="الخطوة ٤: الوصف" data-group="كيف تتدرب">ادخل المحاكي المحوسب أو الورقي، وأعد اختبار تحديد المستوى كل أسبوعين لترى الفرق.</p></li>
         </ol>
         <div class="sample guest-only">
           <div><h3>بعد كل اختبار: خطة، لا مجرد درجة</h3><p>تعرف أين أخطأت ولماذا، وما القسم الذي تعيده الآن، ومقارنة بمحاولتك السابقة. وصفحة «تقدمي» تجمع كل ذلك وتقترح خطوتك التالية.</p><a class="btn btn-navy" href="/placement.html">جرّبها باختبار تحديد المستوى</a></div>
@@ -448,13 +524,35 @@
       </div>
     </section>
 
-    <section class="block" id="courses" aria-labelledby="coursesTitle" style="padding-top:0">
+    <section class="block toppers" id="toppers" aria-labelledby="topTitle" hidden>
       <div class="wrap">
-        <div class="block-head">
+        <div class="sec-head"><div><span class="eyebrow">لوحة الشرف</span><h2 id="topTitle" data-edit="top_title" data-label="عنوان «الأوائل»" data-group="عناوين الأقسام">الأوائل هذا الأسبوع</h2><span class="top-week" id="topWeek"></span></div></div>
+        <div class="tbl-wrap">
+          <table class="toppers-table">
+            <caption class="sr-only">جدول الأوائل هذا الأسبوع: الترتيب والطالب ومجال التميز ومعدل الإنجاز</caption>
+            <thead><tr><th scope="col">الترتيب</th><th scope="col">الطالب</th><th scope="col">مجال التميز</th><th scope="col">معدل الإنجاز</th><th scope="col" class="col-solved">الأسئلة المحلولة</th></tr></thead>
+            <tbody id="topBody"></tbody>
+          </table>
+        </div>
+        <div class="top-note"><span data-edit="top_note" data-label="ملاحظة أسفل جدول الأوائل" data-group="عناوين الأقسام">يُحدَّث الجدول أسبوعيًا بناءً على معدل الإنجاز في التدريب.</span><span id="topUpd"></span></div>
+      </div>
+    </section>
+
+    <section class="block reviews" id="reviews" aria-labelledby="revTitle" hidden>
+      <div class="wrap">
+        <div class="sec-head"><div><span class="eyebrow">من تجارب طلابنا</span><h2 id="revTitle" data-edit="rev_title" data-label="عنوان «قالوا عنا»" data-group="عناوين الأقسام">قالوا عنا</h2><p data-edit="rev_sub" data-label="وصف «قالوا عنا»" data-group="عناوين الأقسام">كلمات من طلابنا عن رحلتهم مع البوابة التعليمية.</p></div><div class="mq-ctl" id="mqCtl"><button type="button" id="mqPrev" aria-label="السابق">→</button><button type="button" id="mqNext" aria-label="التالي">←</button></div></div>
+      </div>
+      <div class="marquee" id="mq" tabindex="0" role="region" aria-label="آراء الطلاب"><div class="mq-track" id="mqTrack"></div></div>
+    </section>
+
+    <section class="block courses-sec" id="courses" aria-labelledby="coursesTitle">
+      <div class="wrap">
+        <div class="sec-head">
           <div>
-            <h2 id="coursesTitle" class="guest-only">باقات الدورات التعليمية</h2>
+            <span class="eyebrow guest-only">باقات الاشتراك</span>
+            <h2 id="coursesTitle" class="guest-only" data-edit="courses_title" data-label="عنوان باقات الدورات" data-group="عناوين الأقسام">باقات الدورات التعليمية</h2>
             <h2 class="member-only">منصة الدورات</h2>
-            <p class="guest-only">شرح كامل مع معلمي البوابة. اختر باقتك وتواصل معنا على واتساب للاشتراك.</p>
+            <p class="guest-only" data-edit="courses_sub" data-label="وصف باقات الدورات" data-group="عناوين الأقسام">شرح كامل مع معلمي البوابة. اختر باقتك وتواصل معنا على واتساب للاشتراك.</p>
           </div>
         </div>
         <div class="courses guest-only" id="pkgs"></div>
@@ -465,9 +563,9 @@
       </div>
     </section>
 
-    <section class="block" id="faq" aria-labelledby="faqTitle" style="padding-top:0">
+    <section class="block faq-sec" id="faq" aria-labelledby="faqTitle" style="padding-top:0">
       <div class="wrap">
-        <div class="block-head"><div><h2 id="faqTitle">أسئلة شائعة</h2></div></div>
+        <div class="sec-head"><div><span class="eyebrow">تساؤلاتك</span><h2 id="faqTitle" data-edit="faq_title" data-label="عنوان «أسئلة شائعة»" data-group="عناوين الأقسام">أسئلة شائعة</h2></div></div>
         <div class="faq">
           <details><summary>هل أستطيع التدريب من الهاتف؟</summary><p>نعم، كل الاختبارات تعمل على الجوال والجهاز اللوحي والكمبيوتر من المتصفح مباشرة، بدون تثبيت أي تطبيق.</p></details>
           <details><summary>ماذا يحدث لو انقطع الإنترنت أو أغلقت الصفحة أثناء الاختبار؟</summary><p>إجاباتك تُحفظ على جهازك أولًا بأول. عند فتح الصفحة مرة أخرى يظهر لك زر لإكمال الاختبار من حيث توقفت.</p></details>
@@ -482,8 +580,8 @@
     <section class="block community" id="join" aria-labelledby="communityTitle">
       <div class="wrap">
         <div>
-          <h2 id="communityTitle">كن قريبًا من البوابة التعليمية</h2>
-          <p class="lead2">انضم إلى تلجرام المنصة أو اترك رقم الواتساب الخاص بك لإضافتك إلى أكبر مجموعة متابعة لتحديثات القدرات في المملكة</p>
+          <h2 id="communityTitle" data-edit="join_title" data-label="عنوان «كن قريبًا»" data-group="التواصل والتذييل">كن قريبًا من البوابة التعليمية</h2>
+          <p class="lead2" data-edit="join_lead" data-label="وصف «كن قريبًا»" data-group="التواصل والتذييل">انضم إلى تلجرام المنصة أو اترك رقم الواتساب الخاص بك لإضافتك إلى أكبر مجموعة متابعة لتحديثات القدرات في المملكة</p>
           <a class="tg-channel" target="_blank" rel="noopener" href="https://t.me/albawaba_edu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.78 15.27 9.6 19.3c.39 0 .56-.17.76-.37l1.83-1.75 3.79 2.77c.7.38 1.19.18 1.38-.64l2.5-11.7c.25-1.03-.38-1.43-1.06-1.18L4.1 11.9c-1 .39-.99.95-.17 1.2l3.76 1.17 8.73-5.5c.41-.27.79-.12.48.15"/></svg>انضم لقناة تيليجرام المنصة</a>
         </div>
         <form class="lead-form" id="leadForm" novalidate>
@@ -502,7 +600,7 @@
     <div class="wrap">
       <div>
         <h4>منصة البوابة التعليمية</h4>
-        <p style="margin:0">منصة تعليمية في المملكة العربية السعودية للتدريب على اختبارات القدرات والتحصيلي.</p>
+        <p style="margin:0" data-edit="foot_about" data-label="وصف المنصة في التذييل" data-group="التواصل والتذييل">منصة تعليمية في المملكة العربية السعودية للتدريب على اختبارات القدرات والتحصيلي.</p>
       </div>
       <div>
         <h4>تواصل معنا</h4>
@@ -523,31 +621,124 @@
       <div class="copy">جميع حقوق النشر محفوظة لمنصة البوابة التعليمية 2026</div>
     </div>
   </footer>
-
 <script>
-// تصفية الاختبارات
-(function () { var F = document.querySelector('.tfilter'); if (!F) return; var ex = document.querySelector('.exams');
-  F.addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (!b) return; var f = b.getAttribute('data-f');
-    [].forEach.call(F.children, function (x) { x.classList.toggle('on', x === b); });
-    [].forEach.call(ex.querySelectorAll('[data-cat]'), function (a) { a.style.display = !f || a.getAttribute('data-cat').split(' ').indexOf(f) >= 0 ? '' : 'none'; });
-    [].forEach.call(ex.querySelectorAll('.exam-list'), function (l) { l.style.display = [].some.call(l.children, function (a) { return a.style.display !== 'none'; }) ? '' : 'none'; });
-    ex.classList.toggle('filtered', !!f); }); })();
-// تبويبا القدرات الكمي واللفظي
-(function () { var tabs = document.querySelectorAll('[data-track-tab]'), panels = document.querySelectorAll('[data-track-panel]'); if (!tabs.length) return;
-  tabs.forEach(function (tab) { tab.addEventListener('click', function () { var key = tab.getAttribute('data-track-tab');
-    tabs.forEach(function (x) { x.setAttribute('aria-selected', x === tab ? 'true' : 'false'); x.tabIndex = x === tab ? 0 : -1; });
-    panels.forEach(function (x) { x.hidden = x.getAttribute('data-track-panel') !== key; });
-  });
-    tab.addEventListener('keydown', function (e) { var i = [].indexOf.call(tabs, tab), n = e.key === 'ArrowLeft' ? i + 1 : e.key === 'ArrowRight' ? i - 1 : -1; if (n < 0) return; e.preventDefault(); var t = tabs[(n + tabs.length) % tabs.length]; t.click(); t.focus(); }); }); })();
-// عدّادات الواجهة: تعدّ من الصفر عند الظهور (وتُترك ثابتة لمن يفضّل تقليل الحركة)
-(function () { var els = document.querySelectorAll('.facts .num'); if (!els.length) return;
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); }, $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
   var AR = function (n) { return String(n).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
-  if (!('IntersectionObserver' in window) || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
-  var run = function (el) { var to = +el.getAttribute('data-to'), plus = el.getAttribute('data-plus') ? '+' : '', t0 = null, D = 1100;
-    var step = function (t) { if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / D), v = Math.round(to * (1 - Math.pow(1 - k, 3))); el.textContent = plus + AR(v); if (k < 1) requestAnimationFrame(step); };
-    el.textContent = plus + AR(0); requestAnimationFrame(step); };
-  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); run(e.target); } }); }, { threshold: .6 });
-  els.forEach(function (el) { io.observe(el); }); })();
+  var RM = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var el = function (t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+
+  // ===== تبويبا القدرات الكمي واللفظي =====
+  (function () { var tabs = $$('[data-track-tab]'), panels = $$('[data-track-panel]'); if (!tabs.length) return;
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () { var key = tab.getAttribute('data-track-tab');
+        tabs.forEach(function (x) { x.setAttribute('aria-selected', x === tab ? 'true' : 'false'); x.tabIndex = x === tab ? 0 : -1; });
+        panels.forEach(function (x) { x.hidden = x.getAttribute('data-track-panel') !== key; }); });
+      tab.addEventListener('keydown', function (e) { var vt = tabs.filter(function (t) { return !t.hidden; }), i = vt.indexOf(tab), n = e.key === 'ArrowLeft' ? i + 1 : e.key === 'ArrowRight' ? i - 1 : -1; if (n < 0) return; e.preventDefault(); var t = vt[(n + vt.length) % vt.length]; t.click(); t.focus(); });
+    }); })();
+
+  // ===== العدّادات: تعدّ من الصفر عند الظهور =====
+  var nums = $$('.num'), io = null;
+  function paint(e, v) { e.textContent = (e.getAttribute('data-plus') ? '+' : '') + AR(v); }
+  function animate(e) { var to = +e.getAttribute('data-to') || 0; e.__done = 1; if (RM) { paint(e, to); return; } var t0 = null, D = 1200;
+    (function step(t) { if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / D); paint(e, Math.round(to * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(step); })(performance.now()); }
+  if ('IntersectionObserver' in window && !RM) {
+    io = new IntersectionObserver(function (es) { es.forEach(function (x) { if (x.isIntersecting) { io.unobserve(x.target); animate(x.target); } }); }, { threshold: .6 });
+    nums.forEach(function (e) { paint(e, 0); io.observe(e); });
+  }
+  function setCount(key, v) { $$('.num[data-key="' + key + '"]').forEach(function (e) { e.setAttribute('data-to', v); if (e.__done || !io) { if (io) animate(e); else paint(e, v); } else paint(e, 0); }); }
+
+  // ===== أسماء المقررات وألوانها في جدول الأوائل =====
+  var CN = { 'aksam kamy': ['أقسام الكمي', 'k'], 'ak_kamyadd': ['أقسام الكمي الإضافية', 'k'], 'aktar kamy': ['الأكثر تكرارًا', 'k'], 'aksam lafzi': ['أقسام اللفظي', 'l'], 'tasis lafzi': ['تأسيس اللفظي', 'l'], 'muhaky mohawsab': ['المحاكي المحوسب', 'm'], 'waraqi': ['المحاكي الورقي', 'm'], 'skills': ['التدريب حسب المهارة', 's'] };
+  var PAL = [['#1d6fb8', '#4aa8ff'], ['#7c5cff', '#b79bff'], ['#0b6e66', '#2dd4bf'], ['#c2410c', '#fb923c'], ['#be185d', '#f472b6'], ['#4f46e5', '#818cf8']];
+  function avatar(name, img, i) { var a = el('span', 'av'); if (img) { var im = el('img'); im.src = img; im.alt = ''; a.appendChild(im); } else { var p = PAL[(name.charCodeAt(0) + i) % PAL.length]; a.style.setProperty('--c1', p[0]); a.style.setProperty('--c2', p[1]); a.textContent = Array.from(name.trim())[0] || '؟'; } return a; }
+  var NF = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 1 });
+
+  function weekLabel() { try { var d = new Date(), back = (d.getDay() + 1) % 7, s = new Date(d.getFullYear(), d.getMonth(), d.getDate() - back), e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6), f = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { day: 'numeric', month: 'long' }); return 'من ' + f.format(s) + ' إلى ' + f.format(e); } catch (x) { return ''; } }
+
+  function renderToppers(list, upd) {
+    var sec = $('#toppers'), nav = $('#navTop'), body = $('#topBody'); if (!sec || !body) return;
+    if (!list || !list.length) { sec.hidden = true; if (nav) nav.hidden = true; return; }
+    var L = list.slice().sort(function (a, b) { return b.rate - a.rate; }), anyS = L.some(function (x) { return x.solved != null; });
+    body.textContent = '';
+    L.forEach(function (x, i) {
+      var tr = el('tr', i < 3 ? 'r' + (i + 1) : ''), td;
+      td = el('td'); td.setAttribute('data-l', 'الترتيب'); td.appendChild(el('span', 'rk', AR(i + 1))); tr.appendChild(td);
+      td = el('td'); td.setAttribute('data-l', 'الطالب'); var s = el('div', 'stu'); s.appendChild(avatar(x.name, x.avatar, i)); s.appendChild(el('b', '', x.name)); td.appendChild(s); tr.appendChild(td);
+      td = el('td'); td.setAttribute('data-l', 'مجال التميز'); var c = el('div', 'chips'); (x.subjects || []).forEach(function (k) { var n = CN[k] || [k, 'm']; c.appendChild(el('span', 'chip ' + n[1], n[0])); }); if (!c.children.length) c.appendChild(el('span', 'chip', 'متميز في التدريب')); td.appendChild(c); tr.appendChild(td);
+      td = el('td'); td.setAttribute('data-l', 'معدل الإنجاز'); var r = el('div', 'rate'); r.appendChild(el('b', '', NF.format(x.rate) + '٪')); var bar = el('div', 'bar'), fill = el('i'); fill.setAttribute('data-w', Math.max(2, Math.min(100, x.rate))); bar.appendChild(fill); r.appendChild(bar); td.appendChild(r); tr.appendChild(td);
+      if (anyS) { td = el('td'); td.className = 'col-solved'; td.setAttribute('data-l', 'الأسئلة المحلولة'); td.appendChild(el('span', 'solved', x.solved != null ? NF.format(x.solved) + ' سؤالًا' : '—')); tr.appendChild(td); }
+      body.appendChild(tr);
+    });
+    $$('.col-solved', sec).forEach(function (e) { if (e.tagName === 'TH') e.hidden = !anyS; });
+    $('#topWeek').textContent = '📅 ' + weekLabel();
+    var u = $('#topUpd'); if (u) { u.textContent = ''; if (upd) { try { u.textContent = 'آخر تحديث: ' + new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { day: 'numeric', month: 'long' }).format(new Date(upd)); } catch (e) { } } }
+    sec.hidden = false; if (nav) nav.hidden = false;
+    var fire = function () { $$('.rate .bar i', sec).forEach(function (i) { i.style.width = i.getAttribute('data-w') + '%'; }); };
+    if ('IntersectionObserver' in window && !RM) { var o2 = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { o2.disconnect(); setTimeout(fire, 80); } }, { threshold: .2 }); o2.observe($('.tbl-wrap', sec)); } else fire();
+  }
+
+  // ===== شريط آراء الطلاب (يتحرك تلقائيًا ويُسحب) =====
+  var MQ = null;
+  function renderReviews(list) {
+    var sec = $('#reviews'), tr = $('#mqTrack'), vp = $('#mq'); if (!sec || !tr) return;
+    tr.textContent = ''; if (MQ) { MQ.stop(); MQ = null; }
+    if (!list || !list.length) { sec.hidden = true; return; }
+    list.forEach(function (x, i) {
+      var c = el('article', 'rv'), st = el('div', 'stars'); st.setAttribute('aria-label', 'تقييم ' + x.rating + ' من ٥'); st.appendChild(document.createTextNode('★'.repeat(x.rating))); if (x.rating < 5) st.appendChild(el('i', '', '★'.repeat(5 - x.rating)));
+      c.appendChild(st); c.appendChild(el('p', '', x.text));
+      var w = el('div', 'who'), t = el('div'); t.appendChild(el('b', '', x.name)); if (x.role) t.appendChild(el('small', '', x.role)); w.appendChild(avatar(x.name, x.avatar, i + 2)); w.appendChild(t); c.appendChild(w); tr.appendChild(c);
+    });
+    sec.hidden = false; MQ = marquee(vp, tr);
+  }
+  function marquee(vp, tr) {
+    var base = $$('.rv', tr), x = 0, half = 0, hov = false, drag = false, vis = true, last = 0, tween = null, resumeAt = 0, raf = 0, dead = false, GAP = 18;
+    function build() {
+      $$('.rv', tr).forEach(function (c) { if (c.__clone) c.remove(); }); tr.style.transform = ''; vp.classList.remove('static');
+      var vw = vp.clientWidth, bw = base.reduce(function (s, c) { return s + c.offsetWidth + GAP; }, 0);
+      if (bw <= vw + GAP) { vp.classList.add('static'); half = 0; return; }
+      var reps = Math.max(1, Math.ceil(vw * 1.3 / bw)), add = function (n) { var k = n.cloneNode(true); k.__clone = 1; k.setAttribute('aria-hidden', 'true'); tr.appendChild(k); };
+      for (var r = 1; r < reps; r++) base.forEach(add);
+      $$('.rv', tr).forEach(add);
+      half = (tr.scrollWidth + GAP) / 2;
+    }
+    function frame(ts) { if (dead) return; raf = requestAnimationFrame(frame); if (!last) last = ts; var dt = Math.min(64, ts - last); last = ts;
+      if (tween) { if (!tween(ts)) tween = null; } else if (half && !RM && !hov && !drag && vis && ts > resumeAt) x += dt * 0.034;
+      if (half) { x = ((x % half) + half) % half; tr.style.transform = 'translate3d(' + x.toFixed(2) + 'px,0,0)'; } }
+    function go(d) { if (!half) return; var from = x, t0 = performance.now(); tween = function (n) { var k = Math.min(1, (n - t0) / 480); x = from + d * (1 - Math.pow(1 - k, 3)); return k < 1; }; resumeAt = performance.now() + 3000; }
+    var step = function () { return (base[0] ? base[0].offsetWidth : 340) + GAP; };
+    var sx = 0, sp = 0, moved = false;
+    vp.addEventListener('pointerdown', function (e) { if (!half || e.button > 0) return; drag = true; moved = false; sx = e.clientX; sp = x; tween = null; vp.classList.add('drag'); try { vp.setPointerCapture(e.pointerId); } catch (_) { } });
+    vp.addEventListener('pointermove', function (e) { if (!drag) return; var dx = e.clientX - sx; if (Math.abs(dx) > 3) moved = true; x = sp + dx; });
+    var up = function () { if (!drag) return; drag = false; vp.classList.remove('drag'); resumeAt = performance.now() + 2500; };
+    vp.addEventListener('pointerup', up); vp.addEventListener('pointercancel', up);
+    vp.addEventListener('mouseenter', function () { hov = true; }); vp.addEventListener('mouseleave', function () { hov = false; resumeAt = performance.now() + 800; });
+    vp.addEventListener('focusin', function () { hov = true; }); vp.addEventListener('focusout', function () { hov = false; });
+    vp.addEventListener('wheel', function (e) { if (!half || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return; e.preventDefault(); x -= e.deltaX; resumeAt = performance.now() + 2500; }, { passive: false });
+    vp.addEventListener('keydown', function (e) { if (e.key === 'ArrowLeft') { e.preventDefault(); go(step()); } else if (e.key === 'ArrowRight') { e.preventDefault(); go(-step()); } });
+    var nx = $('#mqNext'), pv = $('#mqPrev'); if (nx) nx.onclick = function () { go(step()); }; if (pv) pv.onclick = function () { go(-step()); };
+    var vio = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }, { threshold: 0 }) : null; if (vio) vio.observe(vp);
+    var rz = 0, onr = function () { clearTimeout(rz); rz = setTimeout(function () { build(); }, 180); }; addEventListener('resize', onr);
+    var ctl = $('#mqCtl'); build(); if (ctl) ctl.hidden = !half;
+    raf = requestAnimationFrame(frame);
+    return { stop: function () { dead = true; cancelAnimationFrame(raf); removeEventListener('resize', onr); if (vio) vio.disconnect(); } };
+  }
+
+  // ===== إعدادات الصفحة من لوحة التحكم (نصوص، خط، أرقام، الأوائل، الآراء) =====
+  var FONTS = { readex: ['Readex+Pro:wght@400;600;700', '"Readex Pro"'], tajawal: ['Tajawal:wght@400;500;700;800', 'Tajawal'], cairo: ['Cairo:wght@400;600;700;800', 'Cairo'], almarai: ['Almarai:wght@400;700;800', 'Almarai'], kufi: ['Noto+Kufi+Arabic:wght@400;600;700', '"Noto Kufi Arabic"'] };
+  window.bwHome = function (h) {
+    try {
+      h = h || {};
+      var f = FONTS[h.font]; if (f) { var lk = el('link'); lk.rel = 'stylesheet'; lk.href = 'https://fonts.googleapis.com/css2?family=' + f[0] + '&display=swap'; document.head.appendChild(lk); var fam = f[1] + ', Tahoma, sans-serif'; document.documentElement.style.setProperty('--display', fam); document.documentElement.style.setProperty('--body', fam); }
+      var t = h.t || {}; Object.keys(t).forEach(function (k) { $$('[data-edit="' + k + '"]').forEach(function (e) { e.textContent = t[k]; }); });
+      var c = h.counts || {}; Object.keys(c).forEach(function (k) { setCount(k, +c[k] || 0); });
+      var sh = h.show || {};
+      renderToppers(sh.toppers === false ? [] : h.toppers, h.updated);
+      renderReviews(sh.reviews === false ? [] : h.reviews);
+    } catch (e) { if (window.console) console.error('bwHome', e); }
+  };
+})();
+
 // تسجيل خروج الطالب
 (function () { var o = document.getElementById('bwOut'); if (o) o.onclick = function (e) { e.preventDefault(); o.textContent = 'جارٍ تسجيل الخروج…'; fetch('/api/logout', { method: 'POST' }).catch(function () { }).then(function () { try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (_) { } location.replace('/?out=1'); }); }; })();
   // بعد تسجيل الخروج: الرئيسية كزائر + رسالة تأكيد
@@ -556,8 +747,10 @@
 (function () { try { var ls = localStorage, back = ['bw-stats-v1', 'bwv-stats-v1', 'bw-place-v1', 'bw-run', 'bwv-run'].some(function (k) { return ls.getItem(k); }); if (!back) return;
   var a = document.getElementById('heroMain'), b = document.getElementById('heroSec'); if (!a || !b) return;
   a.textContent = 'أكمل تدريبي'; a.href = '/progress.html'; b.textContent = 'اختبار تحديد المستوى'; b.href = '/placement.html'; } catch (e) { } })();
+
 </script>
 <script>
+
 // تفاصيل الدورات = نفس رسالة واتساب للمهتمين في لوحة التحكم (الإعدادات ← رسالة واتساب الجاهزة للمهتمين)
 (function () {
   var box = document.getElementById('pkgs'), wa = '966556992385';
@@ -584,20 +777,26 @@
     });
   }
   draw(DEF);
-  fetch('/api/public').then(function (r) { return r.json(); }).then(function (d) { if (d.contact) wa = String(d.contact).replace(/\D/g, ''); if (d.courses) draw(d.courses); hideCourses(d.hidden || []); }).catch(function () {});
+  fetch('/api/public').then(function (r) { return r.json(); }).then(function (d) { if (d.contact) wa = String(d.contact).replace(/\D/g, ''); if (d.courses) draw(d.courses); hideCourses(d.hidden || []); if (window.bwHome) window.bwHome(d.home || {}); }).catch(function () {});
   // الاختبارات المخفية من لوحة التحكم لا تظهر للطالب
   function hideCourses(h) {
     if (!h.length) return;
     [].forEach.call(document.querySelectorAll('[data-vis]'), function (el) { if (h.indexOf(el.getAttribute('data-vis')) >= 0) el.setAttribute('hidden', ''); });
-    [].forEach.call(document.querySelectorAll('.exam-list'), function (l) { if (![].some.call(l.children, function (a) { return !a.hasAttribute('hidden'); })) l.setAttribute('hidden', ''); });
-    var ex = document.querySelector('.exams'); if (ex && document.querySelector('.exam-main[hidden]')) ex.classList.add('filtered');
-    [].forEach.call(document.querySelectorAll('.tfilter [data-f]'), function (c) { var f = c.getAttribute('data-f'); if (f && ![].some.call(document.querySelectorAll('.exams [data-cat]'), function (x) { return !x.hasAttribute('hidden') && x.getAttribute('data-cat').split(' ').indexOf(f) >= 0; })) c.setAttribute('hidden', ''); });
+    // المقرر المخفي يختفي تمامًا: نخفي المجموعات والتبويبات والبطاقات الفارغة بعده
+    [].forEach.call(document.querySelectorAll('.pathway-links'), function (l) { var real = [].filter.call(l.children, function (a) { return a.hasAttribute('data-vis'); }); if (real.length && real.every(function (a) { return a.hasAttribute('hidden'); })) l.closest('.pathway-group').setAttribute('hidden', ''); });
+    var pa = document.querySelector('.paper-action'); if (pa && pa.querySelector('[data-vis][hidden]')) pa.setAttribute('hidden', '');
+    [].forEach.call(document.querySelectorAll('.track-panel'), function (p) { var gs = p.querySelectorAll('.pathway-group'); if (gs.length && [].every.call(gs, function (g) { return g.hasAttribute('hidden'); })) { p.setAttribute('hidden', ''); p.setAttribute('data-gone', ''); var t = document.getElementById('tab-' + p.getAttribute('data-track-panel')); if (t) t.setAttribute('hidden', ''); } });
+    var vt = [].filter.call(document.querySelectorAll('[data-track-tab]'), function (t) { return !t.hasAttribute('hidden'); });
+    if (!vt.length) { var art = document.querySelector('.pathway'); if (art) art.setAttribute('hidden', ''); }
+    else { var cur = vt.filter(function (t) { return t.getAttribute('aria-selected') === 'true'; })[0]; if (!cur) vt[0].click(); if (vt.length === 1) vt[0].parentNode.setAttribute('hidden', ''); }
     if (h.indexOf('placement') >= 0) { [].forEach.call(document.querySelectorAll('a[href="/placement.html"]'), function (a) { if (a.id === 'heroMain') { a.textContent = 'تقدمي وخطوتي التالية'; a.href = '/progress.html'; var s2 = document.getElementById('heroSec'); if (s2 && s2.getAttribute('href') === '/progress.html') s2.setAttribute('hidden', ''); } else a.setAttribute('hidden', ''); }); }
   }
   if (/[?&]unavailable=1/.test(location.search)) { var nb = document.createElement('div'); nb.textContent = 'هذا الاختبار غير متاح حاليًا.'; nb.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:999;background:#0c2440;color:#fff;border:2px solid #e3a92b;border-radius:12px;padding:10px 18px;font-weight:600'; document.body.appendChild(nb); setTimeout(function () { nb.remove(); }, 4000); history.replaceState(null, '', location.pathname + location.hash); }
 })();
+
 </script>
 <script>
+
 (function () {
   // سؤال تجريبي من بنك اللفظي
   var Q = [
@@ -629,6 +828,7 @@ var en=function(s){return String(s).replace(/[٠-٩]/g,function(d){return'٠١٢
 var say=function(t,ok){m.textContent=t;m.className='lead-msg'+(ok===true?' ok':ok===false?' bad':'')};
 f.onsubmit=async function(e){e.preventDefault();var d=en(ph.value).replace(/\D/g,'');if(d.length<9||d.length>15){say('اكتب رقم واتساب صحيحًا، مثال: 05XXXXXXXX',false);ph.focus();return}
 b.disabled=true;say('جارٍ حفظ طلبك...');try{var r=await fetch('/api/guest-lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:document.getElementById('leadName').value,phone:d,interest:document.getElementById('leadInterest').value,source:'home'})});var j=await r.json().catch(function(){return{}});if(r.ok){say('تم تسجيل رقمك ✓ سنضيفك للمجموعة قريبًا بإذن الله.',true);f.reset()}else say(j.error||'تعذر التسجيل، حاول مرة أخرى',false)}catch(_){say('تعذر الاتصال، حاول مرة أخرى',false)}b.disabled=false}})();
+
 </script>
 </body>
 </html>
