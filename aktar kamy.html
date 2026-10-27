@@ -140,6 +140,19 @@
       .keys { display: none; }
     }
   .qhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.qhead .qans{flex:1;font-size:13.5px;color:#42566c;font-weight:600;text-align:center}.qsub{padding:5px 14px!important;font-size:13px!important}
+
+/* ===== الجوال: كل الاختبار في شاشة واحدة ===== */
+@media (max-width: 900px) {
+  body.testing .side { padding: 6px 8px !important; }
+  body.testing .side h3, body.testing .side .leg, body.testing .side .row, body.testing .side p, body.testing .side .kb { display: none !important; }
+  body.testing .grid { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+  body.testing .grid button { height: 26px; font-size: 11.5px; border-radius: 7px; }
+  body.testing .qwrap { gap: 8px; }
+  body.testing .qimg img { max-height: calc(100dvh - 400px); object-fit: contain; }
+  body.testing .opts { margin-top: 8px; gap: 8px; }
+  body.testing .qnav { margin-top: 8px; }
+  body.testing .card { margin-bottom: 0; }
+}
 </style>
 </head>
 <body class="bwt-hub">

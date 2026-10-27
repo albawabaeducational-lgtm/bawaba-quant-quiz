@@ -89,6 +89,22 @@
     .qsub { padding: 6px 14px !important; font-size: 13.5px !important; }
     .opt { font-size: 19px !important; font-weight: 700 !important; }
     .stem { font-size: clamp(21px, 1.2vw + 16px, 26px) !important; }
+
+    /* ===== شاشة واحدة بلا تمرير أثناء الاختبار ===== */
+    html:has(#app .qhead), html:has(#app .qhead) body { height: 100%; overflow: hidden; }
+    #app:has(.qhead) { display: flex; flex-direction: column; height: calc(100dvh - 64px); box-sizing: border-box; padding-top: 10px !important; padding-bottom: 8px !important; margin-top: 0 !important; overflow: hidden; }
+    #app:has(.qhead) .qhead, #app:has(.qhead) .track { flex: none; }
+    #app:has(.qhead) .track { margin: 6px 0 8px !important; }
+    #app:has(.qhead) > .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px !important; margin: 0 !important; overflow: hidden; }
+    #app:has(.qhead) > .card .psg { flex: 1 1 0; min-height: 48px; max-height: none !important; overflow: auto; margin-bottom: 8px !important; }
+    #app:has(.qhead) > .card .stem { flex: none; margin-bottom: 8px !important; }
+    #app:has(.qhead) > .card .stem img { max-height: calc(100dvh - 430px); width: auto; max-width: 100%; object-fit: contain; }
+    #app:has(.qhead) > .card .opts { flex: none; gap: 6px !important; }
+    #app:has(.qhead) > .card .opt { padding-block: 7px !important; min-height: 0 !important; }
+    #app:has(.qhead) > .card .nav { flex: none; margin-top: 8px !important; }
+    #app:has(.qhead) > .card .dots { flex: none; margin-top: 8px !important; gap: 4px !important; }
+    #app:has(.qhead) > .card .dots button { width: 28px !important; height: 28px !important; font-size: 12px !important; }
+    #app:has(.qhead) > .card .ty { flex: none; margin-bottom: 4px !important; }
   </style>
 </head>
 <body class="bwt-hub">

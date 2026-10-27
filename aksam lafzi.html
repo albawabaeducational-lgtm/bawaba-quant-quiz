@@ -281,7 +281,7 @@ try{localStorage.setItem('_t','1');localStorage.removeItem('_t')}catch(e){bad=1}
 
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 {let r;try{r=JSON.parse(ls(SK)||'')}catch(e){}if(r&&r.ids&&r.ids.length){$('#setup').insertAdjacentHTML('afterbegin',`<div class="fld" id="rs" style="grid-template-columns:1fr auto auto"><div><b>لديك اختبار غير مكتمل</b><div class="h">${r.ids.length} سؤالًا — تابع من حيث توقفت.</div></div><button class="btn sm" id="rsb">متابعة</button><button class="btn red sm" id="rsd">حذف</button></div>`);$('#rsb').onclick=()=>{$('#rs').remove();resume()};$('#rsd').onclick=()=>{ls(SK,'');$('#rs').remove()}}}
-function fit(){let b=$('.qbody'),o=$('.opts'),n=$('.nav');if(!live||!b||!o||!n)return;b.style.flex='none';let h=innerHeight-b.getBoundingClientRect().top-12-8-o.offsetHeight-8-n.offsetHeight-8-(parseFloat(getComputedStyle(n).paddingBottom)||0);b.style.height='';b.style.maxHeight=Math.max(140,h)+'px'}
+function fit(){let b=$('.qbody'),o=$('.opts'),n=$('.nav');if(!live||!b||!o||!n)return;b.style.flex='none';let h=innerHeight-(window.__bwSideH?window.__bwSideH(b):0)-b.getBoundingClientRect().top-12-8-o.offsetHeight-8-n.offsetHeight-8-(parseFloat(getComputedStyle(n).paddingBottom)||0);b.style.height='';b.style.maxHeight=Math.max(80,h)+'px'}
 ['resize','orientationchange','fullscreenchange'].forEach(t=>addEventListener(t,()=>{hh();fit();setTimeout(fit,200)}));if(window.visualViewport)visualViewport.addEventListener('resize',()=>{hh();fit()});
 hh();
 /* ===================== الإصدار 1.3 ===================== */
@@ -707,8 +707,8 @@ function sFit(){
   const b=$('#simQ .qbody'),o=$('#simQ .opts'),n=$('#simQ .nav');
   if(!b||!o||!n||!visQ())return;
   b.style.flex='none';
-  const h=innerHeight-b.getBoundingClientRect().top-12-8-o.offsetHeight-8-n.offsetHeight-8-(parseFloat(getComputedStyle(n).paddingBottom)||0);
-  b.style.height='';b.style.maxHeight=Math.max(140,h)+'px';
+  const h=innerHeight-(window.__bwSideH?window.__bwSideH(b):0)-b.getBoundingClientRect().top-12-8-o.offsetHeight-8-n.offsetHeight-8-(parseFloat(getComputedStyle(n).paddingBottom)||0);
+  b.style.height='';b.style.maxHeight=Math.max(80,h)+'px';
 }
 function sRec(){if(!SM)return;const q=curQ();if(q&&q.shownAt){q.time+=Date.now()-q.shownAt;q.shownAt=0}}
 function sGo(n){if(!SM||!SM.live||n<0||n>=curS().qs.length)return;sRec();SM.qi=n;sDraw()}

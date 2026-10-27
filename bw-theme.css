@@ -179,8 +179,6 @@ html body .opt:not(.qopts > .opt) { font-size: clamp(17.5px, 0.9vw + 12px, 21px)
 html body .opt:not(.qopts > .opt) .ot, html body .opt:not(.qopts > .opt) > span { font-weight: 700; }
 html body .stem { font-weight: 800 !important; }
 html body .qhead + .stem, html body #app .stem { font-size: clamp(22px, 1.4vw + 16px, 28px); }
-html body .psg { font-size: clamp(16.5px, 0.5vw + 14px, 19px) !important; font-weight: 600; line-height: 2.05; color: #14233a; }
-html body .qask { font-size: 15.5px; font-weight: 600; }
 
 /* ===================== شريط التحكم المختصر (يظهر على الجوال والتابلت) ===================== */
 .mstrip { display: none; }
@@ -231,6 +229,16 @@ body.simreal #simQ .opt .x, body.simreal #simQ .strike-tip { display: none !impo
 @media (max-width: 800px) {
   /* السؤال يملأ الشاشة، وخريطة الأسئلة أسفله بالتمرير */
   html body.testing #quiz, html body.testing .exam { height: auto !important; }
-  html body.testing .exam .mainc { height: calc(100dvh - 76px) !important; }
 }
 @media (max-width: 800px) { html body .mainc .qcard .meta .timer { display: none; } }
+
+/* ===== الجوال: كل شيء في شاشة واحدة بلا تمرير — خريطة أسئلة مضغوطة أسفل السؤال ===== */
+@media (max-width: 800px) {
+  html body .exam .side { padding: 6px 8px !important; margin-top: 6px; border-radius: 12px; }
+  html body .exam .side h3, html body .exam .side .leg, html body .exam .side .sub, html body .exam .side > div[style*="text-align:center"], html body .exam .side .btn { display: none !important; }
+  html body .exam .side .qn { grid-template-columns: repeat(12, minmax(0, 1fr)) !important; gap: 4px !important; margin: 0 !important; }
+  html body .exam .side .qn button { min-height: 0 !important; height: 26px !important; padding: 0 !important; font-size: 11.5px !important; border-radius: 7px !important; min-width: 0 !important; }
+  html body .exam .nav { margin-bottom: 0 !important; }
+  .mstrip { position: static; margin-bottom: 6px; }
+}
+@media (max-width: 380px) { html body .exam .side .qn { grid-template-columns: repeat(9, minmax(0, 1fr)) !important; } }

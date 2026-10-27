@@ -229,3 +229,35 @@
   document.addEventListener('click', function (e) { if (lp) { lp = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   var pend = 0; new MutationObserver(function () { if (pend) return; pend = 1; requestAnimationFrame(function () { pend = 0; apply(); }); }).observe(document.body, { childList: true, subtree: true });
 })();
+
+// ارتفاع خريطة الأسئلة حين تكون أسفل السؤال (الجوال) حتى يُحسب في ملاءمة السؤال للشاشة فلا يظهر تمرير
+window.__bwSideH = function (b) {
+  try { var ex = b && b.closest('.exam'), sd = ex && ex.querySelector('.side'); if (!sd || !sd.offsetParent) return 0;
+    var r = sd.getBoundingClientRect(), m = b.closest('.mainc'); if (!m || r.top < m.getBoundingClientRect().top + 20) return 0;
+    return sd.offsetHeight + (parseFloat(getComputedStyle(sd).marginTop) || 0); } catch (e) { return 0; }
+};
+
+// تصغير خط نص السؤال الطويل تلقائيًا حتى يظهر السؤال كاملًا مع اختياراته داخل الشاشة بلا تمرير
+(function () {
+  if (!document.getElementById('bw-shell')) return;
+  var busy = 0;
+  function shrink() {
+    busy = 0;
+    document.querySelectorAll('.qbody, #app > .card, #app .qcard').forEach(function (box) {
+      if (!box.offsetParent) return;
+      var st = box.querySelector('.stem'), ops = box.querySelectorAll('.opt'), hasP = !!box.querySelector('.psg');
+      if (st && st.querySelector('img')) st = null;
+      if (st) st.style.removeProperty('font-size');
+      ops.forEach(function (o) { o.style.removeProperty('font-size'); });
+      var over = function () { return box.scrollHeight > box.clientHeight + 1; };
+      var f = st ? parseFloat(getComputedStyle(st).fontSize) || 20 : 0, n = 0;
+      while (st && !hasP && over() && f > 15 && n < 40) { f -= 1; n++; st.style.setProperty('font-size', f + 'px', 'important'); }
+      if (!over() || !ops.length) return;
+      var g = parseFloat(getComputedStyle(ops[0]).fontSize) || 18; n = 0;
+      while (over() && g > 14 && n < 10) { g -= 1; n++; ops.forEach(function (o) { o.style.setProperty('font-size', g + 'px', 'important'); }); if (st && hasP && f > 16) { f -= 1; st.style.setProperty('font-size', f + 'px', 'important'); } }
+    });
+  }
+  function later() { if (busy) return; busy = 1; setTimeout(function () { requestAnimationFrame(shrink); }, 160); }
+  new MutationObserver(later).observe(document.body, { childList: true, subtree: true });
+  addEventListener('resize', later);
+})();
