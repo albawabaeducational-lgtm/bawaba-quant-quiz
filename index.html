@@ -680,6 +680,12 @@
 
   // ===== شريط آراء الطلاب (يتحرك تلقائيًا ويُسحب) =====
   var MQ = null;
+  var DEFAULT_REVIEWS = [
+    { name: 'أحمد خالد', role: 'طالب · القدرات', rating: 5, avatar: '/assets/avatars/ahmad.jpg', text: 'اختبارات البوابة قرّبتني من أجواء الاختبار الحقيقي. شرح الكمي واضح، وتحليل أخطائي بيّن لي أين أضعف بالضبط، ففي أسابيع قليلة تحسّن مستواي تحسنًا ملحوظًا.' },
+    { name: 'سارة محمد', role: 'طالبة · القدرات', rating: 5, avatar: '/assets/avatars/sara.jpg', text: 'المحاكي المحوسب يشبه الاختبار الحقيقي بدرجة كبيرة، فدخلت القاعة وأنا واثقة ومستعدة. الأسئلة متنوعة والتصحيح يشرح الخطأ ولا يكتفي بالإجابة.' },
+    { name: 'يوسف علي', role: 'طالب · القدرات', rating: 5, avatar: '/assets/avatars/yousef.jpg', text: 'أكثر ما أعجبني سهولة الموقع وترتيب المحتوى. صفحة «تقدمي» تبيّن لي نقاط القوة والضعف وتقترح خطوتي التالية، فصار عندي خطة مذاكرة واضحة.' },
+    { name: 'ريم الشهري', role: 'طالبة · القدرات', rating: 5, avatar: '/assets/avatars/reem.jpg', text: 'مراجعة الأخطاء بالتكرار المتباعد ثبّتت المعلومة عندي أكثر من أي طريقة جربتها. أقسام اللفظي والكمي مرتبة، وأقدر أتدرب على القسم الأضعف مباشرة.' }
+  ];
   function renderReviews(list) {
     var sec = $('#reviews'), tr = $('#mqTrack'), vp = $('#mq'); if (!sec || !tr) return;
     tr.textContent = ''; if (MQ) { MQ.stop(); MQ = null; }
@@ -726,6 +732,7 @@
 
   // ===== إعدادات الصفحة من لوحة التحكم (نصوص، خط، أرقام، الأوائل، الآراء) =====
   var FONTS = { readex: ['Readex+Pro:wght@400;600;700', '"Readex Pro"'], tajawal: ['Tajawal:wght@400;500;700;800', 'Tajawal'], cairo: ['Cairo:wght@400;600;700;800', 'Cairo'], almarai: ['Almarai:wght@400;700;800', 'Almarai'], kufi: ['Noto+Kufi+Arabic:wght@400;600;700', '"Noto Kufi Arabic"'] };
+  renderReviews(DEFAULT_REVIEWS);
   window.bwHome = function (h) {
     try {
       h = h || {};
@@ -734,7 +741,7 @@
       var c = h.counts || {}; Object.keys(c).forEach(function (k) { setCount(k, +c[k] || 0); });
       var sh = h.show || {};
       renderToppers(sh.toppers === false ? [] : h.toppers, h.updated);
-      renderReviews(sh.reviews === false ? [] : h.reviews);
+      renderReviews(sh.reviews === false ? [] : (h.reviews && h.reviews.length ? h.reviews : DEFAULT_REVIEWS));
     } catch (e) { if (window.console) console.error('bwHome', e); }
   };
 })();
