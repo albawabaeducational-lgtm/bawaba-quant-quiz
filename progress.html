@@ -95,7 +95,8 @@
   var DAY = 864e5, now = Date.now();
   var SUBJ = {
     kamy: { title: 'القسم الكمي', page: '/aksam%20kamy.html', slug: 'aksam kamy', stats: 'bw-stats-v1', errs: 'quant-quiz-errors-v1', sel: 'bw-sel-v1', run: 'bw-run', sims: [['bw-sim-v1', 'محاكي الكمي']], resume: 'bwq-resume' },
-    lafzi: { title: 'القسم اللفظي', page: '/aksam%20lafzi.html', slug: 'aksam lafzi', stats: 'bwv-stats-v1', errs: 'verbal-quiz-errors-v1', sel: 'bwv-sel-v1', run: 'bwv-run', sims: [['bwv-sim-v1', 'محاكي اللفظي'], ['bwm-sim-v1', 'المحاكي المحوسب']], resume: 'bwm-resume' }
+    lafzi: { title: 'القسم اللفظي', page: '/aksam%20lafzi.html', slug: 'aksam lafzi', stats: 'bwv-stats-v1', errs: 'verbal-quiz-errors-v1', sel: 'bwv-sel-v1', run: 'bwv-run', sims: [['bwv-sim-v1', 'محاكي اللفظي'], ['bwm-sim-v1', 'المحاكي المحوسب']], resume: 'bwm-resume' },
+    kamy2: { title: 'أقسام الكمي الإضافية', page: '/ak_kamyadd.html', slug: 'ak_kamyadd', stats: 'bwa-stats-v1', errs: 'bwa-errors-v1', sel: 'bwa-sel-v1', run: 'bwa-run', sims: [['bwa-sim-v1', 'محاكي الكمي الإضافي']], resume: 'bwa-resume' }
   };
   var names = {};
   function load(sj) {
@@ -105,8 +106,8 @@
     var n = 0, g = 0, wk = 0; h.forEach(function (x) { n += x.n || 0; g += x.g || 0; if (now - new Date(x.d) < 7 * DAY) wk += x.n || 0; });
     return { secs: secs, h: h, errs: errs, n: n, g: g, wk: wk, due: errs.filter(function (x) { return now - new Date(x.date) >= [1, 3, 7][x.ok || 0] * DAY; }).length, run: get(SUBJ[sj].run, null) };
   }
-  var K = load('kamy'), V = load('lafzi');
-  var sims = []; ['kamy', 'lafzi'].forEach(function (sj) { SUBJ[sj].sims.forEach(function (s) { (get(s[0], []) || []).forEach(function (x) { if (x && x.d != null) sims.push({ d: x.d, p: x.p, n: s[1] }); }); }); });
+  var K = load('kamy'), V = load('lafzi'), A = load('kamy2');
+  var sims = []; ['kamy', 'lafzi', 'kamy2'].forEach(function (sj) { SUBJ[sj].sims.forEach(function (s) { (get(s[0], []) || []).forEach(function (x) { if (x && x.d != null) sims.push({ d: x.d, p: x.p, n: s[1] }); }); }); });
   sims.sort(function (a, b) { return new Date(a.d) - new Date(b.d); });
   var place = (get('bw-place-v1', []) || []).slice(-1)[0] || null;
   var WHYN = { u: 'لم أفهم الفكرة', r: 'تسرّعت', c: 'خطأ حساب أو قراءة', g: 'خمّنت', t: 'ضاق الوقت' }, WHYALL = get('bw-why-v1', {}) || {};
@@ -123,22 +124,23 @@
 
   // الخطوة التالية: قاعدة واحدة واضحة بدل قائمة طويلة
   function nextStep() {
-    var dueAll = K.due + V.due;
+    var dueAll = K.due + V.due + A.due;
     if (K.run && K.run.ids && K.run.ids.length) return { t: 'أكمل اختبارك غير المكتمل', d: 'عندك اختبار بدأته في أقسام الكمي ولم تنهه.', b: 'أكمل في أقسام الكمي', go: SUBJ.kamy.page };
     if (V.run && V.run.ids && V.run.ids.length) return { t: 'أكمل اختبارك غير المكتمل', d: 'عندك اختبار بدأته في أقسام اللفظي ولم تنهه.', b: 'أكمل في أقسام اللفظي', go: SUBJ.lafzi.page };
-    if (dueAll >= 5) { var sj = K.due >= V.due ? 'kamy' : 'lafzi'; return { t: 'راجع ' + AR(dueAll) + ' سؤالًا أخطأت فيها', d: 'مرّ عليها يوم أو أكثر، وهذا أنسب وقت لمراجعتها حتى تثبت.', b: 'راجع أخطاء ' + SUBJ[sj].title, go: SUBJ[sj].page + '#errors' }; }
-    var weak = K.secs.concat(V.secs.map(function (x) { return { id: x.id, t: x.t, c: x.c, p: x.p, sj: 'lafzi' }; })).map(function (x) { if (!x.sj) x.sj = 'kamy'; return x; }).filter(function (x) { return x.t >= 3 && x.p < .6; }).sort(function (a, b) { return a.p - b.p; });
+    if (A.run && A.run.ids && A.run.ids.length) return { t: 'أكمل اختبارك غير المكتمل', d: 'عندك اختبار بدأته في أقسام الكمي الإضافية ولم تنهه.', b: 'أكمل في الأقسام الإضافية', go: SUBJ.kamy2.page };
+    if (dueAll >= 5) { var sj = K.due >= V.due && K.due >= A.due ? 'kamy' : V.due >= A.due ? 'lafzi' : 'kamy2'; return { t: 'راجع ' + AR(dueAll) + ' سؤالًا أخطأت فيها', d: 'مرّ عليها يوم أو أكثر، وهذا أنسب وقت لمراجعتها حتى تثبت.', b: 'راجع أخطاء ' + SUBJ[sj].title, go: SUBJ[sj].page + '#errors' }; }
+    var weak = K.secs.concat(V.secs.map(function (x) { return { id: x.id, t: x.t, c: x.c, p: x.p, sj: 'lafzi' }; })).concat(A.secs.map(function (x) { return { id: x.id, t: x.t, c: x.c, p: x.p, sj: 'kamy2' }; })).map(function (x) { if (!x.sj) x.sj = 'kamy'; return x; }).filter(function (x) { return x.t >= 3 && x.p < .6; }).sort(function (a, b) { return a.p - b.p; });
     if (weak.length) { var w = weak[0]; return { t: 'تدرّب على ' + secName(w.sj, w.id), d: 'دقتك فيه ' + AR(Math.round(w.p * 100)) + '٪ في آخر محاولاتك. جولة واحدة مركزة ستفرق.', b: 'ابدأ التدريب عليه', fn: function () { practice(w.sj, [w.id]); } }; }
     var lastSim = sims[sims.length - 1];
-    if (K.n + V.n >= 40 && (!lastSim || now - new Date(lastSim.d) > 7 * DAY)) return { t: 'اختبر نفسك في المحاكي المحوسب', d: 'تدربت جيدًا هذا الأسبوع. جرّب اختبارًا كاملًا بالمؤقت لتعرف مستواك الحقيقي.', b: 'ادخل المحاكي', go: '/muhaky%20mohawsab.html' };
-    if (K.n + V.n === 0 && !place) return { t: 'ابدأ باختبار تحديد المستوى', d: '٢٠ سؤالًا من الكمي واللفظي تعرف بها مستواك ومن أين تبدأ، وتحصل على خطة مرتبة.', b: 'حدّد مستواك الآن', go: '/placement.html' };
-    if (K.n + V.n === 0) return { t: 'ابدأ أول تدريب لك', d: 'اختر قسمًا من الكمي أو اللفظي وحلّ ١١ سؤالًا. بعدها ستظهر هنا نقاط قوتك وضعفك.', b: 'اختر اختبارك', go: '/#tests' };
-    var sj2 = K.n <= V.n ? 'kamy' : 'lafzi'; return { t: 'تدرّب على قسم جديد في ' + SUBJ[sj2].title, d: 'أداؤك جيد في ما حلّلته. جرّب أقسامًا لم تحلها بعد.', b: 'افتح ' + SUBJ[sj2].title, go: SUBJ[sj2].page };
+    if (K.n + V.n + A.n >= 40 && (!lastSim || now - new Date(lastSim.d) > 7 * DAY)) return { t: 'اختبر نفسك في المحاكي المحوسب', d: 'تدربت جيدًا هذا الأسبوع. جرّب اختبارًا كاملًا بالمؤقت لتعرف مستواك الحقيقي.', b: 'ادخل المحاكي', go: '/muhaky%20mohawsab.html' };
+    if (K.n + V.n + A.n === 0 && !place) return { t: 'ابدأ باختبار تحديد المستوى', d: '٢٠ سؤالًا من الكمي واللفظي تعرف بها مستواك ومن أين تبدأ، وتحصل على خطة مرتبة.', b: 'حدّد مستواك الآن', go: '/placement.html' };
+    if (K.n + V.n + A.n === 0) return { t: 'ابدأ أول تدريب لك', d: 'اختر قسمًا من الكمي أو اللفظي وحلّ ١١ سؤالًا. بعدها ستظهر هنا نقاط قوتك وضعفك.', b: 'اختر اختبارك', go: '/#tests' };
+    var sj2 = K.n <= V.n && K.n <= A.n ? 'kamy' : V.n <= A.n ? 'lafzi' : 'kamy2'; return { t: 'تدرّب على قسم جديد في ' + SUBJ[sj2].title, d: 'أداؤك جيد في ما حلّلته. جرّب أقسامًا لم تحلها بعد.', b: 'افتح ' + SUBJ[sj2].title, go: SUBJ[sj2].page };
   }
   // أيام التدريب المتتالية (بدون ضغط: اليوم لا يُحسب ناقصًا قبل أن ينتهي)
   function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function streak() {
-    var days = {}; K.h.concat(V.h).forEach(function (x) { if (x.d) days[dayKey(x.d)] = 1; }); sims.forEach(function (x) { days[dayKey(x.d)] = 1; });
+    var days = {}; K.h.concat(V.h, A.h).forEach(function (x) { if (x.d) days[dayKey(x.d)] = 1; }); sims.forEach(function (x) { days[dayKey(x.d)] = 1; });
     (get('bw-place-v1', []) || []).forEach(function (x) { if (x && x.d) days[dayKey(x.d)] = 1; });
     var n = 0, t = new Date(), today = !!days[dayKey(t)]; if (!today) t.setDate(t.getDate() - 1);
     while (days[dayKey(t)]) { n++; t.setDate(t.getDate() - 1); }
@@ -152,7 +154,7 @@
   window.bwSetGoal = setGoal;
   function todayCount() {
     var t = dayKey(now), n = 0;
-    K.h.concat(V.h).forEach(function (x) { if (x.d && dayKey(x.d) === t) n += x.n || 0; });
+    K.h.concat(V.h, A.h).forEach(function (x) { if (x.d && dayKey(x.d) === t) n += x.n || 0; });
     ['bw-sim-v1', 'bwv-sim-v1', 'bwm-sim-v1', 'bwmt-hist'].forEach(function (k) { (get(k, []) || []).forEach(function (x) { if (x && x.d && dayKey(x.d) === t) n += x.n || 0; }); });
     Object.keys(SKV).forEach(function (k) { (SKV[k].h || []).forEach(function (x) { if (dayKey(x[0]) === t) n += x[1] || 0; }); });
     return n;
@@ -160,13 +162,13 @@
   function daysLeft() { if (!GOAL.exam) return null; var d = new Date(GOAL.exam + 'T08:00:00'); return Math.ceil((d - now) / DAY); }
   function skills() { return Object.keys(SKV).map(function (k) { var r = SKV[k]; return { id: +k, n: r.n, s: r.s, t: r.t, c: r.c, p: r.t ? r.c / r.t : 0 }; }).filter(function (x) { return x.t >= 3; }); }
   function weakList() {
-    var a = K.secs.map(function (x) { return { k: 'sec', sj: 'kamy', id: x.id, p: x.p, t: x.t }; }).concat(V.secs.map(function (x) { return { k: 'sec', sj: 'lafzi', id: x.id, p: x.p, t: x.t }; }))
+    var a = K.secs.map(function (x) { return { k: 'sec', sj: 'kamy', id: x.id, p: x.p, t: x.t }; }).concat(V.secs.map(function (x) { return { k: 'sec', sj: 'lafzi', id: x.id, p: x.p, t: x.t }; }), A.secs.map(function (x) { return { k: 'sec', sj: 'kamy2', id: x.id, p: x.p, t: x.t }; }))
       .concat(skills().map(function (x) { return { k: 'skill', id: x.id, n: x.n, p: x.p, t: x.t }; }));
     return a.filter(function (x) { return x.t >= 3 && x.p < .75; }).sort(function (a, b) { return a.p - b.p; });
   }
-  function itemName(w) { return w.k === 'skill' ? 'مهارة «' + w.n + '»' : secName(w.sj, w.id) + ' (' + (w.sj === 'kamy' ? 'كمي' : 'لفظي') + ')'; }
+  function itemName(w) { return w.k === 'skill' ? 'مهارة «' + w.n + '»' : secName(w.sj, w.id) + ' (' + (w.sj === 'lafzi' ? 'لفظي' : w.sj === 'kamy2' ? 'كمي إضافي' : 'كمي') + ')'; }
   function reviewSched() {
-    var all = K.errs.concat(V.errs), r = { now: 0, d3: 0, d7: 0 };
+    var all = K.errs.concat(V.errs, A.errs), r = { now: 0, d3: 0, d7: 0 };
     all.forEach(function (x) { var due = new Date(x.date).getTime() + [1, 3, 7][x.ok || 0] * DAY, dd = (due - now) / DAY; if (dd <= 0) r.now++; else if (dd <= 3) r.d3++; else if (dd <= 7) r.d7++; });
     return r;
   }
@@ -199,7 +201,7 @@
     var plan = weekPlan();
     h += '<div class="two"><div class="card"><h3>🗓 خطتك لهذا الأسبوع</h3><p class="m">تتعدل تلقائيًا كل يوم حسب أخطائك وأضعف أقسامك ومهاراتك' + (left !== null && left <= 14 ? '، ومع اقتراب الاختبار تزيد المحاكاة' : '') + '.</p><ul class="plan">' + plan.map(function (d) { return '<li class="' + (d.today ? 'today' : '') + '"><b>' + esc(d.lab) + '</b><span>' + d.txt + '</span></li>'; }).join('') + '</ul></div>';
     var rv = reviewSched();
-    h += '<div class="card"><h3>🔁 جدول المراجعة المتباعدة</h3><p class="m">كل سؤال أخطأت فيه يرجع لك بعد يوم، ثم ٣ أيام، ثم أسبوع. لو حليته صح ٣ مرات يخرج من المجلد.</p><div class="rv"><div><b>' + AR(rv.now) + '</b><span>جاهزة اليوم</span></div><div><b>' + AR(rv.d3) + '</b><span>خلال ٣ أيام</span></div><div><b>' + AR(rv.d7) + '</b><span>خلال أسبوع</span></div></div>' + (rv.now ? '<div class="acts">' + (K.due ? '<a class="btn btn-navy" href="' + SUBJ.kamy.page + '#errors">راجع الكمي (' + AR(K.due) + ')</a>' : '') + (V.due ? '<a class="btn btn-navy" href="' + SUBJ.lafzi.page + '#errors">راجع اللفظي (' + AR(V.due) + ')</a>' : '') + '</div>' : '<p class="m" style="margin:0">لا توجد مراجعات مستحقة اليوم 👍</p>') + '</div></div>';
+    h += '<div class="card"><h3>🔁 جدول المراجعة المتباعدة</h3><p class="m">كل سؤال أخطأت فيه يرجع لك بعد يوم، ثم ٣ أيام، ثم أسبوع. لو حليته صح ٣ مرات يخرج من المجلد.</p><div class="rv"><div><b>' + AR(rv.now) + '</b><span>جاهزة اليوم</span></div><div><b>' + AR(rv.d3) + '</b><span>خلال ٣ أيام</span></div><div><b>' + AR(rv.d7) + '</b><span>خلال أسبوع</span></div></div>' + (rv.now ? '<div class="acts">' + (K.due ? '<a class="btn btn-navy" href="' + SUBJ.kamy.page + '#errors">راجع الكمي (' + AR(K.due) + ')</a>' : '') + (V.due ? '<a class="btn btn-navy" href="' + SUBJ.lafzi.page + '#errors">راجع اللفظي (' + AR(V.due) + ')</a>' : '') + (A.due ? '<a class="btn btn-navy" href="' + SUBJ.kamy2.page + '#errors">راجع الكمي الإضافي (' + AR(A.due) + ')</a>' : '') + '</div>' : '<p class="m" style="margin:0">لا توجد مراجعات مستحقة اليوم 👍</p>') + '</div></div>';
     return h;
   }
   function skillCard() {
@@ -209,7 +211,7 @@
     h += '<p class="m">' + AR(L.length) + ' مهارة تدرّبت عليها.</p>' + L.slice(0, 6).map(row).join('');
     return h + '<div class="acts"><a class="btn btn-navy" href="/skills.html?id=' + L[0].id + '">تدرّب على أضعف مهارة</a></div></div>';
   }
-  var RANK = null, PGN = { 'muhaky mohawsab': 'المحاكي المحوسب', 'aksam kamy': 'محاكي الكمي', 'aksam lafzi': 'محاكي اللفظي', 'muhaky warky1': 'المحاكي الورقي ١', 'muhaky warky2': 'المحاكي الورقي ٢' };
+  var RANK = null, PGN = { 'muhaky mohawsab': 'المحاكي المحوسب', 'aksam kamy': 'محاكي الكمي', 'aksam lafzi': 'محاكي اللفظي', 'ak_kamyadd': 'محاكي الكمي الإضافي', 'muhaky warky1': 'المحاكي الورقي ١', 'muhaky warky2': 'المحاكي الورقي ٢' };
   function rankCard() {
     if (!window.__bwSid) return '<div class="card"><h3>📊 مقارنتك بالطلاب</h3><p class="m">تظهر للمشتركين بعد أول اختبار محاكي: ترتيبك بين الطلاب بدون أي أسماء.</p></div>';
     var h = '<div class="card"><h3>📊 مقارنتك بالطلاب</h3>';
@@ -237,14 +239,15 @@
     return h + '</div>';
   }
   function draw() {
-    var n = K.n + V.n, g = K.g + V.g, step = nextStep(), h = '<h1>تقدمي</h1><p class="sub">ملخص تدريبك، والخطوة التالية المقترحة لك.</p>';
+    var n = K.n + V.n + A.n, g = K.g + V.g + A.g, step = nextStep(), h = '<h1>تقدمي</h1><p class="sub">ملخص تدريبك، والخطوة التالية المقترحة لك.</p>';
     if (place) h += '<div class="resume"><span>مستواك في اختبار تحديد المستوى: ' + esc(place.lvl) + ' (' + AR(place.p) + '٪ · لفظي ' + AR(place.v) + '٪ · كمي ' + AR(place.k) + '٪)</span><a class="btn btn-soft" href="/placement.html">' + (now - new Date(place.d) > 14 * DAY ? 'حان وقت إعادته' : 'أعد الاختبار') + '</a></div>';
     h += '<section class="next"><div><small>خطوتك التالية</small><h2>' + esc(step.t) + '</h2><p>' + esc(step.d) + '</p></div>' + (step.go ? '<a class="btn btn-gold" href="' + step.go + '">' + esc(step.b) + '</a>' : '<button class="btn btn-gold" id="stepBtn">' + esc(step.b) + '</button>') + '</section>';
     var SK2 = streak();
     h += '<div class="streak"><div><b>' + (SK2.n === 1 ? '🔥 يوم تدريب واحد' : SK2.n === 2 ? '🔥 يوما تدريب متتاليان' : SK2.n ? '🔥 ' + AR(SK2.n) + (SK2.n <= 10 ? ' أيام تدريب متتالية' : ' يومًا تدريبيًا متتاليًا') : 'ابدأ اليوم سلسلة أيام تدريبك') + '</b><span>' + (SK2.n && !SK2.today ? 'تدرّب اليوم ولو ١١ سؤالًا لتستمر السلسلة.' : SK2.today ? 'أحسنت، تدربت اليوم.' : 'قليل كل يوم أفضل من كثير مرة واحدة.') + '</span></div><div class="wk">' + SK2.week.map(function (d) { return '<i class="' + (d.on ? 'on' : '') + (d.today ? ' t' : '') + '" title="' + esc(d.l) + '"><em>' + esc(d.l) + '</em></i>'; }).join('') + '</div></div>';
     h += goalCard();
-    h += '<div class="kpis"><div class="kpi"><b>' + AR(n) + '</b><span>سؤالًا حللته</span></div><div class="kpi"><b>' + (n ? AR(Math.round(g / n * 100)) + '٪' : '—') + '</b><span>دقة إجاباتك</span></div><div class="kpi"><b>' + AR(K.wk + V.wk) + '</b><span>سؤالًا هذا الأسبوع</span></div><div class="kpi"><b>' + AR(K.errs.length + V.errs.length) + '</b><span>سؤالًا في مجلد الأخطاء</span></div></div>';
+    h += '<div class="kpis"><div class="kpi"><b>' + AR(n) + '</b><span>سؤالًا حللته</span></div><div class="kpi"><b>' + (n ? AR(Math.round(g / n * 100)) + '٪' : '—') + '</b><span>دقة إجاباتك</span></div><div class="kpi"><b>' + AR(K.wk + V.wk + A.wk) + '</b><span>سؤالًا هذا الأسبوع</span></div><div class="kpi"><b>' + AR(K.errs.length + V.errs.length + A.errs.length) + '</b><span>سؤالًا في مجلد الأخطاء</span></div></div>';
     h += '<div class="two">' + subjCard('kamy', K) + subjCard('lafzi', V) + '</div>';
+    h += '<div class="two">' + subjCard('kamy2', A) + '</div>';
     h += '<div class="two">' + skillCard() + rankCard() + '</div>';
     h += '<div class="two"><div class="card"><h3>نتائج المحاكاة</h3>';
     var last = sims.slice(-10);
@@ -273,6 +276,7 @@
   addEventListener('load', function () { var z = document.getElementById('pz'); if (window.bwPause && z) { z.hidden = false; z.querySelector('button').onclick = window.bwPause; } });
   if (K.secs.length) loadNames('kamy');
   if (V.secs.length) loadNames('lafzi');
+  if (A.secs.length) loadNames('kamy2');
 })();
 </script>
 <script src="/bw-shell.js"></script>

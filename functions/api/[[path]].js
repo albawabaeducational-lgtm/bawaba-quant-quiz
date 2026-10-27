@@ -51,7 +51,8 @@ const PERM_GROUPS = [
     ['settings.access', 'نمط الدخول ومدة التجربة المجانية'],
     ['settings.plans', 'باقات الاشتراك والأسعار'],
     ['settings.contact', 'رقم واتساب المنصة ورسالة المهتمين'],
-    ['settings.guard', 'حماية التجربة المجانية ورفع الحظر']] },
+    ['settings.guard', 'حماية التجربة المجانية ورفع الحظر'],
+    ['settings.home', 'تعديل الصفحة الرئيسية (عدّاد الطلبة، الأوائل، آراء الطلاب، النصوص والخط)']] },
   { key: 'bank', title: 'بنك الأسئلة', items: [
     ['bank.view', 'عرض بنك الأسئلة'],
     ['bank.edit', 'تعديل الأسئلة وتصنيفها'],
@@ -187,6 +188,22 @@ function freeDb(text, n, kind) {
 }
 // الاختبارات التي يمكن إخفاؤها عن الطلاب من لوحة التحكم
 const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
+// ===================== إعدادات الصفحة الرئيسية (تُعدَّل من لوحة التحكم ← الصفحة الرئيسية) =====================
+const HOME_FONTS = ['ibm', 'readex', 'tajawal', 'cairo', 'almarai', 'kufi'];
+const homeStr = (x, n) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u2028\u2029]/g, ' ').trim().slice(0, n);
+const homeNum = (x, a, b, d) => { x = +x; return Number.isFinite(x) ? Math.max(a, Math.min(b, x)) : d; };
+const homeAvatar = x => { x = String(x || ''); return /^data:image\/(?:jpeg|webp|png);base64,[A-Za-z0-9+\/=]+$/.test(x) && x.length <= 16000 ? x : ''; };
+const homeClean = o => {
+  o = o && typeof o === 'object' ? o : {};
+  const arr = (a, n) => (Array.isArray(a) ? a : []).slice(0, n);
+  const out = { counts: {}, toppers: [], reviews: [], t: {}, font: HOME_FONTS.includes(o.font) ? o.font : '', show: { toppers: !(o.show && o.show.toppers === false), reviews: !(o.show && o.show.reviews === false) }, updated: homeStr(o.updated, 40) };
+  for (const k of ['students', 'kamy', 'lafzi', 'secs', 'papers']) { const v = o.counts && o.counts[k]; if (v !== '' && v != null && Number.isFinite(+v)) out.counts[k] = Math.round(homeNum(v, 0, 99999999, 0)); }
+  out.toppers = arr(o.toppers, 20).map(x => ({ name: homeStr(x && x.name, 60), subjects: arr(x && x.subjects, 4).filter(k => VIS.some(v => v[0] === k)), rate: Math.round(homeNum(x && x.rate, 0, 100, 0) * 10) / 10, solved: x && x.solved !== '' && x.solved != null && Number.isFinite(+x.solved) ? Math.round(homeNum(x.solved, 0, 9999999, 0)) : null, avatar: homeAvatar(x && x.avatar) })).filter(x => x.name);
+  out.reviews = arr(o.reviews, 30).map(x => ({ name: homeStr(x && x.name, 50), role: homeStr(x && x.role, 60), text: homeStr(x && x.text, 500), rating: Math.round(homeNum(x && x.rating, 1, 5, 5)), avatar: homeAvatar(x && x.avatar) })).filter(x => x.name && x.text);
+  if (o.t && typeof o.t === 'object') for (const k of Object.keys(o.t).slice(0, 160)) { const v = homeStr(o.t[k], 240); if (/^[a-z0-9_]{1,40}$/.test(k) && v) out.t[k] = v; }
+  return out;
+};
+const homeOf = v => { try { return homeClean(JSON.parse(v || '{}')); } catch (e) { return homeClean({}); } };
 const hiddenOf = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a.filter(k => VIS.some(x => x[0] === k)) : []; } catch (e) { return []; } };
 const SKILL_BANKS = { 'aksam kamy': 'kamy', 'aktar kamy': 'kamy', 'aksam lafzi': 'lafzi' };
 const SUBJECTS = { kamy: 'الكمي', lafzi: 'اللفظي' };
@@ -397,7 +414,7 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
   // الصفحة الرئيسية تعرض «تفاصيل الدورات» من نفس رسالة واتساب التي تُرسل للمهتمين (تُعدَّل من لوحة التحكم ← الإعدادات)
-  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0', google: env.MOODLE_TOKEN ? ((await setting('google_client_id')) || GOOGLE_CLIENT_ID) : '', hidden: hiddenOf(await setting('hidden_courses')) });
+  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0', google: env.MOODLE_TOKEN ? ((await setting('google_client_id')) || GOOGLE_CLIENT_ID) : '', hidden: hiddenOf(await setting('hidden_courses')), home: homeOf(await setting('home_config')) });
 
   if (p === 'login' && m === 'POST') {
     if (await tooMany(ip)) return J({ error: 'محاولات خاطئة كثيرة. حاول بعد ربع ساعة.' }, 429);
@@ -1386,6 +1403,7 @@ export async function onRequest({ request, env, params }) {
     const settings = {};
     if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
+    if (can('settings.home')) { settings.home_config = homeOf(S.home_config); if (!can('settings.access')) { settings.vis = VIS; settings.hidden_courses = hiddenOf(S.hidden_courses); } }
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
     if (can('settings.contact') || can('leads.manage')) settings.lead_message = S.lead_message || DEFAULT_LEAD_MSG;
     if (can('settings.plans')) out.plans = plansOf(S.plans);
@@ -1478,7 +1496,8 @@ export async function onRequest({ request, env, params }) {
     else if (b.key === 'google_client_id') { if (!can('settings.access')) return deny(); v = String(b.value || '').trim(); if (v && !/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/.test(v)) return J({ error: 'Client ID غير صحيح؛ لازم ينتهي بـ .apps.googleusercontent.com' }, 400); }
     else if (b.key === 'free_mode') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
     else if (b.key === 'free_count') { if (!can('settings.access')) return deny(); v = String(Math.max(1, Math.min(50, int(b.value) || 10))); }
-    else if (b.key === 'hidden_courses') { if (!can('settings.access')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
+    else if (b.key === 'hidden_courses') { if (!can('settings.access') && !can('settings.home')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
+    else if (b.key === 'home_config') { if (!can('settings.home')) return deny(); const c = homeClean(b.value); c.updated = iso; v = JSON.stringify(c); if (v.length > 900000) return J({ error: 'حجم الصور كبير؛ قلّل عدد الصور أو استخدم صورًا أصغر' }, 400); }
     else if (b.key === 'lead_message') { if (!can('settings.contact')) return deny(); v = String(b.value || '').slice(0, 3000); }
     else return J({ error: 'not found' }, 404);
     await DB.batch([putSetting(b.key, v), audit(A, 'setting', 'settings', null, b.key)]);
