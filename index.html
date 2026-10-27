@@ -412,6 +412,122 @@
     @media (max-width: 480px) { header.top .brand b { font-size: 13px; line-height: 1.3; max-width: 7.5em; } header.top .brand img { width: 36px; height: 36px; } header.top .btn { padding: 8px 11px; font-size: 13px; } header.top .wrap { gap: 6px; } .lms-strip .lx { display: none; } .lms-strip { font-size: 13px; } .lms-strip .wrap { gap: 6px; padding: 7px 0; } header.top .brand b small { font-size: 10.5px; } }
     @media (max-width: 350px) { header.top .brand b { display: none; } }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; animation: none !important; } .pathway-link .shine { display: none; } }
+
+    /* ================= هوية هادئة (تعلو على ما سبق) ================= */
+    :root {
+      --night: #0e2238; --deep: #132c47; --navy: #1b3a5c; --sea: #2c5f8a; --sky: #6f9ec4;
+      --gold: #c9a45c; --gold-2: #e2c88f; --gold-soft: #f6efe0;
+      --paper: #f3f5f8; --paper-2: #eaeef3; --line: #dbe2ea; --muted: #5d6b7c; --ink: #1d2a39;
+    }
+    body { background: var(--paper); }
+    .lms-strip { background: #132c47; color: #dfe7f0; font-weight: 600; border-bottom: 1px solid #ffffff12; }
+    .lms-strip a { background: var(--gold); color: #1d2a39; }
+    .lms-strip a:hover { background: var(--gold-2); }
+    .top { background: rgba(14, 34, 56, .94); }
+    .brand img { box-shadow: 0 0 0 1px #ffffff2a; }
+    .btn-gold { background: var(--gold); color: #1d2a39; box-shadow: 0 6px 16px #0000001f; }
+    .btn-gold:hover { background: var(--gold-2); box-shadow: 0 8px 20px #00000026; }
+    .btn-navy { background: var(--navy); box-shadow: 0 6px 16px #1b3a5c30; }
+    .btn-navy:hover { background: var(--sea); }
+
+    /* الواجهة: كحلي هادئ بلا توهجات ملونة */
+    .hero { background: radial-gradient(900px 420px at 85% -10%, #2c5f8a40, transparent 70%), linear-gradient(180deg, #0e2238 0%, #132c47 100%); }
+    .hero::before { background-image: radial-gradient(circle at 1.5px 1.5px, #ffffff0d 1.5px, transparent 0); }
+    .slogan { color: var(--gold-2); background: #ffffff0a; box-shadow: inset 0 0 0 1px #ffffff1f; }
+    .hero h1 { background: none; color: #fff; -webkit-text-fill-color: #fff; }
+    .facts li { background: #ffffff0d; border-color: #ffffff1a; box-shadow: none; }
+    .facts li::after { display: none; }
+    .facts li:hover { box-shadow: 0 12px 26px #00000030; background: #ffffff14; }
+    .facts .fi { background: #ffffff12; color: var(--gold-2); box-shadow: inset 0 0 0 1px #ffffff1f; }
+    .facts .fl { color: #b7c5d4; }
+
+    /* قسم الاختبارات */
+    .tests-up { background: linear-gradient(180deg, transparent 0, transparent 92px, #132c47 92px, #11283f 100%); }
+    .tests-up::before { display: none; }
+    .exam-main { background: linear-gradient(150deg, #1d3d60, #15304d); border-color: #ffffff1c; box-shadow: 0 18px 40px #00000035; }
+    .exam-main:hover { box-shadow: 0 24px 48px #00000045, 0 0 0 1px #c9a45c66; }
+    .exam-main .copy mark { background: var(--gold); color: #1d2a39; box-shadow: none; }
+    .exam-main .tag { background: #ffffff0f; color: var(--gold-2); box-shadow: inset 0 0 0 1px #ffffff26; }
+    .quick-try { background: #fff; box-shadow: 0 18px 40px #00000030; }
+    .quick-try::before { background: var(--gold); height: 4px; }
+
+    /* بطاقات المقررات: لون واحد هادئ وتمييز بخط جانبي رفيع */
+    .pathway { background: #ffffff08; border-color: #ffffff17; box-shadow: none; }
+    .pathway-head p { color: #b7c5d4; }
+    .pathway-badge { background: #ffffff0d; color: var(--gold-2); box-shadow: inset 0 0 0 1px #ffffff1f; }
+    .pathway-tabs { background: #00000026; }
+    .pathway-tabs button[aria-selected="true"] { background: var(--gold); color: #1d2a39; box-shadow: none; }
+    .pathway-group { background: #0000001a; border-color: #ffffff12; }
+    .pathway-group h4::before { box-shadow: none; }
+    .pathway-link, .t-kamy, .t-kamy2, .t-aktar, .t-lafzi, .t-tasis, .t-skills, .paper-action .pathway-link {
+      --a: #ffffff; --b: #f4f7fa; --fg: #1b3a5c; --sub: #5d6b7c; --st: #2c5f8a;
+      border: 1px solid #e3e9f0; box-shadow: 0 6px 16px #00000024, inset -4px 0 0 var(--st); }
+    .t-kamy2 { --st: #3f7cae; } .t-aktar { --st: #c9a45c; } .t-lafzi { --st: #4f6d8f; } .t-tasis { --st: #7a8fa6; } .t-skills { --st: #4b8a84; }
+    .paper-action .pathway-link { --st: #c9a45c; }
+    .pathway-link::before, .t-aktar::before, .paper-action .pathway-link::before { color: #1b3a5c; opacity: .05; }
+    .pathway-link::after, .t-aktar::after, .paper-action .pathway-link::after { background: #eef2f6; color: #1b3a5c; }
+    .pathway-link .pl-ic, .t-aktar .pl-ic, .paper-action .pathway-link .pl-ic { background: #eef2f6; color: var(--st); box-shadow: none; }
+    .pathway-link:hover { filter: none; box-shadow: 0 14px 28px #00000038, inset -4px 0 0 var(--st); }
+    .pathway-link:hover::after { background: var(--gold); color: #1d2a39; }
+    .pathway-link .shine { display: none; }
+    .pl-new { background: var(--gold); color: #1d2a39; box-shadow: none; }
+    .pathway-link.pending { background: #ffffff08; border: 1.5px dashed #ffffff33; box-shadow: none; color: #b7c5d4; }
+    .paper-pathway { background: #ffffff08; border-color: #ffffff17; }
+
+    /* أقسام فاتحة: رمادي مزرق هادئ بدل الأبيض الساطع */
+    .light, .faq-sec, .courses-sec { background: var(--paper); }
+    .light .eyebrow { background: #1b3a5c12; color: var(--navy); }
+    .dark { background: #132c47; }
+    .dark .eyebrow { background: #ffffff0f; color: var(--gold-2); }
+    .steps li { background: #fff; border-color: var(--line); box-shadow: 0 4px 14px #1b3a5c0d; }
+    .steps li::before, .steps li:nth-child(2)::before, .steps li:nth-child(3)::before, .steps li:nth-child(4)::before { background: var(--navy); box-shadow: none; }
+    .sample-card { border-color: var(--line); box-shadow: 0 6px 18px #1b3a5c0f; }
+    .modes > div, .modes > div:first-child, .modes > div:last-child { background: #fff; border-color: var(--line); box-shadow: 0 4px 14px #1b3a5c0d; }
+    .mode.tr { background: #e3efe9; color: #2d6a4f; } .mode.sm { background: var(--gold-soft); color: #7a5c22; }
+
+    /* الأوائل */
+    .toppers { background: linear-gradient(180deg, #132c47, #0e2238); }
+    .tbl-wrap { background: #ffffff08; border-color: #ffffff17; box-shadow: none; }
+    .toppers-table th { color: var(--gold-2); background: #00000020; }
+    .r1 .rk { background: var(--gold); color: #1d2a39; box-shadow: none; }
+    .r2 .rk { background: #c9d3de; color: #1d2a39; box-shadow: none; }
+    .r3 .rk { background: #c49a74; color: #2a1a0c; box-shadow: none; }
+    .r1 td:first-child { box-shadow: inset -3px 0 0 var(--gold); } .r2 td:first-child { box-shadow: inset -3px 0 0 #c9d3de; } .r3 td:first-child { box-shadow: inset -3px 0 0 #c49a74; }
+    .chip, .chip.k, .chip.l, .chip.m, .chip.s { background: #ffffff10; color: #dfe7f0; box-shadow: inset 0 0 0 1px #ffffff26; }
+    .rate .bar i { background: var(--gold); }
+    .top-empty { display: flex; align-items: center; gap: 16px; padding: 18px 6px; }
+    .top-empty .te-ic { flex: none; width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; font-size: 24px; background: #ffffff0f; box-shadow: inset 0 0 0 1px #ffffff1f; }
+    .top-empty b { display: block; font-family: var(--display); font-size: 18px; color: #fff; }
+    .top-empty small { color: #b7c5d4; font-size: 14px; }
+    .toppers-table tr.empty { display: table-row; }
+    .toppers-table tr.empty:hover { background: none; }
+
+    /* قالوا عنا: خلفية محايدة بدل الأصفر */
+    .reviews { background: var(--paper-2); }
+    .reviews .sec-head p { color: var(--muted); }
+    .reviews .eyebrow { background: #1b3a5c12; color: var(--navy); }
+    .rv { border-color: var(--line); box-shadow: 0 6px 18px #1b3a5c12; }
+    .rv::before { color: var(--gold); opacity: .35; }
+    .rv .stars { color: var(--gold); } .rv .stars i { color: #e2dccd; }
+    .rv .who { border-top-color: var(--line); } .rv .who small { color: var(--muted); }
+    .mq-ctl button:hover { background: var(--sea); }
+
+    /* الباقات */
+    .course { background: #fff; border-color: var(--line); box-shadow: 0 4px 14px #1b3a5c0d; }
+    .course::before, .course:nth-child(2)::before, .course:nth-child(3)::before, .course:nth-child(4)::before { background: var(--navy); height: 4px; }
+    .course.featured { border: 1.5px solid var(--gold); background: #fff; box-shadow: 0 10px 26px #1b3a5c14; }
+    .course.featured::before { background: var(--gold); }
+    .pkg-tag { background: var(--gold-soft); color: #7a5c22; box-shadow: inset 0 0 0 1px #c9a45c66; }
+    .platform { background: linear-gradient(135deg, #1b3a5c, #132c47); box-shadow: 0 10px 26px #132c4730; }
+    .faq details { border-color: var(--line); box-shadow: none; }
+    .faq details[open] { border-color: #b6c6d8; box-shadow: 0 6px 16px #1b3a5c10; }
+    .faq summary::after { background: #eef2f6; color: var(--navy); }
+    .faq details[open] summary::after { background: var(--gold); color: #1d2a39; }
+    .community { background: linear-gradient(180deg, #132c47, #0e2238); }
+    footer { background: #0a1a2c; }
+    .av { background: #2c5f8a; box-shadow: 0 0 0 2px #ffffff26; }
+    .pathway-link::before { display: none; }
+    @media (max-width: 760px) { .toppers-table tbody tr.empty { display: block; } }
   </style>
 </head>
 <body>
@@ -423,7 +539,7 @@
         <a href="#tests">الاختبارات</a>
         <a href="/placement.html" data-vis="placement">تحديد المستوى</a>
         <a href="/progress.html">تقدمي</a>
-        <a href="#toppers" id="navTop" hidden>الأوائل</a>
+        <a href="#toppers" id="navTop">الأوائل</a>
         <a class="guest-only" href="#try">جرّب سؤالًا</a>
         <a class="guest-only" href="#courses">الدورات</a>
         <a href="#join">تواصل معنا</a>
@@ -524,7 +640,7 @@
       </div>
     </section>
 
-    <section class="block toppers" id="toppers" aria-labelledby="topTitle" hidden>
+    <section class="block toppers" id="toppers" aria-labelledby="topTitle">
       <div class="wrap">
         <div class="sec-head"><div><span class="eyebrow">لوحة الشرف</span><h2 id="topTitle" data-edit="top_title" data-label="عنوان «الأوائل»" data-group="عناوين الأقسام">الأوائل هذا الأسبوع</h2><span class="top-week" id="topWeek"></span></div></div>
         <div class="tbl-wrap">
@@ -658,7 +774,13 @@
 
   function renderToppers(list, upd) {
     var sec = $('#toppers'), nav = $('#navTop'), body = $('#topBody'); if (!sec || !body) return;
-    if (!list || !list.length) { sec.hidden = true; if (nav) nav.hidden = true; return; }
+    if (list === false) { sec.hidden = true; if (nav) nav.hidden = true; return; }
+    if (!list || !list.length) {
+      body.textContent = ''; var er = el('tr', 'empty'), et = el('td'); et.colSpan = 5;
+      var eb = el('div', 'top-empty'); eb.appendChild(el('span', 'te-ic', '🏆')); var ex = el('div'); ex.appendChild(el('b', '', 'تُعلن أسماء أوائل هذا الأسبوع قريبًا')); ex.appendChild(el('small', '', 'اجتهد في التدريب هذا الأسبوع، وقد يكون اسمك أول القائمة.')); eb.appendChild(ex); et.appendChild(eb); er.appendChild(et); body.appendChild(er);
+      $$('.col-solved', sec).forEach(function (e) { e.hidden = true; });
+      $('#topWeek').textContent = '📅 ' + weekLabel(); sec.hidden = false; if (nav) nav.hidden = false; return;
+    }
     var L = list.slice().sort(function (a, b) { return b.rate - a.rate; }), anyS = L.some(function (x) { return x.solved != null; });
     body.textContent = '';
     L.forEach(function (x, i) {
@@ -733,6 +855,7 @@
   // ===== إعدادات الصفحة من لوحة التحكم (نصوص، خط، أرقام، الأوائل، الآراء) =====
   var FONTS = { readex: ['Readex+Pro:wght@400;600;700', '"Readex Pro"'], tajawal: ['Tajawal:wght@400;500;700;800', 'Tajawal'], cairo: ['Cairo:wght@400;600;700;800', 'Cairo'], almarai: ['Almarai:wght@400;700;800', 'Almarai'], kufi: ['Noto+Kufi+Arabic:wght@400;600;700', '"Noto Kufi Arabic"'] };
   renderReviews(DEFAULT_REVIEWS);
+  renderToppers([]);
   window.bwHome = function (h) {
     try {
       h = h || {};
@@ -740,7 +863,7 @@
       var t = h.t || {}; Object.keys(t).forEach(function (k) { $$('[data-edit="' + k + '"]').forEach(function (e) { e.textContent = t[k]; }); });
       var c = h.counts || {}; Object.keys(c).forEach(function (k) { setCount(k, +c[k] || 0); });
       var sh = h.show || {};
-      renderToppers(sh.toppers === false ? [] : h.toppers, h.updated);
+      renderToppers(sh.toppers === false ? false : (h.toppers || []), h.updated);
       renderReviews(sh.reviews === false ? [] : (h.reviews && h.reviews.length ? h.reviews : DEFAULT_REVIEWS));
     } catch (e) { if (window.console) console.error('bwHome', e); }
   };
