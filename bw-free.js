@@ -120,7 +120,7 @@
     document.body.insertBefore(b, document.body.firstChild);
   }
   function boot() {
-    bar(); locks();
+    /* شريط «أنت على النسخة المجانية» أُلغي بطلب الإدارة: القفل 🔒 على الأجزاء المغلقة يكفي */ locks();
     new MutationObserver(sched).observe(document.body, { childList: true, subtree: true });
     if (/[?&]locked=1/.test(location.search)) { modal('هذا الاختبار للمشتركين. النموذج الأول متاح لك مجانًا.'); try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { } }
   }
