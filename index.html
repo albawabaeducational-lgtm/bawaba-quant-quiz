@@ -420,10 +420,10 @@
       --paper: #f3f5f8; --paper-2: #eaeef3; --line: #dbe2ea; --muted: #5d6b7c; --ink: #1d2a39;
     }
     body { background: var(--paper); }
-    .lms-strip { background: #132c47; color: #dfe7f0; font-weight: 600; border-bottom: 1px solid #ffffff12; }
+    .lms-strip { background: var(--deep); color: #dfe7f0; font-weight: 600; border-bottom: 1px solid #ffffff12; }
     .lms-strip a { background: var(--gold); color: #1d2a39; }
     .lms-strip a:hover { background: var(--gold-2); }
-    .top { background: rgba(14, 34, 56, .94); }
+    .top { background: var(--night); }
     .brand img { box-shadow: 0 0 0 1px #ffffff2a; }
     .btn-gold { background: var(--gold); color: #1d2a39; box-shadow: 0 6px 16px #0000001f; }
     .btn-gold:hover { background: var(--gold-2); box-shadow: 0 8px 20px #00000026; }
@@ -431,7 +431,7 @@
     .btn-navy:hover { background: var(--sea); }
 
     /* الواجهة: كحلي هادئ بلا توهجات ملونة */
-    .hero { background: radial-gradient(900px 420px at 85% -10%, #2c5f8a40, transparent 70%), linear-gradient(180deg, #0e2238 0%, #132c47 100%); }
+    .hero { background: radial-gradient(900px 420px at 85% -10%, #2c5f8a40, transparent 70%), linear-gradient(180deg, var(--night) 0%, var(--deep) 100%); }
     .hero::before { background-image: radial-gradient(circle at 1.5px 1.5px, #ffffff0d 1.5px, transparent 0); }
     .slogan { color: var(--gold-2); background: #ffffff0a; box-shadow: inset 0 0 0 1px #ffffff1f; }
     .hero h1 { background: none; color: #fff; -webkit-text-fill-color: #fff; }
@@ -442,9 +442,9 @@
     .facts .fl { color: #b7c5d4; }
 
     /* قسم الاختبارات */
-    .tests-up { background: linear-gradient(180deg, transparent 0, transparent 92px, #132c47 92px, #11283f 100%); }
+    .tests-up { background: linear-gradient(180deg, transparent 0, transparent 92px, var(--deep) 92px, var(--night) 100%); }
     .tests-up::before { display: none; }
-    .exam-main { background: linear-gradient(150deg, #1d3d60, #15304d); border-color: #ffffff1c; box-shadow: 0 18px 40px #00000035; }
+    .exam-main { background: linear-gradient(150deg, var(--navy), var(--deep)); border-color: #ffffff1c; box-shadow: 0 18px 40px #00000035; }
     .exam-main:hover { box-shadow: 0 24px 48px #00000045, 0 0 0 1px #c9a45c66; }
     .exam-main .copy mark { background: var(--gold); color: #1d2a39; box-shadow: none; }
     .exam-main .tag { background: #ffffff0f; color: var(--gold-2); box-shadow: inset 0 0 0 1px #ffffff26; }
@@ -460,12 +460,12 @@
     .pathway-group { background: #0000001a; border-color: #ffffff12; }
     .pathway-group h4::before { box-shadow: none; }
     .pathway-link, .t-kamy, .t-kamy2, .t-aktar, .t-lafzi, .t-tasis, .t-skills, .paper-action .pathway-link {
-      --a: #ffffff; --b: #f4f7fa; --fg: #1b3a5c; --sub: #5d6b7c; --st: #2c5f8a;
+      --a: #ffffff; --b: #f4f7fa; --fg: var(--navy); --sub: #5d6b7c; --st: var(--sea);
       border: 1px solid #e3e9f0; box-shadow: 0 6px 16px #00000024, inset -4px 0 0 var(--st); }
-    .t-kamy2 { --st: #3f7cae; } .t-aktar { --st: #c9a45c; } .t-lafzi { --st: #4f6d8f; } .t-tasis { --st: #7a8fa6; } .t-skills { --st: #4b8a84; }
-    .paper-action .pathway-link { --st: #c9a45c; }
-    .pathway-link::before, .t-aktar::before, .paper-action .pathway-link::before { color: #1b3a5c; opacity: .05; }
-    .pathway-link::after, .t-aktar::after, .paper-action .pathway-link::after { background: #eef2f6; color: #1b3a5c; }
+    .t-kamy2 { --st: #3f7cae; } .t-aktar { --st: var(--gold); } .t-lafzi { --st: #4f6d8f; } .t-tasis { --st: #7a8fa6; } .t-skills { --st: #4b8a84; }
+    .paper-action .pathway-link { --st: var(--gold); }
+    .pathway-link::before, .t-aktar::before, .paper-action .pathway-link::before { color: var(--navy); opacity: .05; }
+    .pathway-link::after, .t-aktar::after, .paper-action .pathway-link::after { background: #eef2f6; color: var(--navy); }
     .pathway-link .pl-ic, .t-aktar .pl-ic, .paper-action .pathway-link .pl-ic { background: #eef2f6; color: var(--st); box-shadow: none; }
     .pathway-link:hover { filter: none; box-shadow: 0 14px 28px #00000038, inset -4px 0 0 var(--st); }
     .pathway-link:hover::after { background: var(--gold); color: #1d2a39; }
@@ -477,7 +477,7 @@
     /* أقسام فاتحة: رمادي مزرق هادئ بدل الأبيض الساطع */
     .light, .faq-sec, .courses-sec { background: var(--paper); }
     .light .eyebrow { background: #1b3a5c12; color: var(--navy); }
-    .dark { background: #132c47; }
+    .dark { background: var(--deep); }
     .dark .eyebrow { background: #ffffff0f; color: var(--gold-2); }
     .steps li { background: #fff; border-color: var(--line); box-shadow: 0 4px 14px #1b3a5c0d; }
     .steps li::before, .steps li:nth-child(2)::before, .steps li:nth-child(3)::before, .steps li:nth-child(4)::before { background: var(--navy); box-shadow: none; }
@@ -486,7 +486,7 @@
     .mode.tr { background: #e3efe9; color: #2d6a4f; } .mode.sm { background: var(--gold-soft); color: #7a5c22; }
 
     /* الأوائل */
-    .toppers { background: linear-gradient(180deg, #132c47, #0e2238); }
+    .toppers { background: linear-gradient(180deg, var(--deep), var(--night)); }
     .tbl-wrap { background: #ffffff08; border-color: #ffffff17; box-shadow: none; }
     .toppers-table th { color: var(--gold-2); background: #00000020; }
     .r1 .rk { background: var(--gold); color: #1d2a39; box-shadow: none; }
@@ -518,14 +518,14 @@
     .course.featured { border: 1.5px solid var(--gold); background: #fff; box-shadow: 0 10px 26px #1b3a5c14; }
     .course.featured::before { background: var(--gold); }
     .pkg-tag { background: var(--gold-soft); color: #7a5c22; box-shadow: inset 0 0 0 1px #c9a45c66; }
-    .platform { background: linear-gradient(135deg, #1b3a5c, #132c47); box-shadow: 0 10px 26px #132c4730; }
+    .platform { background: linear-gradient(135deg, var(--navy), var(--deep)); box-shadow: 0 10px 26px #132c4730; }
     .faq details { border-color: var(--line); box-shadow: none; }
     .faq details[open] { border-color: #b6c6d8; box-shadow: 0 6px 16px #1b3a5c10; }
     .faq summary::after { background: #eef2f6; color: var(--navy); }
     .faq details[open] summary::after { background: var(--gold); color: #1d2a39; }
-    .community { background: linear-gradient(180deg, #132c47, #0e2238); }
-    footer { background: #0a1a2c; }
-    .av { background: #2c5f8a; box-shadow: 0 0 0 2px #ffffff26; }
+    .community { background: linear-gradient(180deg, var(--deep), var(--night)); }
+    footer { background: var(--night); }
+    .av { background: var(--sea); box-shadow: 0 0 0 2px #ffffff26; }
     .pathway-link::before { display: none; }
     @media (max-width: 760px) { .toppers-table tbody tr.empty { display: block; } }
   </style>
@@ -860,6 +860,14 @@
     try {
       h = h || {};
       var f = FONTS[h.font]; if (f) { var lk = el('link'); lk.rel = 'stylesheet'; lk.href = 'https://fonts.googleapis.com/css2?family=' + f[0] + '&display=swap'; document.head.appendChild(lk); var fam = f[1] + ', Tahoma, sans-serif'; document.documentElement.style.setProperty('--display', fam); document.documentElement.style.setProperty('--body', fam); }
+      var th = h.theme || {}; if (th.main || th.accent || th.bg) {
+        var hx = function (c) { c = c.replace('#', ''); return [0, 2, 4].map(function (i) { return parseInt(c.substr(i, 2), 16); }); };
+        var mix = function (c, w, k) { var a = hx(c), b = hx(w); return '#' + a.map(function (v, i) { return ('0' + Math.round(v + (b[i] - v) * k).toString(16)).slice(-2); }).join(''); };
+        var rs = document.documentElement.style;
+        if (th.main) { rs.setProperty('--navy', th.main); rs.setProperty('--deep', mix(th.main, '#000000', .28)); rs.setProperty('--night', mix(th.main, '#000000', .45)); rs.setProperty('--sea', mix(th.main, '#ffffff', .22)); }
+        if (th.accent) { rs.setProperty('--gold', th.accent); rs.setProperty('--gold-2', mix(th.accent, '#ffffff', .35)); rs.setProperty('--gold-soft', mix(th.accent, '#ffffff', .85)); }
+        if (th.bg) { rs.setProperty('--paper', th.bg); rs.setProperty('--paper-2', mix(th.bg, '#000000', .04)); }
+      }
       var t = h.t || {}; Object.keys(t).forEach(function (k) { $$('[data-edit="' + k + '"]').forEach(function (e) { e.textContent = t[k]; }); });
       var c = h.counts || {}; Object.keys(c).forEach(function (k) { setCount(k, +c[k] || 0); });
       var sh = h.show || {};

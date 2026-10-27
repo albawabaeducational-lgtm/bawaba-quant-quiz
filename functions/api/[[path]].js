@@ -200,6 +200,8 @@ const homeClean = o => {
   for (const k of ['students', 'kamy', 'lafzi', 'secs', 'papers']) { const v = o.counts && o.counts[k]; if (v !== '' && v != null && Number.isFinite(+v)) out.counts[k] = Math.round(homeNum(v, 0, 99999999, 0)); }
   out.toppers = arr(o.toppers, 20).map(x => ({ name: homeStr(x && x.name, 60), subjects: arr(x && x.subjects, 4).filter(k => VIS.some(v => v[0] === k)), rate: Math.round(homeNum(x && x.rate, 0, 100, 0) * 10) / 10, solved: x && x.solved !== '' && x.solved != null && Number.isFinite(+x.solved) ? Math.round(homeNum(x.solved, 0, 9999999, 0)) : null, avatar: homeAvatar(x && x.avatar) })).filter(x => x.name);
   out.reviews = arr(o.reviews, 30).map(x => ({ name: homeStr(x && x.name, 50), role: homeStr(x && x.role, 60), text: homeStr(x && x.text, 500), rating: Math.round(homeNum(x && x.rating, 1, 5, 5)), avatar: homeAvatar(x && x.avatar) })).filter(x => x.name && x.text);
+  const hexc = x => /^#[0-9a-fA-F]{6}$/.test(String(x || '')) ? String(x).toLowerCase() : '';
+  if (o.theme && typeof o.theme === 'object') { const th = { main: hexc(o.theme.main), accent: hexc(o.theme.accent), bg: hexc(o.theme.bg) }; if (th.main || th.accent || th.bg) out.theme = th; }
   if (o.t && typeof o.t === 'object') for (const k of Object.keys(o.t).slice(0, 160)) { const v = homeStr(o.t[k], 240); if (/^[A-Za-z0-9_]{1,40}$/.test(k) && v) out.t[k] = v; }
   return out;
 };
