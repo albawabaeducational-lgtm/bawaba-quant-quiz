@@ -646,7 +646,7 @@
         <div class="tbl-wrap">
           <table class="toppers-table">
             <caption class="sr-only">جدول الأوائل هذا الأسبوع: الترتيب والطالب ومجال التميز ومعدل الإنجاز</caption>
-            <thead><tr><th scope="col">الترتيب</th><th scope="col">الطالب</th><th scope="col">مجال التميز</th><th scope="col">معدل الإنجاز</th><th scope="col" class="col-solved">الأسئلة المحلولة</th></tr></thead>
+            <thead><tr><th scope="col">الترتيب</th><th scope="col">الطالب</th><th scope="col">مجال التميز</th><th scope="col" class="col-rate">معدل الإنجاز</th><th scope="col" class="col-solved">الأسئلة المحلولة</th></tr></thead>
             <tbody id="topBody"></tbody>
           </table>
         </div>
@@ -778,21 +778,22 @@
     if (!list || !list.length) {
       body.textContent = ''; var er = el('tr', 'empty'), et = el('td'); et.colSpan = 5;
       var eb = el('div', 'top-empty'); eb.appendChild(el('span', 'te-ic', '🏆')); var ex = el('div'); ex.appendChild(el('b', '', 'تُعلن أسماء أوائل هذا الأسبوع قريبًا')); ex.appendChild(el('small', '', 'اجتهد في التدريب هذا الأسبوع، وقد يكون اسمك أول القائمة.')); eb.appendChild(ex); et.appendChild(eb); er.appendChild(et); body.appendChild(er);
-      $$('.col-solved', sec).forEach(function (e) { e.hidden = true; });
+      $$('.col-solved', sec).forEach(function (e) { e.hidden = true; }); $$('th.col-rate', sec).forEach(function (e) { e.hidden = false; });
       $('#topWeek').textContent = '📅 ' + weekLabel(); sec.hidden = false; if (nav) nav.hidden = false; return;
     }
-    var L = list.slice().sort(function (a, b) { return b.rate - a.rate; }), anyS = L.some(function (x) { return x.solved != null; });
+    var L = list.slice().sort(function (a, b) { return ((b.rate == null ? -1 : b.rate) - (a.rate == null ? -1 : a.rate)) || ((b.solved || 0) - (a.solved || 0)); }), anyS = L.some(function (x) { return x.solved != null; }), anyR = L.some(function (x) { return x.rate != null; });
     body.textContent = '';
     L.forEach(function (x, i) {
       var tr = el('tr', i < 3 ? 'r' + (i + 1) : ''), td;
       td = el('td'); td.setAttribute('data-l', 'الترتيب'); td.appendChild(el('span', 'rk', AR(i + 1))); tr.appendChild(td);
       td = el('td'); td.setAttribute('data-l', 'الطالب'); var s = el('div', 'stu'); s.appendChild(avatar(x.name, x.avatar, i)); s.appendChild(el('b', '', x.name)); td.appendChild(s); tr.appendChild(td);
       td = el('td'); td.setAttribute('data-l', 'مجال التميز'); var c = el('div', 'chips'); (x.subjects || []).forEach(function (k) { var n = CN[k] || [k, 'm']; c.appendChild(el('span', 'chip ' + n[1], n[0])); }); if (!c.children.length) c.appendChild(el('span', 'chip', 'متميز في التدريب')); td.appendChild(c); tr.appendChild(td);
-      td = el('td'); td.setAttribute('data-l', 'معدل الإنجاز'); var r = el('div', 'rate'); r.appendChild(el('b', '', NF.format(x.rate) + '٪')); var bar = el('div', 'bar'), fill = el('i'); fill.setAttribute('data-w', Math.max(2, Math.min(100, x.rate))); bar.appendChild(fill); r.appendChild(bar); td.appendChild(r); tr.appendChild(td);
+      if (anyR) { td = el('td'); td.className = 'col-rate'; td.setAttribute('data-l', 'معدل الإنجاز'); if (x.rate == null) td.appendChild(el('span', 'solved', '—')); else { var r = el('div', 'rate'); r.appendChild(el('b', '', NF.format(x.rate) + '٪')); var bar = el('div', 'bar'), fill = el('i'); fill.setAttribute('data-w', Math.max(2, Math.min(100, x.rate))); bar.appendChild(fill); r.appendChild(bar); td.appendChild(r); } tr.appendChild(td); }
       if (anyS) { td = el('td'); td.className = 'col-solved'; td.setAttribute('data-l', 'الأسئلة المحلولة'); td.appendChild(el('span', 'solved', x.solved != null ? NF.format(x.solved) + ' سؤالًا' : '—')); tr.appendChild(td); }
       body.appendChild(tr);
     });
     $$('.col-solved', sec).forEach(function (e) { if (e.tagName === 'TH') e.hidden = !anyS; });
+    $$('th.col-rate', sec).forEach(function (e) { e.hidden = !anyR; });
     $('#topWeek').textContent = '📅 ' + weekLabel();
     var u = $('#topUpd'); if (u) { u.textContent = ''; if (upd) { try { u.textContent = 'آخر تحديث: ' + new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { day: 'numeric', month: 'long' }).format(new Date(upd)); } catch (e) { } } }
     sec.hidden = false; if (nav) nav.hidden = false;
