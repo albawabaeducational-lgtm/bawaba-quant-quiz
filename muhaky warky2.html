@@ -307,7 +307,9 @@ function showSectionExpiryToast(text,ms){const old=document.querySelector('.sect
 function endSection(auto){stamp();clearInterval(S.tick);S.secTime[S.sec]=Math.min(DUR,Math.round(DUR-(S.deadline-Date.now())/1000));if(S.secTime[S.sec]<0)S.secTime[S.sec]=DUR;
  if(S.sec<4){const prev=NAMES[S.sec];S.sec++;startSection();showInstr();showSectionExpiryToast((auto?'انتهى وقت القسم '+prev+' — ':'')+'بدأ وقت القسم '+NAMES[S.sec]+' الآن.',5000)}
  else{if(auto)showSectionExpiryToast('انتهى وقت القسم '+NAMES[S.sec]+'. تم إنهاء الاختبار.');results()}}
-function showInstr(){S.instr=true;show('vCover');banner();$('cvTitle').textContent='تعليمات القسم '+NAMES[S.sec];$('cvWrap').innerHTML=pgEl(COVERS[S.sec]);const a=$('cvAuto');a.textContent='⏱ الوقت يعمل الآن — قراءة التعليمات جزء من وقت القسم';a.classList.remove('hidden');$('bGo').textContent='متابعة إلى الأسئلة ←'}
+function showInstr(){S.instr=true;show('vCover');banner();$('cvTitle').textContent='تعليمات القسم '+NAMES[S.sec];$('cvWrap').innerHTML=pgEl(COVERS[S.sec]);const a=$('cvAuto');a.textContent='⏱ الوقت يعمل الآن — قراءة التعليمات جزء من وقت القسم';a.classList.remove('hidden');$('bGo').textContent='متابعة إلى الأسئلة ←';
+ /* الانتقال تلقائيًا إلى أسئلة القسم بعد ثوانٍ من ظهور معلوماته */
+ clearInterval(window.__bwIT);const st=S.sec;let k=8;const upd=()=>{if(!S.instr||S.sec!==st||$('vCover').classList.contains('hidden')){clearInterval(window.__bwIT);return}if(k<=0){clearInterval(window.__bwIT);leaveInstr();return}a.textContent='⏱ الوقت يعمل الآن — الانتقال إلى أسئلة القسم تلقائيًا خلال '+ar(k)+' ثوانٍ';$('bGo').textContent='ادخل إلى الأسئلة الآن ←';k--};upd();window.__bwIT=setInterval(upd,1000)}
 function leaveInstr(){S.instr=false;stopCover();show('vExam');banner();S.qStart=Date.now();requestAnimationFrame(()=>draw())}
 function resumeExpired(){let over=Date.now()-S.deadline;S.secTime[S.sec]=DUR;
  for(;;){if(S.sec>=4){S.qStart=Date.now();results();return}S.sec++;if(over<DUR*1000){startSection();S.deadline=Date.now()+DUR*1000-over;tick();return}S.secTime[S.sec]=DUR;over-=DUR*1000}}

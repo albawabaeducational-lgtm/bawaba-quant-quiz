@@ -124,6 +124,10 @@ h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0}
 
 @media(min-width:900px){.wrap{max-width:1180px}.hero-identity{min-height:132px;padding:18px 22px;gap:18px}.hero-identity .identity-logo{width:94px;height:94px}.hero-identity .identity-copy b{font-size:22px}.hero-identity .identity-copy span,.hero-identity .identity-copy a{font-size:15px}.hero-identity .qr-card{min-width:112px;padding:6px}.hero-identity .qr-card img{width:92px;height:92px}.hero-identity .qr-card small{font-size:13px}.bar .identity.compact{min-height:88px;padding:12px 16px;gap:14px}.bar .identity.compact .identity-logo{width:64px;height:64px}.bar .identity.compact .identity-copy b{font-size:17px}.bar .identity.compact .identity-copy span{display:block;font-size:13px}.bar .identity.compact .qr-mini img{width:54px;height:54px}}
 .qr-card:first-of-type{border-color:#159447;background:#effaf3}.qr-card:last-of-type{border-color:#1d3f8f;background:#eef2ff}.qr-card img{image-rendering:auto}.hero-identity .identity-copy span{line-height:1.8}@media(max-width:600px){.hero-identity .identity-copy span{line-height:1.45}.hero-identity .qr-card img{width:48px;height:48px}}
+.bar .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.bar .row .name{flex:1}.tq{font-size:13.5px;color:var(--muted);font-weight:600}.tsub{padding:6px 14px!important;min-height:0!important;font-size:13.5px!important}
+.opt{font-size:clamp(18px,1vw + 13px,21px)!important;font-weight:700!important}.stem{font-weight:800!important}
+@media(max-width:700px){.qcard{padding:14px!important}.stem{font-size:26px!important;padding-block:6px!important}.opt{min-height:50px!important;padding-block:8px!important}}
+@media(min-width:701px) and (max-height:950px){.qcard{padding:12px 18px!important}.qask{margin:2px 0!important}.stem{font-size:30px!important;padding-block:4px!important}.opts{gap:7px!important}.opt{min-height:46px!important;padding-block:6px!important}.nav{margin-top:8px!important}.map{margin-top:8px!important}.map button{min-width:34px!important;height:34px!important}.bar{margin-bottom:6px!important}}
 </style>
 <link rel="stylesheet" href="/bw-theme.css">
 </head>
@@ -204,7 +208,7 @@ function quiz(){
   const e=Math.floor((Date.now()-st.t0)/1000);
   app.innerHTML=`
   <div class="bar"><div class="row"><span class="name">${st.name}</span>
-    <span class="timer num" id="timer">${st.limit?fmt(st.limit-e):fmt(e)}</span></div>
+    <span class="tq num">أجبت <b>${AR(answered)}</b> · متبقٍ <b>${AR(st.qs.length-answered)}</b></span><span class="timer num" id="timer">${st.limit?fmt(st.limit-e):fmt(e)}</span><button class="btn primary tsub" id="end3" type="button">تسليم</button></div>
     ${academyIdentity(true)}
     <div class="prog"><i style="width:${answered/st.qs.length*100}%"></i></div></div>
   <article class="qcard">
@@ -230,7 +234,7 @@ function quiz(){
   app.querySelectorAll(".map button").forEach(b=>b.onclick=()=>go(+b.dataset.g));
   m_("prev",()=>go(st.i-1));m_("next",()=>go(st.i+1));
   m_("flag",()=>{st.flag[st.i]=!st.flag[st.i];quiz()});
-  m_("end",ask);m_("end2",ask);m_("quit",home);
+  m_("end",ask);m_("end2",ask);m_("end3",ask);m_("quit",home);
   bindConfirm();
 }
 function pick(k){

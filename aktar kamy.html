@@ -139,7 +139,8 @@
       .qimg .zoom { top: 6px; bottom: auto; left: 6px; font-size: 11px; padding: 2px 8px; opacity: .85; }
       .keys { display: none; }
     }
-  </style>
+  .qhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.qhead .qans{flex:1;font-size:13.5px;color:#42566c;font-weight:600;text-align:center}.qsub{padding:5px 14px!important;font-size:13px!important}
+</style>
 </head>
 <body class="bwt-hub">
   <div id="bw-shell"><a class="bws-brand" href="./"><img src="icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">الأكثر تكرارًا – كمي</span><span class="bws-tools"><span class="timer hidden" id="timer"></span></span><a class="bws-back" href="./#tests">كل الاختبارات</a></div>
@@ -245,7 +246,7 @@
   }
   function draw() {
     var n = R.ids.length, id = R.ids[R.pos], q = BY[id], a = R.ans[R.pos], answered = Object.keys(R.ans).length, train = R.mode === 'train', shown = train && R.shown[R.pos];
-    var h = '<div class="qwrap"><div><div class="qhead"><span>السؤال ' + AR(R.pos + 1) + ' من ' + AR(n) + '</span><span class="mode">' + (R.kind === 'errors' ? 'مراجعة الأخطاء' : train ? 'تدريب' : 'محاكاة') + '</span></div><div class="qtrack"><i style="width:' + (answered / n * 100) + '%"></i></div>'
+    var h = '<div class="qwrap"><div><div class="qhead"><span>السؤال ' + AR(R.pos + 1) + ' من ' + AR(n) + '</span><span class="qans">أجبت ' + AR(answered) + ' · متبقٍ ' + AR(n - answered) + '</span><button type="button" class="btn red sm qsub" data-a="end">تسليم</button><span class="mode">' + (R.kind === 'errors' ? 'مراجعة الأخطاء' : train ? 'تدريب' : 'محاكاة') + '</span></div><div class="qtrack"><i style="width:' + (answered / n * 100) + '%"></i></div>'
       + '<div class="card" style="padding:14px"><div class="qimg" data-z="' + id + '"><img src="' + img(id) + '" alt="السؤال ' + AR(R.pos + 1) + '" decoding="async"><span class="zoom">🔍 اضغط للتكبير</span></div>'
       + '<div class="opts">' + L.map(function (l, i) { var c = 'opt'; if (shown) { if (i === q.c) c += ' ok'; else if (i === a) c += ' no'; } else if (a === i) c += ' on'; return '<button type="button" class="' + c + '" data-o="' + i + '"' + (shown ? ' disabled' : '') + ' aria-pressed="' + (a === i) + '">' + l + '</button>'; }).join('') + '</div>'
       + (shown ? '<div class="fb ' + (a === q.c ? 'ok">✓ إجابة صحيحة' : 'no">✗ الإجابة الصحيحة: ' + L[q.c]) + '</div>' : '')

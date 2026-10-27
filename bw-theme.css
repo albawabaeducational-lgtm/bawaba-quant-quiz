@@ -173,3 +173,64 @@ body.bwt-raw .grid .card .m { display: none !important; }
   .exam .mainc:has(.psg) > .opts { position: sticky; top: 84px; margin-top: 0; }
   .exam .mainc:has(.psg) > .opts > * { width: 100%; }
 }
+
+/* ===================== خط أوضح لأسئلة اللفظي (كل الاختبارات) ===================== */
+html body .opt:not(.qopts > .opt) { font-size: clamp(17.5px, 0.9vw + 12px, 21px); font-weight: 700; }
+html body .opt:not(.qopts > .opt) .ot, html body .opt:not(.qopts > .opt) > span { font-weight: 700; }
+html body .stem { font-weight: 800 !important; }
+html body .qhead + .stem, html body #app .stem { font-size: clamp(22px, 1.4vw + 16px, 28px); }
+html body .psg { font-size: clamp(16.5px, 0.5vw + 14px, 19px) !important; font-weight: 600; line-height: 2.05; color: #14233a; }
+html body .qask { font-size: 15.5px; font-weight: 600; }
+
+/* ===================== شريط التحكم المختصر (يظهر على الجوال والتابلت) ===================== */
+.mstrip { display: none; }
+@media (max-width: 800px) {
+  .mstrip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 6; background: #fff; border: 1px solid var(--bw-line); border-radius: 14px; padding: 7px 10px; margin-bottom: 8px; box-shadow: 0 4px 14px #0c244014; font-size: 13px; }
+  .mstrip .ms-sec { font-weight: 700; color: var(--bw-navy); }
+  .mstrip .ms-ans { color: #42566c; flex: 1; min-width: 120px; }
+  .mstrip .ms-t { font-size: 15px; padding: 2px 10px; }
+  .mstrip .btn { padding: 6px 12px !important; font-size: 13px !important; min-height: 0; }
+}
+body.simreal .mstrip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #fff; border: 1px solid var(--bw-line); border-radius: 14px; padding: 8px 12px; margin-bottom: 8px; font-size: 14px; }
+body.simreal .mstrip .ms-ans { flex: 1; }
+.sim-auto { text-align: center; margin: 4px 0 10px; color: #8a5d00; background: #fff6e0; border-radius: 12px; padding: 8px 12px; font-weight: 600; }
+
+/* ===================== المحاكي: وضع «الاختبار الفعلي» ===================== */
+.sim-mode .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+.sim-mode .seg label { cursor: pointer; position: relative; display: inline-block; }
+.sim-mode .seg input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }
+.sim-mode .seg span { display: inline-block; padding: 9px 16px; border-radius: 12px; border: 1.5px solid var(--bw-line); background: #fff; font-weight: 700; }
+.sim-mode .seg input:checked + span { border-color: var(--bw-navy); background: var(--bw-navy); color: #fff; }
+#simSetup:has(input[name=simMode][value=real]:checked) .sim-tr { display: none; }
+body.simreal #sHt, body.simreal #sFx, body.simreal [data-a="fx"], body.simreal [data-a="tt"], body.simreal .side [data-a="home"], body.simreal .side .kb, body.simreal .bws-lms, body.simreal #simToast { display: none !important; }
+body.simreal #simQ .qcard .meta { font-weight: 700; color: var(--bw-navy); }
+body.simreal #simQ .opt .x, body.simreal #simQ .strike-tip { display: none !important; }
+#simSetup .fld.sim-mode { grid-template-columns: 1fr; }
+#simSetup .fld.sim-mode .seg { justify-content: flex-start; }
+
+/* ===== الجوال والتابلت: خريطة الأسئلة وزر التسليم ظاهران أسفل السؤال دائمًا (بدل إخفائها خلف زر) ===== */
+@media (max-width: 800px) {
+  html body .exam .side { display: block !important; position: static !important; margin-top: 10px; padding: 12px 14px !important; }
+  html body .exam .side h3 { font-size: 14px; margin: 0 0 8px; }
+  html body .exam .side .qn { grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)) !important; gap: 6px !important; }
+  html body .exam .side .qn button { min-height: 36px; font-size: 13.5px; }
+  html body .exam .side .kb, html body .exam .side hr, html body .exam .side [data-a="home"], html body .exam .side [data-a="tt"], html body .exam .side .sim-big, html body .exam .side [data-a="sec"] { display: none !important; }
+  html body .exam .side .btn.red { width: 100%; margin-top: 10px; padding: 11px !important; font-size: 15px !important; background: var(--bw-navy) !important; color: #fff !important; border: 0 !important; }
+  html body .exam .nav .mo, html body .mstrip .btn.soft { display: none !important; }
+  .mstrip { top: 64px; }
+}
+@media (max-width: 800px) {
+  html body .exam .mainc { order: 1; }
+  html body .exam .side { order: 2 !important; }
+  .mstrip { gap: 6px 8px; font-size: 12.5px; flex-wrap: nowrap; }
+  .mstrip .ms-ans { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mstrip .ms-sec { white-space: nowrap; }
+  .mstrip .ms-t { font-size: 13.5px; padding: 2px 8px; white-space: nowrap; }
+  .mstrip .btn.red { flex: none; }
+}
+@media (max-width: 800px) {
+  /* السؤال يملأ الشاشة، وخريطة الأسئلة أسفله بالتمرير */
+  html body.testing #quiz, html body.testing .exam { height: auto !important; }
+  html body.testing .exam .mainc { height: calc(100dvh - 76px) !important; }
+}
+@media (max-width: 800px) { html body .mainc .qcard .meta .timer { display: none; } }

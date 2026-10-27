@@ -228,16 +228,4 @@
   ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { document.addEventListener(ev, function () { clearTimeout(tm); }, { passive: true }); });
   document.addEventListener('click', function (e) { if (lp) { lp = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   var pend = 0; new MutationObserver(function () { if (pend) return; pend = 1; requestAnimationFrame(function () { pend = 0; apply(); }); }).observe(document.body, { childList: true, subtree: true });
-  // تلميح مرة واحدة أول ما تظهر اختيارات
-  var hinted = false; try { hinted = !!localStorage.getItem('bw-xh'); } catch (e) { }
-  if (!hinted) {
-    var hw = new MutationObserver(function () {
-      if (!document.querySelector('.opts > button, .opts > .opt')) return;
-      hw.disconnect(); try { localStorage.setItem('bw-xh', '1'); } catch (e) { }
-      var t = document.createElement('div'); t.className = 'bw-xhint';
-      t.textContent = '💡 لشطب اختيار تستبعده: ' + (('ontouchstart' in window) ? 'اضغط عليه ضغطة مطوّلة' : 'كليك يمين عليه') + '. ونفس الطريقة تلغي الشطب.';
-      document.body.appendChild(t); setTimeout(function () { t.remove(); }, 6000);
-    });
-    hw.observe(document.body, { childList: true, subtree: true });
-  }
 })();

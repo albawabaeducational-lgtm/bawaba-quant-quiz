@@ -83,6 +83,12 @@
       .sk { grid-template-columns: minmax(0, 1fr) 80px 46px; }
       .rv .stem img { max-width: 100%; }
     }
+    .qhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .qside { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .qans { font-size: 13.5px; color: #42566c; font-weight: 600; }
+    .qsub { padding: 6px 14px !important; font-size: 13.5px !important; }
+    .opt { font-size: 19px !important; font-weight: 700 !important; }
+    .stem { font-size: clamp(21px, 1.2vw + 16px, 26px) !important; }
   </style>
 </head>
 <body class="bwt-hub">
@@ -126,7 +132,12 @@
       // الكمي: سؤال واحد من ١٠ اختبارات موزعة على كامل البنك (من الأسهل للأصعب تقريبًا)
       var ks = K.secs.map(function (s) { return s.id; }).filter(function (id) { return K.qs.some(function (a) { return a[1] === id; }); }), n = Math.min(10, ks.length);
       for (var i = 0; i < n; i++) { var sid = ks[Math.floor(i * ks.length / n + Math.random() * ks.length / n)], pool = K.qs.filter(function (a) { return a[1] === sid; }); if (pool.length) out.push({ s: 'k', a: pool[Math.floor(Math.random() * pool.length)] }); }
-      return out;
+      // ضمان ٢٠ سؤالًا دائمًا (١٠ لفظي + ١٠ كمي): لو نقص نوع أو قطعة يُكمَّل من باقي البنك بلا تكرار
+      var used = {}; out.forEach(function (q) { used[q.s + q.a[0]] = 1; });
+      var fill = function (sk, src, want) { var have = out.filter(function (q) { return q.s === sk; }).length; if (have >= want) return; shuffle(src.slice()).some(function (a) { if (used[sk + a[0]]) return false; used[sk + a[0]] = 1; out.push({ s: sk, a: a }); return ++have >= want; }); };
+      fill('v', vq.filter(function (a) { return a[2] !== 3; }), 10); fill('k', K.qs.filter(function (a) { return KN[a[1]] !== undefined; }), 10);
+      var vs = out.filter(function (q) { return q.s === 'v'; }), kq = out.filter(function (q) { return q.s === 'k'; });
+      return vs.slice(0, 10).concat(kq.slice(0, 10));
     }
 
     var Q = [], ans = {}, pos = 0, t0 = 0, live = false, tick = null;
@@ -156,7 +167,7 @@
     }
     function show() {
       var q = Q[pos], a = q.a, nA = Object.keys(ans).length, last = pos === Q.length - 1;
-      var h = '<div class="qhead"><span class="sec">' + (q.s === 'k' ? 'القسم الكمي' : 'القسم اللفظي') + ' · سؤال ' + AR(pos + 1) + ' من ' + AR(Q.length) + '</span><span id="tm">' + fmt(Math.floor((Date.now() - t0) / 1000)) + '</span></div>'
+      var h = '<div class="qhead"><span class="sec">' + (q.s === 'k' ? 'القسم الكمي' : 'القسم اللفظي') + ' · سؤال ' + AR(pos + 1) + ' من ' + AR(Q.length) + '</span><span class="qside"><span class="qans">أجبت ' + AR(nA) + ' · متبقٍ ' + AR(Q.length - nA) + '</span><span id="tm">' + fmt(Math.floor((Date.now() - t0) / 1000)) + '</span><button type="button" class="btn btn-soft qsub" data-fin="1">تسليم</button></span></div>'
         + '<div class="track"><i style="width:' + Math.round(nA / Q.length * 100) + '%"></i></div><div class="card">'
         + (q.s === 'v' ? '<span class="ty">' + TYN[a[2]] + '</span>' : '') + stemHtml(q)
         + '<div class="opts' + (q.s === 'k' ? ' grid4' : '') + '">' + (q.s === 'k' ? L : a[5]).map(function (o, i) { return '<button type="button" class="opt' + (ans[pos] === i ? ' on' : '') + '" data-o="' + i + '">' + (q.s === 'k' ? esc(o) : '<span class="l">' + L[i] + '</span><span>' + esc(o) + '</span>') + '</button>'; }).join('') + '</div>'
@@ -171,7 +182,7 @@
       if (b.dataset.g !== undefined) { pos = +b.dataset.g; show(); return; }
       if (b.id === 'pv' && pos) { pos--; show(); }
       else if (b.id === 'nx') { pos++; show(); }
-      else if (b.id === 'fin') {
+      else if (b.id === 'fin' || b.dataset.fin) {
         var miss = Q.length - Object.keys(ans).length;
         if (miss && !confirm('تركت ' + CNT(miss, 'سؤالًا واحدًا', 'سؤالين', 'أسئلة', 'سؤالًا') + ' بدون إجابة. هل تريد الإنهاء؟')) return;
         finish();
