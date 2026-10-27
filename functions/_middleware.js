@@ -9,6 +9,7 @@ const DAY30 = 30 * 864e5;
 // نفس القائمة موجودة في functions/api/[[path]].js — أي مقرر جديد يُضاف في الملفين.
 const COURSES = {
   'aksam kamy': { title: 'أقسام الكمي', model: 'bank', img: true, hints: true, url: '/aksam kamy' },
+  'ak_kamyadd': { title: 'أقسام الكمي الإضافية', model: 'bank', img: true, hints: true, url: '/ak_kamyadd' },
   'aksam lafzi': { title: 'أقسام اللفظي', model: 'bank', url: '/aksam lafzi' },
   // المحاكي المحوسب يُبنى تلقائيًا من أقسام الكمي واللفظي (أي قسم جديد فيهما يظهر فيه مباشرة)
   'muhaky mohawsab': { title: 'المحاكي المحوسب', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] },

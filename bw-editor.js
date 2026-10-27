@@ -116,7 +116,7 @@
   // ---------- بنك الأسئلة ----------
   var secName = function (id) { var s = D.secs.filter(function (x) { return x.id === id; })[0]; return s ? s.name : ''; };
   var secQs = function (id) { return D.qs.filter(function (a) { return a[1] === id; }); };
-  var qImg = function (a) { var m = /\/api\/exam\/img\/\d+/.exec(a[4] || ''); return m ? m[0] : 'img/' + a[0] + '.webp'; };
+  var qImg = function (a) { var m = /\/api\/exam\/img\/\d+/.exec(a[4] || ''); if (m) return m[0]; var as = /\ssrc="(assets\/images\/[^"]+)"/.exec(a[4] || ''); return as ? as[1] : 'img/' + a[0] + '.webp'; };
   function badge(kind, key) { var p = patched[kind + '|' + key]; if (!p || p === 'del') return ''; return inBase(kind, key) ? '<span class="b mod">معدّل</span>' : '<span class="b new">مضاف</span>'; }
   function viewHome() {
     var h = '';
@@ -201,7 +201,7 @@
     syncQ(); var q = E.q, a = q.a, ops = [];
     if (C.img) {
       if (!q.img) { toast('ارفع صورة السؤال أولًا', 'err'); return; }
-      a[4] = /^\/api\//.test(q.img) ? '<p><img src="' + q.img + '" alt="صورة السؤال"></p>' : '<p><img src="img/' + a[0] + '.webp" alt="صورة السؤال"></p>'; a[5] = L.slice(); a[2] = 0; a[3] = -1;
+      a[4] = /^(\/api\/|assets\/images\/)/.test(q.img) ? '<p><img src="' + q.img + '" alt="صورة السؤال"></p>' : '<p><img src="img/' + a[0] + '.webp" alt="صورة السؤال"></p>'; a[5] = L.slice(); a[2] = 0; a[3] = -1;
     } else {
       if (!String(a[4]).trim()) { toast('اكتب نص السؤال', 'err'); return; }
       while (a[5].length && !String(a[5][a[5].length - 1]).trim() && a[5].length > 2 && a[6] < a[5].length - 1) a[5].pop();

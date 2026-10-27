@@ -248,11 +248,70 @@
       .brand b { font-size: 15px; }
     }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+    /* تنظيم مسارات القدرات */
+    .pathways { margin-top: 22px; display: grid; gap: 22px; }
+    .pathway { background: linear-gradient(145deg, #ffffff 0%, #f4f8fc 100%); border: 1.5px solid #b8ccdf; border-top: 5px solid var(--sea); border-radius: 22px; padding: 24px; box-shadow: 0 14px 30px #12345a18, inset 0 1px 0 #fff; }
+    .pathway-head { display: block; text-align: center; margin-bottom: 18px; }
+    .pathway-head h3 { color: var(--navy); font-size: 30px; }
+    .pathway-head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    .pathway-badge { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; background: var(--gold-soft); color: #7a5300; font-size: 13px; font-weight: 700; padding: 6px 12px; }
+    .pathway-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 18px; }
+    .pathway-tabs button { border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--navy); font: 600 17px var(--body); padding: 9px 34px; cursor: pointer; }
+    .pathway-tabs button[aria-selected="true"] { background: var(--navy); border-color: var(--navy); color: #fff; box-shadow: 0 5px 12px #12345a25; }
+    .track-panel[hidden] { display: none; }
+    .pathway-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .pathway-group { border: 1.5px solid #b9ccdd; border-radius: 16px; background: linear-gradient(145deg, #ffffff 0%, #edf4fa 100%); padding: 16px; box-shadow: 0 6px 16px #12345a10, inset 0 1px 0 #fff; }
+    .pathway-group h4 { color: var(--navy); font-size: 17px; margin: 0 0 11px; display: flex; align-items: center; gap: 8px; }
+    .pathway-group h4 small { color: var(--muted); font-size: 12px; font-weight: 600; }
+    .pathway-group h4::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: none; }
+    .pathway-links { display: grid; gap: 8px; }
+    .pathway-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 46px; padding: 9px 12px; border-radius: 12px; background: #fff; border: 1.5px solid #c5d5e3; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; box-shadow: 0 3px 8px #12345a0a; transition: border-color .2s, transform .2s, background .2s; }
+    .pathway-link:hover { border-color: #9fb9d2; background: #f8fbfe; transform: translateY(-1px); }
+    .pathway-link::after { content: "←"; color: var(--sea); font-size: 18px; line-height: 1; }
+    .pathway-link.pending { cursor: default; color: var(--muted); background: #f8fafc; border-style: dashed; }
+    .pathway-link.pending:hover { transform: none; background: #f8fafc; }
+    .pathway-link.pending::after { content: "قريبًا"; font-size: 11px; color: #92702a; background: var(--gold-soft); border-radius: 999px; padding: 2px 7px; }
+    .paper-pathway { background: linear-gradient(135deg, #fff 0%, #fffaf0 100%); border-color: #d8bf7a; border-top-color: var(--gold); }
+    .paper-pathway .pathway-group { background: linear-gradient(145deg, #fff 0%, #fff8e9 100%); border-color: #dcc98f; }
+    .paper-action { margin-top: 16px; display: flex; justify-content: center; }
+    .paper-action .pathway-link { max-width: 420px; width: 100%; justify-content: center; background: var(--navy); color: #fff; border-color: var(--navy); }
+    .paper-action .pathway-link::after { color: var(--gold); }
+    .facts li { text-align: center; display: grid; justify-items: center; gap: 2px; }
+    .facts .fi { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: #ffffff1c; color: var(--gold); font-family: var(--display); font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .facts .fl { font-size: 13.5px; line-height: 1.4; }
+    .facts b { font-variant-numeric: tabular-nums; }
+    .pathway-link { min-height: 58px; }
+    .pl-main { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .pl-ic { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--gold-soft); color: #8a5d00; font-family: var(--display); font-size: 17px; font-weight: 700; }
+    .pl-tx { min-width: 0; display: grid; line-height: 1.45; }
+    .pl-tx strong { font-family: var(--display); font-size: 14.5px; font-weight: 600; color: var(--navy); }
+    .pl-tx small { font-size: 12px; font-weight: 500; color: var(--muted); }
+    .pl-new { font-style: normal; font-size: 11px; font-weight: 700; background: var(--right); color: #fff; border-radius: 99px; padding: 1px 8px; margin-inline-start: 6px; vertical-align: middle; }
+    .pathway-link:hover .pl-ic { background: var(--gold); color: var(--night); }
+    .pathway-tabs button:focus-visible { outline-offset: 2px; }
+    html.bw-in .tests-featured { grid-template-columns: 1fr; }
+    @media (max-width: 700px) { .pathway { padding: 18px; } .pathway-groups { grid-template-columns: 1fr; } .pathway-head h3 { font-size: 21px; } }
     /* الصفحة تبدأ بالاختبارات: الواجهة قصيرة وقائمة الاختبارات تصعد فوقها */
     .hero .wrap.intro-hero { display: block; padding: 54px 0 120px; text-align: center; }
     .intro-hero h1 { max-width: 18em; margin-inline: auto; }
     .intro-hero .lead { margin-inline: auto; }
     .intro-hero .facts { justify-content: center; margin-top: 26px; }
+    .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 34px 0 0; }
+    .facts li { min-width: 0; padding: 13px 10px; border: 1px solid #ffffff2b; border-radius: 16px; background: linear-gradient(145deg, #ffffff16, #ffffff08); box-shadow: inset 0 1px 0 #ffffff18, 0 8px 22px #00000018; }
+    .facts li:nth-child(2) { background: linear-gradient(145deg, #1d5c8f66, #ffffff08); }
+    .facts li:nth-child(3) { background: linear-gradient(145deg, #e3a92b40, #ffffff08); }
+    .facts li:nth-child(4) { background: linear-gradient(145deg, #1d8a5848, #ffffff08); }
+    .facts b { font-size: 25px; }
+    .tests-featured { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 18px; align-items: stretch; margin-bottom: 22px; }
+    .tests-featured .exam-main { min-height: 250px; padding: 26px; }
+    .quick-try { background: var(--white); border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 22px; padding: 22px; box-shadow: 0 12px 28px #12345a12; }
+    .quick-try h2 { color: var(--navy); font-size: 23px; margin: 0 0 7px; }
+    .quick-try p { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+    .quick-try .sheet { border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: none; }
+    .quick-try .stem { font-size: 21px; padding: 8px 0 12px; }
+    .quick-try .choice { font-size: 14px; padding: 7px 9px; }
+    .quick-try .bubble { width: 28px; height: 28px; font-size: 13px; }
+    .quick-try .verdict { min-height: 34px; margin-top: 8px; font-size: 13px; }
     .tests-up { margin-top: -86px; position: relative; z-index: 2; padding-bottom: 70px; }
     .try { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
     .try h2 { font-size: clamp(26px, 3.2vw, 36px); color: var(--navy); }
@@ -261,7 +320,8 @@
     .course.featured { border: 2px solid var(--gold); }
     .btn-wa { background: #1fa855; color: #fff; }
     .btn-wa:hover { background: #22b85d; }
-    @media (max-width: 960px) { .try { grid-template-columns: 1fr; gap: 28px; } .courses { grid-template-columns: 1fr; } }
+    @media (max-width: 960px) { .try { grid-template-columns: 1fr; gap: 28px; } .tests-featured { grid-template-columns: 1fr; } .courses { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .facts li { padding: 10px 7px; } .tests-featured .exam-main { min-height: 230px; } }
     @media (max-width: 560px) { .hero .wrap.intro-hero { padding: 38px 0 104px; } .tests-up { margin-top: -78px; } }
     /* الطالب المسجّل (بالكود أو بحساب منصة الدورات): لا تظهر له الباقات والاشتراك والتجربة */
     html.bw-in .guest-only { display: none !important; }
@@ -298,25 +358,23 @@
     <section class="hero" aria-labelledby="heroTitle">
       <div class="wrap intro-hero">
         <p class="slogan">حيث تصنع الإنجازات وتتحقق الأحلام</p>
-        <h1 id="heroTitle">اختبارات القدرات كما ستراها يوم الاختبار</h1>
-        <p class="lead">أقسام الكمي واللفظي المحدثة ٢٠٢٦، ومحاكي الاختبار المحوسب بالمؤقت، ومحاكيات الورقي. اختر اختبارك وابدأ الآن.</p>
+        <h1 id="heroTitle">اختبارات القدرات</h1>
         <ul class="facts" aria-label="محتوى المنصة">
-          <li><b>+١٢٠٠</b>سؤال كمي</li>
-          <li><b>+١٨٠٠</b>سؤال لفظي</li>
-          <li><b>+٢٦٠</b>قسمًا للتدريب</li>
-          <li><b>٢</b>نموذج ورقي كامل</li>
+          <li><span class="fi" aria-hidden="true">∑</span><b><span class="num" data-to="4000" data-plus="1">+٤٠٠٠</span></b><span class="fl">سؤال كمي</span></li>
+          <li><span class="fi" aria-hidden="true">أ</span><b><span class="num" data-to="2800" data-plus="1">+٢٨٠٠</span></b><span class="fl">سؤال لفظي</span></li>
+          <li><span class="fi" aria-hidden="true">▦</span><b><span class="num" data-to="400" data-plus="1">+٤٠٠</span></b><span class="fl">قسم ونموذج تدريب</span></li>
+          <li><span class="fi" aria-hidden="true">✎</span><b><span class="num" data-to="2">٢</span></b><span class="fl">نموذج ورقي كامل</span></li>
         </ul>
         <p style="margin:22px 0 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><a class="btn btn-gold" id="heroMain" href="/placement.html">ابدأ اختبار تحديد المستوى</a><a class="btn btn-line" id="heroSec" href="/progress.html">تقدمي وخطوتي التالية</a></p>
       </div>
     </section>
 
-    <section class="tests-up" id="tests" aria-label="الاختبارات">
+    <section class="tests-up" id="tests" aria-label="تنظيم اختبارات القدرات">
       <div class="wrap">
-        <div class="tfilter" role="group" aria-label="تصفية الاختبارات"><button type="button" class="on" data-f="">الكل</button><button type="button" data-f="kamy">كمي</button><button type="button" data-f="lafzi">لفظي</button><button type="button" data-f="mohawsab">محوسب</button><button type="button" data-f="waraqi">ورقي</button><button type="button" data-f="tasis">تأسيس</button></div>
-        <div class="exams">
-          <a class="exam-main" data-vis="muhaky mohawsab" data-cat="mohawsab" href="/muhaky%20mohawsab.html">
+        <div class="tests-featured">
+          <a class="exam-main" data-vis="muhaky mohawsab" data-cat="mohawsab" href="muhaky%20mohawsab.html">
             <div>
-              <span class="tag">الأقرب للاختبار الحقيقي</span>
+              <span class="tag">كأنك في اختبار حقيقي</span>
               <h3>محاكي اختبار القدرات المحوسب</h3>
               <p class="copy"><mark>نسخ ولصق</mark> من الاختبار الحقيقي</p>
               <p class="copy2">ما تراه هنا هو ما ستراه يوم الاختبار: نفس الأسئلة، ونفس الشكل، ونفس الوقت.</p>
@@ -324,32 +382,44 @@
             </div>
             <span class="btn btn-gold go">ابدأ المحاكاة</span>
           </a>
-          <div class="exam-list">
-            <a class="exam-row" data-vis="tasis lafzi" data-cat="tasis lafzi" href="/tasis%20lafzi.html.html"><span class="ic" aria-hidden="true">ت</span><span><strong>تأسيس اللفظي<em class="mode tr">تدريب</em></strong><span class="d">مواد وتدريبات تأسيس القسم اللفظي</span></span><span class="cnt">+٩٠٠ سؤال</span></a>
-            <a class="exam-row" data-vis="aksam kamy" data-cat="kamy" href="/aksam%20kamy.html"><span class="ic" aria-hidden="true">∑</span><span><strong>أقسام الكمي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم الكمي</span><span class="claim"><mark>نسخ ولصق</mark> لن يخرج عنها الاختبار · تحدَّ نفسك</span></span><span class="cnt">+١٢٠٠ سؤال</span></a>
-            <a class="exam-row" data-vis="aksam lafzi" data-cat="lafzi" href="/aksam%20lafzi.html"><span class="ic" aria-hidden="true">أ</span><span><strong>أقسام اللفظي المحدثة 2026<em class="mode tr">تدريب</em></strong><span class="d">تدريبات واختبارات القسم اللفظي</span><span class="claim"><mark>نسخ ولصق</mark> لن يخرج عنها الاختبار · تحدَّ نفسك</span></span><span class="cnt">+١٨٠٠ سؤال</span></a>
-            <a class="exam-row" data-vis="aktar kamy" data-cat="kamy" href="/aktar%20kamy.html"><span class="ic" aria-hidden="true">★</span><span><strong>الأسئلة الأكثر تكرارًا – كمي<em class="mode tr">تدريب</em><em class="mode sm">محاكاة</em></strong><span class="d">بنك واحد، اختبارات ١٠ إلى ٥٥ سؤالًا بدون تكرار</span></span><span class="cnt">+١٤٠٠ سؤال</span></a>
-          </div>
-          <div class="exam-list">
-            <a class="exam-row" data-vis="skills" data-cat="kamy lafzi tasis" href="/skills.html"><span class="ic" aria-hidden="true">◈</span><span><strong>التدريب حسب المهارة<em class="mode tr">تدريب</em></strong><span class="d">اختر المهارة وتدرّب على كل أسئلتها من كل الأقسام</span></span><span class="cnt">الكمي واللفظي</span></a>
-            <a class="exam-row" data-vis="waraqi" data-cat="waraqi" href="waraqi.html"><span class="ic" aria-hidden="true">✎</span><span><strong>محاكيات اختبار القدرات الورقي<em class="mode sm">محاكاة</em></strong><span class="d">النموذج الأول والنموذج الثاني</span></span><span class="cnt">١٢٠ سؤالًا لكل نموذج</span></a>
-          </div>
+          <section class="quick-try guest-only" id="try" aria-labelledby="tryHead">
+            <h2 id="tryHead">جرّب سؤالًا قبل أن تبدأ</h2>
+            <p>سؤال حقيقي من بنك أسئلة اللفظي. اختر إجابتك وسترى التصحيح وسبب الإجابة فورًا.</p>
+            <div class="sheet" id="tryQ" aria-labelledby="tryTitle">
+              <div class="sheet-head"><span id="tryTitle">جرّب سؤالًا الآن</span><span id="tryType">التناظر اللفظي</span></div>
+              <div class="stem" id="tryStem"></div>
+              <ul class="choices" id="tryChoices"></ul>
+              <div class="verdict" id="tryVerdict" role="status" aria-live="polite">اختر الإجابة التي تحمل نفس علاقة الكلمتين.</div>
+            </div>
+          </section>
         </div>
-      </div>
-    </section>
 
-    <section class="block guest-only" id="try" aria-labelledby="tryHead" style="padding-top:20px">
-      <div class="wrap try">
-        <div>
-          <h2 id="tryHead">جرّب سؤالًا قبل أن تبدأ</h2>
-          <p>سؤال حقيقي من بنك أسئلة اللفظي. اختر إجابتك وسترى التصحيح وسبب الإجابة فورًا، تمامًا كما يحدث داخل الاختبارات.</p>
-          <a class="btn btn-navy" href="/aksam%20lafzi.html">افتح أقسام اللفظي</a>
-        </div>
-        <div class="sheet" id="tryQ" aria-labelledby="tryTitle">
-          <div class="sheet-head"><span id="tryTitle">جرّب سؤالًا الآن</span><span id="tryType">التناظر اللفظي</span></div>
-          <div class="stem" id="tryStem"></div>
-          <ul class="choices" id="tryChoices"></ul>
-          <div class="verdict" id="tryVerdict" role="status" aria-live="polite">اختر الإجابة التي تحمل نفس علاقة الكلمتين.</div>
+        <div class="pathways" aria-label="أقسام القدرات">
+          <article class="pathway">
+            <div class="pathway-head"><div><h3>القدرات المحوسبة</h3><p>اختر القسم الذي تريد التدريب عليه</p></div><span class="pathway-badge">كمي ولفظي</span></div>
+            <div class="pathway-tabs" role="tablist" aria-label="أقسام القدرات"><button type="button" role="tab" id="tab-kamy" aria-controls="panel-kamy" aria-selected="true" data-track-tab="kamy">كمي</button><button type="button" role="tab" id="tab-lafzi" aria-controls="panel-lafzi" aria-selected="false" tabindex="-1" data-track-tab="lafzi">لفظي</button></div>
+            <div class="track-panel" id="panel-kamy" aria-labelledby="tab-kamy" data-track-panel="kamy" role="tabpanel">
+              <div class="pathway-groups">
+                <section class="pathway-group"><h4>تأسيس</h4><div class="pathway-links"><a class="pathway-link" href="/skills" data-vis="skills"><span class="pl-main"><span class="pl-ic" aria-hidden="true">◎</span><span class="pl-tx"><strong>اختبارات التأسيس حسب المهارة</strong><small>تدرّب على المهارة التي تحتاجها</small></span></span></a></div></section>
+                <section class="pathway-group"><h4>محوسب <small>(حل التجميعات: أقسام ونماذج)</small></h4><div class="pathway-links"><a class="pathway-link" href="aksam%20kamy.html" data-vis="aksam kamy"><span class="pl-main"><span class="pl-ic" aria-hidden="true">∑</span><span class="pl-tx"><strong>أقسام الكمي المحدثة 2026</strong><small>١١٧ قسمًا · ١٬٢٨٧ سؤالًا</small></span></span></a><a class="pathway-link" href="ak_kamyadd.html" data-vis="ak_kamyadd"><span class="pl-main"><span class="pl-ic" aria-hidden="true">＋</span><span class="pl-tx"><strong>أقسام الكمي الإضافية <em class="pl-new">جديد</em></strong><small>١٢٠ قسمًا · ١٬٣٢٠ سؤالًا</small></span></span></a><a class="pathway-link" href="aktar%20kamy.html" data-vis="aktar kamy"><span class="pl-main"><span class="pl-ic" aria-hidden="true">★</span><span class="pl-tx"><strong>الأسئلة الأكثر تكرارًا</strong><small>٢٨ نموذجًا · ١٬٤٣٧ سؤالًا</small></span></span></a></div></section>
+              </div>
+            </div>
+            <div class="track-panel" id="panel-lafzi" aria-labelledby="tab-lafzi" data-track-panel="lafzi" role="tabpanel" hidden>
+              <div class="pathway-groups">
+                <section class="pathway-group"><h4>تأسيس</h4><div class="pathway-links"><a class="pathway-link" href="/skills" data-vis="skills"><span class="pl-main"><span class="pl-ic" aria-hidden="true">◎</span><span class="pl-tx"><strong>اختبارات التأسيس حسب المهارة</strong><small>تدرّب على المهارة التي تحتاجها</small></span></span></a><a class="pathway-link" href="tasis%20lafzi.html.html" data-vis="tasis lafzi"><span class="pl-main"><span class="pl-ic" aria-hidden="true">↔</span><span class="pl-tx"><strong>تأسيس اللفظي</strong><small>التناظر اللفظي · ٩٧٧ سؤالًا</small></span></span></a></div></section>
+                <section class="pathway-group"><h4>محوسب</h4><div class="pathway-links"><a class="pathway-link" href="aksam%20lafzi.html" data-vis="aksam lafzi"><span class="pl-main"><span class="pl-ic" aria-hidden="true">أ</span><span class="pl-tx"><strong>أقسام اللفظي المحدثة 2026</strong><small>١٥١ قسمًا · ١٬٨٥٢ سؤالًا</small></span></span></a></div></section>
+              </div>
+            </div>
+          </article>
+
+          <article class="pathway paper-pathway" aria-labelledby="paperTitle">
+            <div class="pathway-head"><div><h3 id="paperTitle">القدرات الورقية</h3><p>تجميعات ومحاكيات الاختبار الورقي</p></div><span class="pathway-badge">محاكاة</span></div>
+            <div class="pathway-groups">
+              <section class="pathway-group"><h4>كمي</h4><div class="pathway-links"><span class="pathway-link pending">تجميعات الكمي للخمس سنين الفائتة</span></div></section>
+              <section class="pathway-group"><h4>لفظي</h4><div class="pathway-links"><span class="pathway-link pending">تجميعات اللفظي للخمس سنوات الفائتة</span></div></section>
+            </div>
+            <div class="paper-action"><a class="pathway-link" href="waraqi.html" data-vis="waraqi"><span class="pl-main"><span class="pl-ic" aria-hidden="true">✎</span><span class="pl-tx"><strong>الاختبارات المحاكية للاختبار الورقي</strong><small>نموذجان كاملان بمؤقت وتقرير نتيجة</small></span></span></a></div>
+          </article>
         </div>
       </div>
     </section>
@@ -462,6 +532,22 @@
     [].forEach.call(ex.querySelectorAll('[data-cat]'), function (a) { a.style.display = !f || a.getAttribute('data-cat').split(' ').indexOf(f) >= 0 ? '' : 'none'; });
     [].forEach.call(ex.querySelectorAll('.exam-list'), function (l) { l.style.display = [].some.call(l.children, function (a) { return a.style.display !== 'none'; }) ? '' : 'none'; });
     ex.classList.toggle('filtered', !!f); }); })();
+// تبويبا القدرات الكمي واللفظي
+(function () { var tabs = document.querySelectorAll('[data-track-tab]'), panels = document.querySelectorAll('[data-track-panel]'); if (!tabs.length) return;
+  tabs.forEach(function (tab) { tab.addEventListener('click', function () { var key = tab.getAttribute('data-track-tab');
+    tabs.forEach(function (x) { x.setAttribute('aria-selected', x === tab ? 'true' : 'false'); x.tabIndex = x === tab ? 0 : -1; });
+    panels.forEach(function (x) { x.hidden = x.getAttribute('data-track-panel') !== key; });
+  });
+    tab.addEventListener('keydown', function (e) { var i = [].indexOf.call(tabs, tab), n = e.key === 'ArrowLeft' ? i + 1 : e.key === 'ArrowRight' ? i - 1 : -1; if (n < 0) return; e.preventDefault(); var t = tabs[(n + tabs.length) % tabs.length]; t.click(); t.focus(); }); }); })();
+// عدّادات الواجهة: تعدّ من الصفر عند الظهور (وتُترك ثابتة لمن يفضّل تقليل الحركة)
+(function () { var els = document.querySelectorAll('.facts .num'); if (!els.length) return;
+  var AR = function (n) { return String(n).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
+  if (!('IntersectionObserver' in window) || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  var run = function (el) { var to = +el.getAttribute('data-to'), plus = el.getAttribute('data-plus') ? '+' : '', t0 = null, D = 1100;
+    var step = function (t) { if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / D), v = Math.round(to * (1 - Math.pow(1 - k, 3))); el.textContent = plus + AR(v); if (k < 1) requestAnimationFrame(step); };
+    el.textContent = plus + AR(0); requestAnimationFrame(step); };
+  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); run(e.target); } }); }, { threshold: .6 });
+  els.forEach(function (el) { io.observe(el); }); })();
 // تسجيل خروج الطالب
 (function () { var o = document.getElementById('bwOut'); if (o) o.onclick = function (e) { e.preventDefault(); o.textContent = 'جارٍ تسجيل الخروج…'; fetch('/api/logout', { method: 'POST' }).catch(function () { }).then(function () { try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (_) { } location.replace('/?out=1'); }); }; })();
   // بعد تسجيل الخروج: الرئيسية كزائر + رسالة تأكيد

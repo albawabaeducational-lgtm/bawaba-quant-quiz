@@ -30,7 +30,7 @@
   })();
 
   var slug = ''; try { slug = decodeURIComponent(location.pathname).replace(/^\//, '').replace(/(\.html)+$/, ''); } catch (e) { }
-  var COURSES = ['aksam kamy', 'aksam lafzi', 'muhaky mohawsab', 'muhaky warky1', 'muhaky warky2', 'tasis lafzi'];
+  var COURSES = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi', 'muhaky mohawsab', 'muhaky warky1', 'muhaky warky2', 'tasis lafzi'];
   if (COURSES.indexOf(slug) < 0) return;
   // فتح «الأسئلة الخاطئة» مباشرة من صفحة «تقدمي»
   if (location.hash === '#errors') addEventListener('load', function () { setTimeout(function () { var b = document.getElementById('errBtn'); if (b) b.click(); }, 150); });

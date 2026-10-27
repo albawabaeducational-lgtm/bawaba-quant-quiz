@@ -106,6 +106,7 @@ const LEAD_STATUS = ['new', 'contacted', 'added', 'subscribed', 'not_interested'
 // نفس القائمة موجودة في functions/_middleware.js — أي مقرر جديد يُضاف في الملفين.
 const COURSES = [
   { slug: 'aksam kamy', title: 'أقسام الكمي', file: '/aksam kamy.html', model: 'bank', img: true, hints: true },
+  { slug: 'ak_kamyadd', title: 'أقسام الكمي الإضافية', file: '/ak_kamyadd.html', model: 'bank', img: true, hints: true }, // صور الأسئلة في assets/images/ (وليس img/<id>.webp)
   { slug: 'aksam lafzi', title: 'أقسام اللفظي', file: '/aksam lafzi.html', model: 'bank' },
   { slug: 'muhaky mohawsab', title: 'المحاكي المحوسب', file: '/muhaky mohawsab.html.html', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] }, // يُبنى تلقائيًا من الكمي واللفظي
   { slug: 'muhaky warky1', title: 'المحاكي الورقي – النموذج الأول', file: '/muhaky warky1.html', model: 'key' },
@@ -146,7 +147,7 @@ let schemaReady = false, leadsReady = false, moodleReady = false;
 const GOOGLE_CLIENT_ID = '1017687433947-oscl9bci17amtnqp8hlrgogk1p29ub23.apps.googleusercontent.com';
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
-const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-skill-v1', 'bw-rank-off'];
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-skill-v1', 'bw-rank-off'];
 let progressReady = false;
 const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
@@ -185,7 +186,7 @@ function freeDb(text, n, kind) {
   return JSON.stringify(d).replace(/</g, '\\u003c');
 }
 // الاختبارات التي يمكن إخفاؤها عن الطلاب من لوحة التحكم
-const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['aksam kamy', 'أقسام الكمي'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
+const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
 const hiddenOf = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a.filter(k => VIS.some(x => x[0] === k)) : []; } catch (e) { return []; } };
 const SKILL_BANKS = { 'aksam kamy': 'kamy', 'aktar kamy': 'kamy', 'aksam lafzi': 'lafzi' };
 const SUBJECTS = { kamy: 'الكمي', lafzi: 'اللفظي' };
@@ -773,7 +774,7 @@ export async function onRequest({ request, env, params }) {
       const sec = int(d[1]); if (!(sec > 0)) bad('اختر القسم');
       let t = int(d[2]) || 0, pi = int(d[3]), stem = txt(d[4], 6000), opts = (Array.isArray(d[5]) ? d[5] : []).slice(0, 5).map(x => txt(x, 800)), cor = int(d[6]);
       const hint = c.hints ? txt(d[7], 2000).trim() : '';
-      if (c.img) { const mm = /\/api\/exam\/img\/(\d+)/.exec(stem); stem = '<p><img src="' + (mm ? '/api/exam/img/' + mm[1] : 'img/' + id + '.webp') + '" alt="صورة السؤال"></p>'; opts = LETTERS.slice(); t = 0; pi = -1; }
+      if (c.img) { const mm = /\/api\/exam\/img\/(\d+)/.exec(stem); const am = /<img[^>]*\ssrc="(assets\/images\/[^"]+)"/.exec(stem); stem = '<p><img src="' + (mm ? '/api/exam/img/' + mm[1] : am ? am[1] : 'img/' + id + '.webp') + '" alt="صورة السؤال"></p>'; opts = LETTERS.slice(); t = 0; pi = -1; }
       else { if (!stem.trim()) bad('اكتب نص السؤال'); if (opts.length < 2 || opts.some(o => !o.trim())) bad('اكتب كل الاختيارات'); if (!(t >= 0 && t < 20)) t = 0; if (!(pi >= -1)) pi = -1; }
       if (!(cor >= 0 && cor < opts.length)) bad('اختر الإجابة الصحيحة');
       return hint ? [id, sec, t, pi, stem, opts, cor, hint] : [id, sec, t, pi, stem, opts, cor];
