@@ -113,6 +113,7 @@ const COURSES = [
   { slug: 'muhaky warky1', title: 'المحاكي الورقي – النموذج الأول', file: '/muhaky warky1.html', model: 'key' },
   { slug: 'muhaky warky2', title: 'المحاكي الورقي – النموذج الثاني', file: '/muhaky warky2.html', model: 'key' },
   { slug: 'tasis lafzi', title: 'تأسيس اللفظي', file: '/tasis lafzi.html.html', model: 'raw' },
+  { slug: 'ikmal_aljumal', title: 'إكمال الجمل', file: '/ikmal_aljumal.html', model: 'raw' },
   { slug: 'aktar kamy', title: 'الأسئلة الأكثر تكرارًا – كمي', file: '/aktar kamy.html', model: 'static' } // بنك صور: تصنيف المهارات والتقارير فقط
 ];
 const COURSE = Object.fromEntries(COURSES.map(c => [c.slug, c]));
@@ -148,7 +149,7 @@ let schemaReady = false, leadsReady = false, moodleReady = false;
 const GOOGLE_CLIENT_ID = '1017687433947-oscl9bci17amtnqp8hlrgogk1p29ub23.apps.googleusercontent.com';
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
-const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-skill-v1', 'bw-rank-off'];
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-skill-v1', 'bw-rank-off'];
 let progressReady = false;
 const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
@@ -187,7 +188,7 @@ function freeDb(text, n, kind) {
   return JSON.stringify(d).replace(/</g, '\\u003c');
 }
 // الاختبارات التي يمكن إخفاؤها عن الطلاب من لوحة التحكم
-const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
+const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
 // ===================== إعدادات الصفحة الرئيسية (تُعدَّل من لوحة التحكم ← الصفحة الرئيسية) =====================
 const HOME_FONTS = ['ibm', 'readex', 'tajawal', 'cairo', 'almarai', 'kufi'];
 const homeStr = (x, n) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u2028\u2029]/g, ' ').trim().slice(0, n);

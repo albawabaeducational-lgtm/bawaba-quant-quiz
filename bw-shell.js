@@ -30,7 +30,7 @@
   })();
 
   var slug = ''; try { slug = decodeURIComponent(location.pathname).replace(/^\//, '').replace(/(\.html)+$/, ''); } catch (e) { }
-  var COURSES = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi', 'muhaky mohawsab', 'muhaky warky1', 'muhaky warky2', 'tasis lafzi'];
+  var COURSES = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi', 'muhaky mohawsab', 'muhaky warky1', 'muhaky warky2', 'tasis lafzi', 'ikmal_aljumal'];
   if (COURSES.indexOf(slug) < 0) return;
   // فتح «الأسئلة الخاطئة» مباشرة من صفحة «تقدمي»
   if (location.hash === '#errors') addEventListener('load', function () { setTimeout(function () { var b = document.getElementById('errBtn'); if (b) b.click(); }, 150); });
@@ -260,4 +260,24 @@ window.__bwSideH = function (b) {
   function later() { if (busy) return; busy = 1; setTimeout(function () { requestAnimationFrame(shrink); }, 160); }
   new MutationObserver(later).observe(document.body, { childList: true, subtree: true });
   addEventListener('resize', later);
+})();
+
+// ملء الشاشة تلقائيًا عند بدء أي اختبار (يتطلب ضغطة من المستخدم، لذا يُفعَّل مع زر البدء نفسه)
+(function () {
+  if (!document.getElementById('bw-shell')) return;
+  var SEL = '#simGo,#simBegin,#go,#bStart,#bGo,#rand,button.card[data-t],[data-a="go"],#bResume';
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button,a'); if (!b) return;
+    var start = b.matches(SEL) || (/^\s*(🚀\s*)?ابدأ/.test(b.textContent || '') && !b.closest('#bw-shell'));
+    if (!start) return;
+    var d = document.documentElement;
+    try { if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen().catch(function () { }); else if (!document.webkitFullscreenElement && d.webkitRequestFullscreen) d.webkitRequestFullscreen(); } catch (x) { }
+  }, true);
+})();
+// زر ملء الشاشة في الشريط العلوي لكل الاختبارات (إن لم يكن في الصفحة زر خاص)
+(function () {
+  var sh = document.getElementById('bw-shell'); if (!sh || document.getElementById('fsb') || !(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) return;
+  var b = document.createElement('button'); b.type = 'button'; b.className = 'bws-a11y bws-fs'; b.title = 'ملء الشاشة'; b.setAttribute('aria-label', 'ملء الشاشة'); b.textContent = '⛶';
+  var a = sh.querySelector('.bws-a11y'); if (a) sh.insertBefore(b, a); else sh.appendChild(b);
+  b.onclick = function () { var d = document.documentElement; try { if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else (d.requestFullscreen || d.webkitRequestFullscreen).call(d); } catch (e) { } };
 })();

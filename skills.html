@@ -60,7 +60,19 @@
     body.present .mw { width: min(1300px, calc(100% - 24px)); }
     body.present .opt { font-size: 26px; padding: 16px; }
     @media (max-width: 640px) { .card, .hero { padding: 16px; } .opts.txt { grid-template-columns: 1fr; } .opt { font-size: 18px; padding: 10px; } .qnav .btn { flex: 1; } }
-  </style>
+  
+/* ===== شاشة واحدة بلا تمرير أثناء التدريب ===== */
+html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: hidden; }
+#app:has(> .qhead) { display: flex; flex-direction: column; height: calc(100dvh - 64px); box-sizing: border-box; padding-top: 10px !important; padding-bottom: 8px !important; margin-top: 0 !important; overflow: hidden; }
+#app:has(> .qhead) > .qhead, #app:has(> .qhead) > .row, #app:has(> .qhead) > .qtrack { flex: none; }
+#app:has(> .qhead) > .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px !important; margin: 6px 0 !important; overflow: hidden; }
+#app:has(> .qhead) > .card .tq { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#app:has(> .qhead) > .card .psg { flex: 1 1 0; min-height: 48px; max-height: none !important; overflow: auto; }
+#app:has(> .qhead) > .card .qimg { flex: 1 1 auto; min-height: 0; display: flex; }
+#app:has(> .qhead) > .card .qimg img { max-height: 100%; width: auto; max-width: 100%; margin: auto; object-fit: contain; }
+#app:has(> .qhead) > .card .opts, #app:has(> .qhead) > .card .qnav, #app:has(> .qhead) > .card .fb { flex: none; }
+#app:has(> .qhead) > .row { margin-top: 4px !important; }
+</style>
 </head>
 <body class="bwt-hub">
   <div id="bw-shell"><a class="bws-brand" href="./"><img src="icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">التدريب حسب المهارة</span><span class="bws-tools"></span><a class="bws-back" href="./#tests">كل الاختبارات</a></div>
@@ -76,16 +88,34 @@
   var SK = null, sub = 'kamy', cur = null, S = null; // S = جلسة التدريب
   var opt = { mode: 'train', n: 0, order: 'rand' };
 
+  // ===== مهارات اللفظي: تُسحب تلقائيًا من بنوك اللفظي المحوسب (مختصر الأقسام وأي بنك لفظي يُضاف) حسب نوع السؤال =====
+  // التعديلات التي يجريها المعلمون على البنك تظهر هنا مباشرة لأنها تُقرأ من نفس البنك المعدَّل
+  var VCACHE = null;
+  function vbanks() {
+    if (VCACHE) return VCACHE;
+    var D = window.__BWD || {}, out = [];
+    Object.keys(D).forEach(function (slug) {
+      var B = window.__bwBank ? window.__bwBank(slug) : D[slug]; if (!B || !B.qs || !B.secs) return;
+      var ok = {}; B.secs.forEach(function (x) { ok[x.id] = 1; });
+      var nm = (window.__BWX && window.__BWX.names && window.__BWX.names[slug]) || (slug === 'aksam lafzi' ? 'أقسام اللفظي' : slug);
+      B.qs.forEach(function (a) { if (!ok[a[1]] || !a[5] || a[5].length < 2 || TYN[a[2]] === undefined) return;
+        out.push({ t: a[2], p: a[3] >= 0 && B.ps ? (B.ps[a[3]] || '') : '', s: a[4], o: a[5], c: a[6], bank: nm, sec: a[1], id: a[0] }); });
+    });
+    out.sort(function (x, y) { return x.sec - y.sec || x.id - y.id; });
+    return (VCACHE = out);
+  }
+  function VSK() { var all = vbanks(); return TYN.map(function (n, t) { return { id: -(t + 1), name: n, subject: 'lafzi', n: all.filter(function (x) { return x.t === t; }).length }; }); }
+  function localSkill(id) { var t = -id - 1, items = vbanks().filter(function (x) { return x.t === t; }); return { skill: { id: id, name: TYN[t], subject: 'lafzi' }, items: items, total: items.length }; }
   function list() {
     document.body.classList.remove('present'); S = null;
-    var skills = (SK.skills || []).filter(function (x) { return x.subject === sub; });
+    var skills = sub === 'lafzi' ? VSK() : (SK.skills || []).filter(function (x) { return x.subject === sub; });
     var h = '<section class="hero"><h1>التدريب حسب المهارة</h1><p>اختر المهارة لتظهر لك كل أسئلتها من أقسام الكمي والأكثر تكرارًا وأقسام اللفظي، وتدرّب عليها بتصحيح فوري.</p><div class="tabs">' + Object.keys(SK.subjects).map(function (k) { return '<button type="button" data-sub="' + k + '" class="' + (k === sub ? 'on' : '') + '">' + esc(SK.subjects[k]) + '</button>'; }).join('') + '</div></section>';
     h += '<div class="card"><div class="skg">' + (skills.map(function (x) { return '<button type="button" class="sk' + (x.n ? '' : ' empty') + '" data-sk="' + x.id + '"' + (x.n ? '' : ' disabled') + '><span>' + esc(x.name) + '</span><b>' + (x.n ? cnt(x.n) : 'قريبًا') + '</b></button>'; }).join('') || '<p class="m">لا توجد مهارات بعد.</p>') + '</div></div>';
     app.innerHTML = h; window.scrollTo(0, 0);
   }
   function setup(id) {
     app.innerHTML = '<div class="card"><p class="m">جارٍ تحميل أسئلة المهارة…</p></div>';
-    fetch('/api/skills/questions?id=' + id).then(function (r) { return r.json(); }).then(function (d) {
+    (id < 0 ? Promise.resolve(localSkill(id)) : fetch('/api/skills/questions?id=' + id).then(function (r) { return r.json(); })).then(function (d) {
       if (!d.items) throw new Error(d.error || 'تعذّر التحميل');
       cur = d; history.replaceState(null, '', '?id=' + id);
       var banks = {}; d.items.forEach(function (it) { banks[it.bank] = (banks[it.bank] || 0) + 1; });
@@ -156,6 +186,8 @@
   });
   fetch('/api/skills').then(function (r) { return r.json(); }).then(function (d) {
     SK = d; var id = +new URLSearchParams(location.search).get('id');
+    if (!SK.subjects) SK.subjects = { kamy: 'الكمي', lafzi: 'اللفظي' }; if (!SK.subjects.lafzi) SK.subjects.lafzi = 'اللفظي';
+    if (id < 0) { sub = 'lafzi'; setup(id); return; }
     var s0 = id && (d.skills || []).filter(function (x) { return x.id === id; })[0];
     if (s0) { sub = s0.subject; setup(id); } else list();
   }).catch(function () { app.innerHTML = '<div class="card"><p class="m">تعذّر تحميل المهارات. تأكد من الاتصال وأعد تحميل الصفحة.</p></div>'; });

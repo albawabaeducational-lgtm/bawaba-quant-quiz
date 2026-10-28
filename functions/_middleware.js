@@ -16,11 +16,14 @@ const COURSES = {
   'muhaky warky1': { title: 'المحاكي الورقي – النموذج الأول', model: 'key' },
   'muhaky warky2': { title: 'المحاكي الورقي – النموذج الثاني', model: 'key' },
   'tasis lafzi': { title: 'تأسيس اللفظي', model: 'raw' },
+  'ikmal_aljumal': { title: 'إكمال الجمل', model: 'raw' },
   // بنك صور ثابت: يعدّل المعلم الإجابة والإرشاد وصورة السؤال، أو يخفي السؤال
   'aktar kamy': { title: 'الأسئلة الأكثر تكرارًا – كمي', model: 'static', img: true, hints: true, url: '/aktar kamy' }
 };
 // صفحات ليست مقررات لكنها تقرأ أسئلة المقررات (مع تعديلات المعلمين): اختبار تحديد المستوى
-const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'] };
+// skills: مهارات اللفظي في «التأسيس حسب المهارة» تُبنى تلقائيًا من هذه البنوك حسب نوع كل سؤال
+// (أي ملف لفظي محوسب جديد يُضاف اسمه هنا فتنسحب أسئلته لمهاراتها مباشرة، مع تعديلات المعلمين)
+const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
 // النسخة المجانية: تُحذف من الصفحة نفسها أسئلة الأجزاء المقفولة (لا تصل للمتصفح أصلًا).
 // نفس الدالة موجودة في functions/api/[[path]].js
 const DB_TAG = '<script id="db" type="application/json">';
@@ -47,7 +50,7 @@ async function freePage(html, slug, n, etag) {
   const key = etag && typeof caches !== 'undefined' ? new Request('https://bw-free.cache/' + encodeURIComponent(slug) + '/' + n + '/' + encodeURIComponent(etag)) : null;
   if (key) { try { const c = await caches.default.match(key); if (c) return JSON.parse(await c.text()); } catch (e) { } }
   let out = { html, tests: 0 };
-  if (slug === 'tasis lafzi') out = freeRaw(html, n);
+  if (slug === 'tasis lafzi' || slug === 'ikmal_aljumal') out = freeRaw(html, n);
   else {
     const a = html.indexOf(DB_TAG), z = a < 0 ? -1 : html.indexOf('</script>', a);
     if (a >= 0 && z >= 0) out.html = html.slice(0, a + DB_TAG.length) + freeDb(html.slice(a + DB_TAG.length, z), n, slug === 'aktar kamy' ? 'aktar' : 'bank') + html.slice(z);
