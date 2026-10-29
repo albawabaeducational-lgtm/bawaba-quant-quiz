@@ -101,7 +101,7 @@ async function staffOf(env, request, iso) {
 export async function onRequest({ request, env, next }) {
   const url = new URL(request.url), p = url.pathname;
   // روابط قصيرة وسهلة للمشاركة (الروابط القديمة تظل تعمل كما هي)
-  const SHORT = { '/kamy': '/aksam%20kamy.html', '/lafzi': '/aksam%20lafzi.html', '/mock': '/muhaky%20mohawsab.html', '/mohawsab': '/muhaky%20mohawsab.html', '/tasis': '/tasis%20lafzi.html.html', '/paper': '/waraqi.html', '/account': '/account.html', '/signup': '/account.html?tab=signup', '/my': '/account.html?tab=exams', '/aktar': '/aktar%20kamy.html', '/level': '/placement.html' };
+  const SHORT = { '/kamy': '/aksam%20kamy.html', '/lafzi': '/aksam%20lafzi.html', '/mock': '/muhaky%20mohawsab.html', '/mohawsab': '/muhaky%20mohawsab.html', '/tasis': '/tasis%20lafzi.html.html', '/paper': '/waraqi.html', '/signup': '/account.html?tab=signup', '/my': '/account.html?tab=exams', '/aktar': '/aktar%20kamy.html', '/level': '/placement.html' };
   const sp = SHORT[p.replace(/\/+$/, '').toLowerCase()];
   if (sp) return new Response(null, { status: 302, headers: { location: sp + url.search + url.hash } });
   // رابط الإحالة: /r/CODE يحفظ المُحيل ٣٠ يومًا (أول رابط يُفتح هو المعتمد) ثم يفتح صفحة إنشاء الحساب
