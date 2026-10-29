@@ -214,7 +214,7 @@ const DATA=DB.qs.map(a=>({id:a[0],name:'Question '+a[0],section:SN[a[1]],text:a[
 try{const n=DATA.length,m=DB.secs.length,f=document.querySelector('.foot');if(f)f.innerHTML=f.innerHTML.replace(/[٠-٩\d]+ سؤالًا في [٠-٩\d]+ قسمًا/,n+' سؤالًا في '+m+' قسمًا');const sp=[...document.querySelectorAll('#simSetup p.sub')].find(p=>p.textContent.includes('من ١ إلى'));if(sp)sp.innerHTML=sp.innerHTML.replace(/من ١ إلى [٠-٩\d]+/,'من ١ إلى '+m)}catch(e){}
 </script>
 <script data-keep="1">
-const U=(new URLSearchParams(location.search).get('uid')||'').replace(/\W/g,''),L=['أ','ب','ج','د'],ST='bwa-errors-v1'+(U?'-'+U:''),$=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s),ID=new Map(DATA.map(q=>[q.id,q]));
+const U=(new URLSearchParams(location.search).get('uid')||'').replace(/\W/g,''),L=['أ','ب','ج','د'],AT=(q,a)=>L[a],ST='bwa-errors-v1'+(U?'-'+U:''),$=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s),ID=new Map(DATA.map(q=>[q.id,q]));
 const secs=[...new Set(DATA.map(q=>q.sectionId))].sort((a,b)=>a-b);
 let chosen=new Set(),run=[],ans={},flag=new Set(),pos=0,total=0,tm=null,t0=0,wrong=[],live=false;
 let bad=0;const mem={},ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):localStorage.setItem(k,v)}catch(e){bad=1;return v===undefined?mem[k]:(mem[k]=v)}};
