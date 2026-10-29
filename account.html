@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e2238">
+  <meta name="robots" content="noindex">
+  <title>حسابي | البوابة التعليمية</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@500;700&display=swap">
+  <style>
+    :root { --night: #0e2238; --navy: #1b3a5c; --sea: #2c5f8a; --gold: #c9a45c; --gold-2: #e2c88f; --paper: #f3f5f8; --line: #dbe2ea; --ink: #1d2a39; --muted: #5d6b7c; --ok: #17633f; --ok-soft: #e1f4ea; --bad: #b4321f; --bad-soft: #fbe6e2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 500 15.5px/1.7 "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif; }
+    a { color: inherit; }
+    header.top { position: sticky; top: 0; z-index: 40; background: var(--night); color: #fff; }
+    header.top .wrap { display: flex; align-items: center; gap: 10px; min-height: 64px; width: min(1000px, calc(100% - 32px)); margin: 0 auto; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
+    .brand img { width: 40px; height: 40px; border-radius: 11px; background: #fff; padding: 3px; }
+    .brand b { font: 700 16px "Readex Pro", sans-serif; line-height: 1.25; } .brand small { display: block; font-size: 11.5px; color: var(--gold); }
+    .hb { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 6px; background: #ffffff14; color: #fff; text-decoration: none; border-radius: 10px; padding: 8px 12px; font-weight: 600; font-size: 13.5px; box-shadow: inset 0 0 0 1.5px #ffffff33; }
+    main { width: min(1000px, calc(100% - 32px)); margin: 24px auto 60px; }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 22px; margin-bottom: 16px; box-shadow: 0 4px 14px #1b3a5c0d; }
+    h1 { font: 700 clamp(24px, 3vw, 30px) "Readex Pro", sans-serif; color: var(--navy); margin: 0 0 4px; }
+    h2 { font: 700 19px "Readex Pro", sans-serif; color: var(--navy); margin: 0 0 10px; }
+    .m { color: var(--muted); margin: 0; font-size: 14.5px; }
+    .tabs { display: flex; gap: 6px; background: #e8edf3; border-radius: 14px; padding: 5px; margin: 0 0 18px; }
+    .tabs button { flex: 1; border: 0; background: transparent; border-radius: 10px; padding: 10px 8px; font: 700 14.5px "IBM Plex Sans Arabic", sans-serif; color: var(--muted); cursor: pointer; }
+    .tabs button.on { background: #fff; color: var(--navy); box-shadow: 0 2px 8px #1b3a5c1a; }
+    label.f { display: grid; gap: 5px; font-weight: 700; font-size: 14px; color: var(--navy); margin-bottom: 12px; }
+    input, select { font: 500 16px "IBM Plex Sans Arabic", sans-serif; padding: 11px 13px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); width: 100%; }
+    input:focus, select:focus { outline: none; border-color: var(--sea); box-shadow: 0 0 0 4px #2c5f8a1f; }
+    input[dir=ltr] { text-align: right; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; padding: 11px 18px; font: 700 15px "IBM Plex Sans Arabic", sans-serif; cursor: pointer; text-decoration: none; background: var(--navy); color: #fff; }
+    .btn.gold { background: var(--gold); color: var(--ink); } .btn.ghost { background: #fff; color: var(--navy); box-shadow: inset 0 0 0 1.5px var(--line); } .btn.wa { background: #1fa855; } .btn.sm { padding: 7px 13px; font-size: 13.5px; }
+    .btn:disabled { opacity: .55; cursor: wait; } .btn.block { width: 100%; }
+    .msg { min-height: 22px; font-weight: 600; font-size: 14px; margin: 8px 0 0; } .msg.bad { color: var(--bad); } .msg.ok { color: var(--ok); }
+    .note { background: #fff6e0; border: 1.5px solid #e3a92b; color: #5a3e00; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; font-weight: 600; }
+    .auth { max-width: 460px; margin: 0 auto; }
+    .alt { text-align: center; margin-top: 14px; font-size: 14px; color: var(--muted); } .alt a { color: var(--sea); font-weight: 700; }
+    .subs { display: grid; gap: 12px; }
+    .sub { border: 1.5px solid var(--line); border-radius: 16px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; }
+    .sub h3 { margin: 0; font: 700 17px "Readex Pro", sans-serif; color: var(--navy); }
+    .sub .d { color: var(--muted); font-size: 13.5px; }
+    .sub .acts { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+    .left { font: 700 14px "Readex Pro", sans-serif; border-radius: 99px; padding: 3px 12px; white-space: nowrap; }
+    .s-active .left { background: var(--ok-soft); color: var(--ok); } .s-soon .left { background: #fff1d6; color: #8a5d00; } .s-expired .left, .s-cancelled .left { background: var(--bad-soft); color: var(--bad); }
+    .s-soon { border-color: #e3a92b; } .s-expired, .s-cancelled { opacity: .85; }
+    .rn { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f6f8fb; border-radius: 12px; padding: 10px; }
+    .rn select { width: auto; }
+    .pend { color: #8a5d00; font-weight: 700; font-size: 13.5px; }
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .newc { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1.5px dashed var(--line); border-radius: 14px; padding: 10px 14px; }
+    .tog { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; } .tog input { width: 20px; height: 20px; }
+    .hidden { display: none !important; }
+    @media (max-width: 560px) { .card { padding: 16px; } .brand b { display: none; } }
+  </style>
+</head>
+<body>
+  <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><a class="hb" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">🎓<span> ركن الدورات</span></a></div></header>
+  <main id="acc"><div class="card"><p class="m">جارٍ التحميل…</p></div></main>
+<script>
+(function () {
+  'use strict';
+  var Q = new URLSearchParams(location.search), acc = document.getElementById('acc'), tab = Q.get('tab') || '', ME = null;
+  var AR = function (n) { return String(n).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var dt = function (x) { try { return new Date(x).toLocaleDateString('ar-SA-u-ca-gregory-nu-arab', { year: 'numeric', month: 'long', day: 'numeric' }); } catch (e) { return String(x).slice(0, 10); } };
+  var days = function (n) { return n === 1 ? 'يوم واحد' : n === 2 ? 'يومان' : AR(n) + (n <= 10 ? ' أيام' : ' يومًا'); };
+  function post(u, b) { return fetch(u, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return [r.ok, d]; }); }); }
+  function go(u) { location.href = u; }
+  function nextUrl() { var n = Q.get('next') || ''; return n.charAt(0) === '/' && n.charAt(1) !== '/' ? n : '/account.html?tab=exams'; }
+  function load(force) { (window.bwMe ? window.bwMe(force) : fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.json(); })).then(function (me) { ME = me; me.logged ? logged() : guest(); }); }
+
+  // ===== زائر: تسجيل الدخول / إنشاء حساب =====
+  function guest() {
+    var su = tab === 'signup';
+    acc.innerHTML = '<div class="auth"><div class="card"><h1>' + (su ? 'إنشاء حساب جديد' : 'تسجيل الدخول') + '</h1><p class="m" style="margin-bottom:16px">' + (su ? 'أنشئ حسابك في دقيقة، ثم اطلب الاشتراك في القسم الذي تريده.' : 'ادخل بجوالك أو بريدك وكلمة المرور.') + '</p>'
+      + '<div class="tabs"><button type="button" data-t="login" class="' + (su ? '' : 'on') + '">تسجيل الدخول</button><button type="button" data-t="signup" class="' + (su ? 'on' : '') + '">إنشاء حساب</button></div>'
+      + (su ? '<form id="fs"><label class="f">الاسم الكامل<input name="name" autocomplete="name" required maxlength="80"></label><label class="f">رقم الجوال<input name="phone" type="tel" inputmode="tel" dir="ltr" autocomplete="tel" required placeholder="05xxxxxxxx"></label><label class="f">البريد الإلكتروني<input name="email" type="email" dir="ltr" autocomplete="email" required></label><label class="f">كلمة المرور<input name="password" type="password" autocomplete="new-password" required minlength="6" placeholder="٦ أحرف على الأقل"></label><button class="btn gold block" type="submit">إنشاء الحساب</button><p class="msg" id="em"></p></form>'
+        : '<form id="fl"><label class="f">الجوال أو البريد الإلكتروني<input name="id" dir="ltr" autocomplete="username" required></label><label class="f">كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="btn block" type="submit">دخول</button><p class="msg" id="em"></p></form>')
+      + '</div><p class="alt">عندك كود من المنصة أو حساب على منصة الدورات؟ <a href="/login' + (Q.get('next') ? '?next=' + encodeURIComponent(Q.get('next')) : '') + '">ادخل من هنا</a></p></div>';
+    acc.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; history.replaceState(null, '', '?tab=' + tab + (Q.get('next') ? '&next=' + encodeURIComponent(Q.get('next')) : '')); guest(); }; });
+    var f = acc.querySelector('form'), em = document.getElementById('em');
+    f.onsubmit = function (e) {
+      e.preventDefault(); var b = f.querySelector('button'), d = {}; new FormData(f).forEach(function (v, k) { d[k] = v; });
+      b.disabled = true; em.className = 'msg'; em.textContent = 'لحظة…';
+      post(su ? '/api/account/signup' : '/api/account/login', d).then(function (x) {
+        if (x[0]) { if (window.bwMeClear) window.bwMeClear(); em.className = 'msg ok'; em.textContent = su ? 'تم إنشاء حسابك ✓' : 'تم الدخول ✓'; go(nextUrl()); return; }
+        em.className = 'msg bad'; em.textContent = x[1].error || 'حدث خطأ'; b.disabled = false;
+      }).catch(function () { em.className = 'msg bad'; em.textContent = 'تعذّر الاتصال، حاول مرة أخرى'; b.disabled = false; });
+    };
+  }
+
+  // ===== مسجّل: حسابي / اختباراتي / سفيري =====
+  function logged() {
+    if (['me', 'exams', 'ref'].indexOf(tab) < 0) tab = 'exams';
+    var h = '<div class="card" style="padding:18px 22px"><h1>أهلًا ' + esc(ME.name.split(' ')[0]) + '</h1><p class="m">' + (ME.account ? esc(ME.email) + ' · <span dir="ltr">' + esc(String(ME.phone).replace(/^966(5\d{8})$/, '0$1')) + '</span>' : 'أنت داخل بكود من المنصة') + '</p></div>'
+      + '<div class="tabs"><button type="button" data-t="exams" class="' + (tab === 'exams' ? 'on' : '') + '">📚 اختباراتي</button><button type="button" data-t="me" class="' + (tab === 'me' ? 'on' : '') + '">👤 حسابي</button><button type="button" data-t="ref" class="' + (tab === 'ref' ? 'on' : '') + '">🤝 سفيري</button></div><div id="pane"></div>';
+    acc.innerHTML = h;
+    acc.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; history.replaceState(null, '', '?tab=' + tab); logged(); }; });
+    var P = document.getElementById('pane');
+    if (tab === 'exams') P.innerHTML = exams(); else if (tab === 'me') P.innerHTML = mine(); else P.innerHTML = ref();
+    bind(P);
+  }
+  function waLink(course, d) { var t = 'السلام عليكم ورحمة الله وبركاته\nأرغب في ' + (d.renew ? 'تجديد' : 'الاشتراك في') + ' «' + course + '» لمدة ' + days(d.days) + '.\nالاسم: ' + ME.name + (ME.phone ? '\nالجوال: ' + ME.phone : '') + (ME.email ? '\nالبريد: ' + ME.email : '') + '\nأرجو إرسال بيانات الدفع.'; return 'https://wa.me/' + String(ME.contact || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(t); }
+  function rnBox(key, renew) { return '<div class="rn hidden" data-rn="' + esc(key) + '" data-renew="' + (renew ? 1 : 0) + '"><span>المدة:</span><select><option value="30">شهر</option><option value="60">شهرين</option><option value="90">٣ أشهر</option><option value="180">٦ أشهر</option></select><button type="button" class="btn wa sm" data-send>إرسال الطلب ومتابعة الدفع عبر واتساب</button></div>'; }
+  function exams() {
+    if (!ME.account) return '<div class="card"><h2>اختباراتك</h2><p class="m" style="margin-bottom:12px">دخلت بكود من المنصة، وكل الاختبارات المتاحة في كودك تظهر لك في الصفحة الرئيسية.</p><a class="btn" href="/">الصفحة الرئيسية</a></div>';
+    var subs = ME.subs || [], pend = {}; (ME.pending || []).forEach(function (p) { pend[p.course] = p; });
+    var need = Q.get('need'), have = {}; subs.forEach(function (s) { if (s.state === 'active' || s.state === 'soon') have[s.course] = 1; });
+    var h = '';
+    if (need && !have[need]) { var nt = (ME.courses.filter(function (c) { return c.key === need; })[0] || {}).title || need; h += '<div class="note">«' + esc(nt) + '» غير مشمول في اشتراكك الحالي. اطلب الاشتراك فيه من الأسفل.</div>'; }
+    var soon = subs.filter(function (s) { return s.state === 'soon'; })[0]; if (soon) h += '<div class="note">⏳ ينتهي اشتراكك في «' + esc(soon.title) + '» بعد ' + days(soon.days) + '. جدّده الآن حتى لا ينقطع تدريبك.</div>';
+    h += '<div class="card"><h2>اشتراكاتي</h2>' + (subs.length ? '<div class="subs">' + subs.map(function (s) {
+      var live = s.state === 'active' || s.state === 'soon', lbl = s.state === 'expired' ? 'منتهي' : s.state === 'cancelled' ? 'ملغى' : 'باقي ' + days(s.days);
+      return '<div class="sub s-' + s.state + '"><div><h3>' + esc(s.title) + '</h3><div class="d">من ' + dt(s.start) + ' إلى ' + dt(s.end) + '</div></div><span class="left">' + lbl + '</span><div class="acts">' + (live ? '<a class="btn sm" href="' + (window.bwCourseUrl ? window.bwCourseUrl(s.course) : '/') + '">ادخل الاختبار</a>' : '') + (pend[s.course] ? '<span class="pend">✓ طلب التجديد قيد المراجعة</span>' : '<button type="button" class="btn ghost sm" data-open="' + esc(s.course) + '">طلب تجديد</button>') + '</div>' + rnBox(s.course, true) + '</div>';
+    }).join('') + '</div>' : '<p class="m">لا توجد اشتراكات في حسابك بعد. اختر من الأسفل ما تريد الاشتراك فيه.</p>') + '</div>';
+    var rest = (ME.courses || []).filter(function (c) { return !subs.some(function (s) { return s.course === c.key; }); });
+    if (rest.length) h += '<div class="card"><h2>اشترك في قسم جديد</h2><p class="m" style="margin-bottom:12px">أرسل الطلب، ونتواصل معك عبر واتساب ببيانات الدفع، ثم نفعّل الاشتراك.</p><div class="subs">' + rest.map(function (c) {
+      return '<div class="sub' + (need === c.key ? ' s-soon' : '') + '"><div><h3>' + esc(c.title) + '</h3></div>' + (pend[c.key] ? '<span class="pend">✓ طلبك قيد المراجعة</span>' : '<button type="button" class="btn gold sm" data-open="' + esc(c.key) + '">طلب اشتراك</button>') + rnBox(c.key, false) + '</div>';
+    }).join('') + '</div></div>';
+    return h;
+  }
+  function mine() {
+    if (!ME.account) return '<div class="card"><h2>حسابي</h2><p class="m" style="margin-bottom:12px">أنت داخل بكود: <b>' + esc(ME.name) + '</b>.</p><button type="button" class="btn ghost" data-out>تسجيل الخروج</button></div>';
+    return '<div class="card"><h2>بياناتي</h2><form id="fn"><label class="f">الاسم<input name="name" value="' + esc(ME.name) + '" maxlength="80"></label><div class="grid2"><label class="f">الجوال<input value="' + esc(String(ME.phone).replace(/^966(5\d{8})$/, '0$1')) + '" dir="ltr" disabled></label><label class="f">البريد الإلكتروني<input value="' + esc(ME.email) + '" dir="ltr" disabled></label></div><button class="btn" type="submit">حفظ الاسم</button><p class="msg"></p></form></div>'
+      + '<div class="card"><h2>كلمة المرور</h2><form id="fp"><div class="grid2"><label class="f">كلمة المرور الحالية<input name="oldPassword" type="password" autocomplete="current-password" required></label><label class="f">كلمة المرور الجديدة<input name="newPassword" type="password" autocomplete="new-password" minlength="6" required></label></div><button class="btn" type="submit">تغيير كلمة المرور</button><p class="msg"></p></form></div>'
+      + '<div class="card"><h2>العدّاد</h2><label class="tog"><input type="checkbox" id="sc"' + (ME.showCounter ? ' checked' : '') + '> إظهار عدّاد أيام الاشتراك على أيقونة الحساب</label><p class="m" style="margin-top:6px">تنبيه الأيام الثلاثة الأخيرة يظهر مرة يوميًا حتى لو أخفيت العدّاد.</p></div>'
+      + '<div class="card"><button type="button" class="btn ghost" data-out>⎋ تسجيل الخروج</button></div>';
+  }
+  function ref() { return '<div class="card"><h2>🤝 سفيري</h2><p class="m">قريبًا: رابط إحالة خاص بك تشاركه مع أصدقائك، وتحصل على عمولة عن كل من يشترك من خلاله.</p></div>'; }
+  function bind(P) {
+    P.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { var box = b.closest('.sub').querySelector('.rn'); box.classList.toggle('hidden'); }; });
+    P.querySelectorAll('[data-send]').forEach(function (b) { b.onclick = function () {
+      var box = b.closest('.rn'), key = box.dataset.rn, d = +box.querySelector('select').value, title = (ME.courses.filter(function (c) { return c.key === key; })[0] || {}).title || key;
+      var w = window.open('about:blank', '_blank'); b.disabled = true;
+      post('/api/account/renew', { course: key, days: d }).then(function (x) {
+        if (!x[0]) { if (w) w.close(); alert(x[1].error || 'تعذّر إرسال الطلب'); b.disabled = false; return; }
+        var u = waLink(title, { days: d, renew: box.dataset.renew === '1' }); if (w) w.location.href = u; else location.href = u;
+        if (window.bwMeClear) window.bwMeClear(); load(true);
+      });
+    }; });
+    if (Q.get('renew')) { var rb = P.querySelector('[data-open="' + CSS.escape(Q.get('renew')) + '"]'); if (rb) rb.click(); }
+    var fn = P.querySelector('#fn'); if (fn) fn.onsubmit = function (e) { e.preventDefault(); var m = fn.querySelector('.msg'); post('/api/account/update', { name: fn.name.value }).then(function (x) { m.className = 'msg ' + (x[0] ? 'ok' : 'bad'); m.textContent = x[0] ? 'تم الحفظ ✓' : (x[1].error || 'حدث خطأ'); if (x[0] && window.bwMeClear) window.bwMeClear(); }); };
+    var fp = P.querySelector('#fp'); if (fp) fp.onsubmit = function (e) { e.preventDefault(); var m = fp.querySelector('.msg'); post('/api/account/update', { oldPassword: fp.oldPassword.value, newPassword: fp.newPassword.value }).then(function (x) { m.className = 'msg ' + (x[0] ? 'ok' : 'bad'); m.textContent = x[0] ? 'تم تغيير كلمة المرور ✓' : (x[1].error || 'حدث خطأ'); if (x[0]) fp.reset(); }); };
+    var sc = P.querySelector('#sc'); if (sc) sc.onchange = function () { post('/api/account/update', { showCounter: sc.checked }).then(function () { if (window.bwMeClear) window.bwMeClear(); ME.showCounter = sc.checked; }); };
+    P.querySelectorAll('[data-out]').forEach(function (b) { b.onclick = function () { if (window.bwMeClear) window.bwMeClear(); fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).finally(function () { location.href = '/'; }); }; });
+  }
+  load(true);
+})();
+</script>
+<script src="/bw-account.js" defer></script>
+</body>
+</html>

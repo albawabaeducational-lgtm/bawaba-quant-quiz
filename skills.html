@@ -66,8 +66,9 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
 #app:has(> .qhead) { display: flex; flex-direction: column; height: calc(100dvh - 64px); box-sizing: border-box; padding-top: 10px !important; padding-bottom: 8px !important; margin-top: 0 !important; overflow: hidden; }
 #app:has(> .qhead) > .qhead, #app:has(> .qhead) > .row, #app:has(> .qhead) > .qtrack { flex: none; }
 #app:has(> .qhead) > .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px !important; margin: 6px 0 !important; overflow: hidden; }
-#app:has(> .qhead) > .card .tq { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-#app:has(> .qhead) > .card .psg { flex: 1 1 0; min-height: 48px; max-height: none !important; overflow: auto; }
+#app:has(> .qhead) > .card { justify-content: center; }
+#app:has(> .qhead) > .card .tq { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#app:has(> .qhead) > .card .psg { flex: 0 1 auto; min-height: 48px; max-height: none !important; overflow: auto; }
 #app:has(> .qhead) > .card .qimg { flex: 1 1 auto; min-height: 0; display: flex; }
 #app:has(> .qhead) > .card .qimg img { max-height: 100%; width: auto; max-width: 100%; margin: auto; object-fit: contain; }
 #app:has(> .qhead) > .card .opts, #app:has(> .qhead) > .card .qnav, #app:has(> .qhead) > .card .fb { flex: none; }
@@ -87,6 +88,13 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
 .wr:hover { background: #f6f9fc; } .wr b { grid-row: span 2; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: #fbe6e2; color: #b4321f; }
 .wr small { color: #5a6b80; } .wr em { font-style: normal; color: #17633f; font-weight: 700; }
 #app:has(> .qhead) > .skmap { flex: none; }
+
+/* نفس مواصفات خط باقي الاختبارات: السؤال كبير وعريض في المنتصف، والخيارات عريضة */
+.tq .stem { font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif; font-size: clamp(24px, 1.6vw + 16px, 32px) !important; font-weight: 800 !important; color: #c0392b; text-align: center; margin: 14px 0 !important; line-height: 1.6; }
+.tq .ty { align-self: flex-start; }
+.opts.txt .opt { font: 700 clamp(17.5px, 0.9vw + 12px, 21px) "IBM Plex Sans Arabic", sans-serif !important; }
+.tq .psg { font-size: 16px; }
+.wr.na b { background: #eef2f6; color: #42566c; }
 </style>
 </head>
 <body class="bwt-hub">
@@ -191,10 +199,10 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
   function result(auto) {
     var n = S.items.length, g = 0; S.items.forEach(function (it, i) { if (S.ans[i] === it.c) g++; });
     var W = wrongIdx(), K = skipIdx(), pc = Math.round(g / n * 100);
-    var row = function (i) { var it = S.items[i], a = S.ans[i]; return '<button type="button" class="wr" data-rv="' + i + '"><b>' + AR(i + 1) + '</b><span>' + snip(it) + '</span><small>' + (a === undefined ? 'لم تُجب' : 'إجابتك: ' + L[a]) + ' · الصحيحة: <em>' + L[it.c] + '</em></small></button>'; };
+    var row = function (i) { var it = S.items[i], a = S.ans[i]; return '<button type="button" class="wr' + (a === undefined ? ' na' : '') + '" data-rv="' + i + '"><b>' + AR(i + 1) + '</b><span>' + snip(it) + '</span><small>' + (a === undefined ? 'لم تُجب' : 'إجابتك: ' + L[a]) + ' · الصحيحة: <em>' + L[it.c] + '</em></small></button>'; };
     var h = '<section class="hero"><p style="color:var(--bw-gold);font-weight:600">' + esc(cur.skill.name) + (auto ? ' · انتهى الوقت' : '') + '</p><h1>' + AR(g) + ' / ' + AR(n) + '</h1><p>نسبة الصحيح ' + AR(pc) + '٪ · خاطئة ' + AR(W.length) + ' · بلا إجابة ' + AR(K.length) + '</p></section>'
-      + '<div class="row" style="margin-bottom:14px">' + (W.length ? '<button class="btn soft" data-a="rvall">📖 مراجعة الأخطاء</button><button class="btn gold" data-a="retest">🔁 اختبار الأخطاء</button>' : '') + '<button class="btn ghost" data-a="go">أعد الاختبار</button><button class="btn ghost" data-a="back">كل المهارات</button></div>'
-      + (W.length ? '<div class="card"><h2>الأسئلة الخاطئة (' + AR(W.length) + ')</h2><p class="m" style="margin-bottom:8px">اضغط على أي سؤال لتراجعه بحجمه الكامل.</p>' + W.map(row).join('') + '</div>' : '<div class="card"><h2>✓ لا أخطاء</h2><p class="m">أحسنت، كل إجاباتك صحيحة.</p></div>')
+      + '<div class="row" style="margin-bottom:14px">' + (W.length + K.length ? '<button class="btn soft" data-a="rvall">📖 مراجعة الأخطاء</button><button class="btn gold" data-a="retest">🔁 اختبار الأخطاء</button>' : '') + '<button class="btn ghost" data-a="go">أعد الاختبار</button><button class="btn ghost" data-a="back">كل المهارات</button></div>'
+      + (W.length ? '<div class="card"><h2>الأسئلة الخاطئة (' + AR(W.length) + ')</h2><p class="m" style="margin-bottom:8px">اضغط على أي سؤال لتراجعه بحجمه الكامل.</p>' + W.map(row).join('') + '</div>' : !K.length ? '<div class="card"><h2>✓ لا أخطاء</h2><p class="m">أحسنت، كل إجاباتك صحيحة.</p></div>' : g ? '<div class="card"><h2>لا إجابات خاطئة</h2><p class="m">كل ما أجبت عنه صحيح، لكنك تركت ' + AR(K.length) + ' بلا إجابة. راجعها من الأسفل.</p></div>' : '<div class="card"><h2>لم تُجب عن أي سؤال</h2><p class="m">راجع الأسئلة وإجاباتها الصحيحة من الأسفل، ثم أعد الاختبار.</p></div>')
       + (K.length ? '<div class="card"><h2>بلا إجابة (' + AR(K.length) + ')</h2>' + K.map(row).join('') + '</div>' : '');
     app.innerHTML = h; window.scrollTo(0, 0);
   }
@@ -227,11 +235,11 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
       case 'end': return askEnd();
       case 'endno': var cf = document.getElementById('skcf'); if (cf) cf.innerHTML = ''; return;
       case 'endok': return end();
-      case 'rvall': return review(wrongIdx(), 0);
+      case 'rvall': return review(wrongIdx().concat(skipIdx()), 0);
       case 'rvp': return review(S.rev.list, S.rev.k - 1);
       case 'rvn': return review(S.rev.list, S.rev.k + 1);
       case 'res': return result();
-      case 'retest': var it2 = wrongIdx().map(function (i) { return S.items[i]; }); opt.mode = 'train'; return go(it2);
+      case 'retest': var it2 = wrongIdx().concat(skipIdx()).map(function (i) { return S.items[i]; }); opt.mode = 'train'; return go(it2);
     }
   });
   document.addEventListener('keydown', function (e) {

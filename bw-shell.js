@@ -281,3 +281,5 @@ window.__bwSideH = function (b) {
   var a = sh.querySelector('.bws-a11y'); if (a) sh.insertBefore(b, a); else sh.appendChild(b);
   b.onclick = function () { var d = document.documentElement; try { if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else (d.requestFullscreen || d.webkitRequestFullscreen).call(d); } catch (e) { } };
 })();
+// أيقونة الشخص وقائمة الحساب في شريط كل الاختبارات
+(function () { if (!document.getElementById('bw-shell') || window.__bwAcct) return; var s = document.createElement('script'); s.src = '/bw-account.js'; s.defer = true; document.head.appendChild(s); })();

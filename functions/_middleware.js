@@ -101,7 +101,7 @@ async function staffOf(env, request, iso) {
 export async function onRequest({ request, env, next }) {
   const url = new URL(request.url), p = url.pathname;
   // روابط قصيرة وسهلة للمشاركة (الروابط القديمة تظل تعمل كما هي)
-  const SHORT = { '/kamy': '/aksam%20kamy.html', '/lafzi': '/aksam%20lafzi.html', '/mock': '/muhaky%20mohawsab.html', '/mohawsab': '/muhaky%20mohawsab.html', '/tasis': '/tasis%20lafzi.html.html', '/paper': '/waraqi.html', '/aktar': '/aktar%20kamy.html', '/level': '/placement.html' };
+  const SHORT = { '/kamy': '/aksam%20kamy.html', '/lafzi': '/aksam%20lafzi.html', '/mock': '/muhaky%20mohawsab.html', '/mohawsab': '/muhaky%20mohawsab.html', '/tasis': '/tasis%20lafzi.html.html', '/paper': '/waraqi.html', '/account': '/account.html', '/signup': '/account.html?tab=signup', '/my': '/account.html?tab=exams', '/aktar': '/aktar%20kamy.html', '/level': '/placement.html' };
   const sp = SHORT[p.replace(/\/+$/, '').toLowerCase()];
   if (sp) return new Response(null, { status: 302, headers: { location: sp + url.search + url.hash } });
   const isPage = request.method === 'GET' && (p === '/' || !/\.[a-z0-9]+$/i.test(p) || /\.html$/i.test(p));
@@ -188,6 +188,19 @@ export async function onRequest({ request, env, next }) {
     return serve(ed);
   }
 
+  // حساب الطالب (تسجيل ذاتي): يدخل فقط الأقسام المشترك فيها والسارية. لا نسخة مجانية بعد تسجيل الدخول؛
+  // أي قسم غير مشترك فيه (حتى بالرابط المباشر) يرجعه إلى «اختباراتي». الانتهاء يُفحص مع كل طلب فيُسحب الوصول تلقائيًا.
+  if (st && st.kind === 'account' && st.status === 'active') {
+    const GATED2 = !!(course || slug === 'aktar kamy' || slug === 'skills');
+    if (GATED2) {
+      const key = /^muhaky warky[12]$/.test(slug) ? 'waraqi' : slug;
+      let ok = false;
+      try { ok = !!(await env.DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND course=? AND status='active' AND end_at>?").bind(st.id, key, iso).first()); } catch (e) { ok = false; }
+      if (!ok) return new Response(null, { status: 302, headers: { location: '/account.html?tab=exams&need=' + encodeURIComponent(key) } });
+    }
+    head += '<script>document.documentElement.classList.add("bw-acct")</script>';
+    return serve(ui({}) + '<script src="/bw-tracker.js"></script><script src="/bw-sync.js"></script>');
+  }
   if (S.require_login === '1' && !valid) {
     // الصفحة الرئيسية وصفحات التعريف (تحديد المستوى، تقدمي، قائمة الورقي…) مفتوحة دائمًا لأنها واجهة المنصة ودعايتها.
     // القفل على صفحات الاختبارات فقط.

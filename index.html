@@ -600,6 +600,20 @@
     html[data-cards="glass"] .pathway-link .pl-ic, html[data-cards="glass"] .pathway-link::after { background: #ffffff1f; color: #fff; }
     html.th-light[data-cards="glass"] .pathway-link { --a: #ffffffd9; --b: #ffffffb3; --fg: var(--navy); --sub: var(--tx2); border-color: #00000014; }
     html.th-light[data-cards="glass"] .pathway-link .pl-ic, html.th-light[data-cards="glass"] .pathway-link::after { background: #0000000a; color: var(--navy); }
+
+    /* ===== الشريط العلوي: الشعار · ركن الدورات · إنشاء حساب · تسجيل الدخول · أيقونة الشخص ===== */
+    .top .btn-lms { background: #ffffff14; color: #fff; box-shadow: inset 0 0 0 1.5px #ffffff33; padding: 8px 12px; font-size: 13.5px; }
+    html.th-light .top .btn-lms { background: #fff; color: var(--navy); box-shadow: inset 0 0 0 1.5px #0000001f; }
+    .top .wrap > .btn:first-of-type { margin-inline-start: auto; }
+    @media (min-width: 961px) { .top .wrap > .btn:first-of-type { margin-inline-start: 0; } }
+    @media (max-width: 600px) {
+      header.top .wrap { gap: 6px; }
+      header.top .btn.hb-sm { padding: 7px 10px; font-size: 12.5px; }
+      header.top .btn-lms { padding: 7px 9px; font-size: 12.5px; }
+      header.top .btn-lms span { display: none; }
+      header.top .brand b { display: none; }
+      .bwp-b { width: 36px !important; height: 36px !important; }
+    }
   </style>
 <script>
   /* ألوان الصفحة من الأدمن: تُطبَّق مبكرًا من آخر نسخة محفوظة لتجنب وميض الألوان */
@@ -624,7 +638,6 @@
 </script>
 </head>
 <body>
-  <div class="lms-strip"><div class="wrap"><span>🎓 الشروحات والدورات والفيديوهات على <u>منصة الدورات</u><span class="lx"> — وهنا منصة الاختبارات</span></span><a href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">ادخل منصة الدورات ←</a></div></div>
   <header class="top">
     <div class="wrap">
       <a class="brand" href="/"><img src="/icons/logo.jpg" alt="" width="44" height="44"><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a>
@@ -637,10 +650,9 @@
         <a class="guest-only" href="#courses">الدورات</a>
         <a href="#join">تواصل معنا</a>
       </nav>
-      <a class="btn btn-lms hide-sm" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">🎓 منصة الدورات</a>
-      <a class="btn btn-line guest-only" href="https://albawaba-edu.com/e/login/signup.php" target="_blank" rel="noopener">إنشاء حساب</a>
-      <a class="btn btn-gold guest-only" href="/login">تسجيل الدخول</a>
-      <a class="btn btn-line member-only" href="#" id="bwOut">تسجيل الخروج</a>
+      <a class="btn btn-lms hb-lms" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener" title="ركن الدورات">🎓<span> ركن الدورات</span></a>
+      <a class="btn btn-line guest-only hb-sm" href="/account.html?tab=signup">إنشاء حساب</a>
+      <a class="btn btn-gold guest-only hb-sm" href="/account.html">تسجيل الدخول</a>
     </div>
   </header>
 
@@ -1013,6 +1025,7 @@
   draw(DEF);
   fetch('/api/public').then(function (r) { return r.json(); }).then(function (d) { if (d.contact) wa = String(d.contact).replace(/\D/g, ''); if (d.courses) draw(d.courses); hideCourses(d.hidden || []); if (window.bwHome) window.bwHome(d.home || {}); }).catch(function () {});
   // الاختبارات المخفية من لوحة التحكم لا تظهر للطالب
+  window.__bwHide = function (h) { hideCourses(h); };
   function hideCourses(h) {
     if (!h.length) return;
     [].forEach.call(document.querySelectorAll('[data-vis]'), function (el) { if (h.indexOf(el.getAttribute('data-vis')) >= 0) el.setAttribute('hidden', ''); });
@@ -1065,5 +1078,6 @@ f.onsubmit=async function(e){e.preventDefault();var d=en(ph.value).replace(/\D/g
 b.disabled=true;say('جارٍ حفظ طلبك...');try{var r=await fetch('/api/guest-lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:document.getElementById('leadName').value,phone:d,interest:document.getElementById('leadInterest').value,source:'home'})});var j=await r.json().catch(function(){return{}});if(r.ok){say('تم تسجيل رقمك ✓ سنضيفك للمجموعة قريبًا بإذن الله.',true);f.reset()}else say(j.error||'تعذر التسجيل، حاول مرة أخرى',false)}catch(_){say('تعذر الاتصال، حاول مرة أخرى',false)}b.disabled=false}})();
 
 </script>
+<script src="/bw-account.js" defer></script>
 </body>
 </html>
