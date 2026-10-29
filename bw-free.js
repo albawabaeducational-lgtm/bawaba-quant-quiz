@@ -68,12 +68,14 @@
   function modal(msg) {
     var old = document.querySelector('.bwf-m'); if (old) old.remove();
     var m = document.createElement('div'); m.className = 'bwf-m'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
-    m.innerHTML = '<div><h3>🔒 هذا الجزء للمشتركين</h3><p>' + esc(msg || ('أنت الآن على النسخة المجانية: أول ' + AR(N) + ' من كل اختبار. سجّل دخولك لفتح كل الاختبارات والأقسام.')) + '</p>'
-      + '<a class="b b1" href="/login?next=' + nxt + '">تسجيل الدخول</a>'
-      + '<a class="b b2" href="' + SIGNUP + '" target="_blank" rel="noopener">إنشاء حساب جديد</a>'
+    var need = '/account.html?tab=exams&need=' + encodeURIComponent(PAGE === 'muhaky warky1' || PAGE === 'muhaky warky2' ? 'waraqi' : PAGE);
+    m.innerHTML = '<div><h3>🔒 هذا الجزء للمشتركين</h3><p>' + esc(msg || ('أنت الآن على النسخة المجانية: أول ' + AR(N) + ' من كل اختبار. ' + (F.acct ? 'اشترك لفتح كل الاختبارات والأقسام.' : 'سجّل دخولك لفتح كل الاختبارات والأقسام.'))) + '</p>'
+      + (F.acct
+        ? '<a class="b b1" href="' + need + '">اطلب الاشتراك الآن</a>'
+        : '<a class="b b1" href="/account.html?next=' + nxt + '">تسجيل الدخول</a><a class="b b2" href="/account.html?tab=signup">إنشاء حساب جديد</a>')
       + (F.wa ? '<a class="b b3" href="https://wa.me/' + esc(F.wa) + '?text=' + encodeURIComponent('أريد الاشتراك في منصة البوابة التعليمية') + '" target="_blank" rel="noopener">اشترك عبر واتساب</a>' : '')
       + '<button type="button" class="b b4" data-x>إغلاق</button>'
-      + '<small>إنشاء الحساب وحده لا يفتح النسخة الكاملة؛ لازم تكون مشتركًا في دورة واحدة على الأقل من دوراتنا.</small></div>';
+      + (F.acct ? '' : '<small>إنشاء الحساب وحده لا يفتح النسخة الكاملة؛ يلزم الاشتراك في القسم.</small>') + '</div>';
     m.addEventListener('click', function (e) { if (e.target === m || e.target.hasAttribute('data-x')) m.remove(); });
     document.body.appendChild(m);
     var b = m.querySelector('a'); if (b) b.focus();

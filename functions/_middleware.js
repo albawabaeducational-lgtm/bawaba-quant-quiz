@@ -204,14 +204,26 @@ export async function onRequest({ request, env, next }) {
   // أي قسم غير مشترك فيه (حتى بالرابط المباشر) يرجعه إلى «اختباراتي». الانتهاء يُفحص مع كل طلب فيُسحب الوصول تلقائيًا.
   if (st && st.kind === 'account' && st.status === 'active') {
     const GATED2 = !!(course || slug === 'aktar kamy' || slug === 'skills');
+    // حساب بلا أي اشتراك ساري = يأخذ النسخة المجانية مثل الزائر (حتى لا يخسر شيئًا بإنشاء الحساب)
+    let anySub = false;
+    try { anySub = !!(await env.DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND status='active' AND end_at>?").bind(st.id, iso).first()); } catch (e) { anySub = false; }
+    const freeOn2 = S.free_mode !== '0', fN2 = Math.max(1, Math.min(50, +S.free_count || 10));
+    const tail = ui({}) + '<script src="/bw-tracker.js"></script><script src="/bw-sync.js"></script>';
     if (GATED2) {
       const key = /^muhaky warky[12]$/.test(slug) ? 'waraqi' : slug;
       let ok = false;
       try { ok = !!(await env.DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND course=? AND status='active' AND end_at>?").bind(st.id, key, iso).first()); } catch (e) { ok = false; }
+      if (!ok && !anySub && freeOn2) {
+        if (slug === 'muhaky warky2') return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
+        const tf = slug === 'muhaky warky1' ? null : async (html, etag) => { try { const o = await freePage(html, slug, fN2, etag); return o.tests ? o.html.replace('</head>', '<script>window.__BWFT=' + o.tests + '</script></head>') : o.html; } catch (e) { return '<!doctype html><meta charset="utf-8"><p style="font-family:sans-serif;text-align:center;margin:40px">تعذّر تحميل الصفحة. <a href="/">الرئيسية</a></p>'; } };
+        head += '<script>document.documentElement.classList.add("bw-acct")</script>' + `<script>window.__BWF=${safeJson({ n: fN2, why: 'acct', acct: 1, c: slug, wa: contact })}</script><script src="/bw-free.js"></script>`;
+        return serve(tail, null, tf);
+      }
       if (!ok) return new Response(null, { status: 302, headers: { location: '/account.html?tab=exams&need=' + encodeURIComponent(key) } });
     }
     head += '<script>document.documentElement.classList.add("bw-acct")</script>';
-    return serve(ui({}) + '<script src="/bw-tracker.js"></script><script src="/bw-sync.js"></script>');
+    if (!GATED2 && !anySub && freeOn2) head += `<script>window.__BWF=${safeJson({ n: fN2, why: '', acct: 1, c: slug, wa: contact })}</script><script src="/bw-free.js"></script>`;
+    return serve(tail);
   }
   if (S.require_login === '1' && !valid) {
     // الصفحة الرئيسية وصفحات التعريف (تحديد المستوى، تقدمي، قائمة الورقي…) مفتوحة دائمًا لأنها واجهة المنصة ودعايتها.
