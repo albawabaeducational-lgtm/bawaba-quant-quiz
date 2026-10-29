@@ -70,21 +70,21 @@
   var days = function (n) { return n === 1 ? 'يوم واحد' : n === 2 ? 'يومان' : AR(n) + (n <= 10 ? ' أيام' : ' يومًا'); };
   function post(u, b) { return fetch(u, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return [r.ok, d]; }); }); }
   function go(u) { location.href = u; }
-  function nextUrl() { var n = Q.get('next') || ''; return n.charAt(0) === '/' && n.charAt(1) !== '/' ? n : '/account.html?tab=exams'; }
+  function nextUrl() { var n = Q.get('next') || ''; if (Q.get('marketer') === '1') return '/account.html?tab=ref'; return n.charAt(0) === '/' && n.charAt(1) !== '/' ? n : '/account.html?tab=exams'; }
   function load(force) { (window.bwMe ? window.bwMe(force) : fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.json(); })).then(function (me) { ME = me; me.logged ? logged() : guest(); }); }
 
   // ===== زائر: تسجيل الدخول / إنشاء حساب =====
   function guest() {
-    var su = tab === 'signup';
-    acc.innerHTML = '<div class="auth"><div class="card"><h1>' + (su ? 'إنشاء حساب جديد' : 'تسجيل الدخول') + '</h1><p class="m" style="margin-bottom:16px">' + (su ? 'أنشئ حسابك في دقيقة، ثم اطلب الاشتراك في القسم الذي تريده.' : 'ادخل بجوالك أو بريدك وكلمة المرور.') + '</p>'
+    var su = tab === 'signup', mk = Q.get('marketer') === '1';
+    acc.innerHTML = '<div class="auth"><div class="card"><h1>' + (su ? (mk ? 'سجّل كمسوّق (سفير البوابة)' : 'إنشاء حساب جديد') : 'تسجيل الدخول') + '</h1><p class="m" style="margin-bottom:16px">' + (su ? (mk ? 'احصل على رابطك الخاص، وشاركه، واكسب عمولة عن كل طالب يشترك من خلاله.' : 'أنشئ حسابك في دقيقة، ثم اطلب الاشتراك في القسم الذي تريده.') : 'ادخل بجوالك أو بريدك وكلمة المرور.') + '</p>'
       + '<div class="tabs"><button type="button" data-t="login" class="' + (su ? '' : 'on') + '">تسجيل الدخول</button><button type="button" data-t="signup" class="' + (su ? 'on' : '') + '">إنشاء حساب</button></div>'
       + (su ? '<form id="fs"><label class="f">الاسم الكامل<input name="name" autocomplete="name" required maxlength="80"></label><label class="f">رقم الجوال<input name="phone" type="tel" inputmode="tel" dir="ltr" autocomplete="tel" required placeholder="05xxxxxxxx"></label><label class="f">البريد الإلكتروني<input name="email" type="email" dir="ltr" autocomplete="email" required></label><label class="f">كلمة المرور<input name="password" type="password" autocomplete="new-password" required minlength="6" placeholder="٦ أحرف على الأقل"></label><button class="btn gold block" type="submit">إنشاء الحساب</button><p class="msg" id="em"></p></form>'
         : '<form id="fl"><label class="f">الجوال أو البريد الإلكتروني<input name="id" dir="ltr" autocomplete="username" required></label><label class="f">كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="btn block" type="submit">دخول</button><p class="msg" id="em"></p></form>')
       + '</div><p class="alt">عندك كود من المنصة أو حساب على منصة الدورات؟ <a href="/login' + (Q.get('next') ? '?next=' + encodeURIComponent(Q.get('next')) : '') + '">ادخل من هنا</a></p></div>';
-    acc.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; history.replaceState(null, '', '?tab=' + tab + (Q.get('next') ? '&next=' + encodeURIComponent(Q.get('next')) : '')); guest(); }; });
+    acc.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; history.replaceState(null, '', '?tab=' + tab + (Q.get('next') ? '&next=' + encodeURIComponent(Q.get('next')) : '') + (Q.get('marketer') ? '&marketer=1' : '')); guest(); }; });
     var f = acc.querySelector('form'), em = document.getElementById('em');
     f.onsubmit = function (e) {
-      e.preventDefault(); var b = f.querySelector('button'), d = {}; new FormData(f).forEach(function (v, k) { d[k] = v; });
+      e.preventDefault(); var b = f.querySelector('button'), d = {}; new FormData(f).forEach(function (v, k) { d[k] = v; }); if (su && mk) d.marketer = 1;
       b.disabled = true; em.className = 'msg'; em.textContent = 'لحظة…';
       post(su ? '/api/account/signup' : '/api/account/login', d).then(function (x) {
         if (x[0]) { if (window.bwMeClear) window.bwMeClear(); em.className = 'msg ok'; em.textContent = su ? 'تم إنشاء حسابك ✓' : 'تم الدخول ✓'; go(nextUrl()); return; }
@@ -130,7 +130,26 @@
       + '<div class="card"><h2>العدّاد</h2><label class="tog"><input type="checkbox" id="sc"' + (ME.showCounter ? ' checked' : '') + '> إظهار عدّاد أيام الاشتراك على أيقونة الحساب</label><p class="m" style="margin-top:6px">تنبيه الأيام الثلاثة الأخيرة يظهر مرة يوميًا حتى لو أخفيت العدّاد.</p></div>'
       + '<div class="card"><button type="button" class="btn ghost" data-out>⎋ تسجيل الخروج</button></div>';
   }
-  function ref() { return '<div class="card"><h2>🤝 سفيري</h2><p class="m">قريبًا: رابط إحالة خاص بك تشاركه مع أصدقائك، وتحصل على عمولة عن كل من يشترك من خلاله.</p></div>'; }
+  function ref() {
+    if (!ME.account) return '<div class="card"><h2>🤝 سفيري</h2><p class="m">رابط الإحالة متاح لأصحاب الحسابات. <a href="/account.html?tab=signup&marketer=1">أنشئ حسابًا</a>.</p></div>';
+    setTimeout(loadRef, 0); return '<div id="refBox"><div class="card"><p class="m">جارٍ التحميل…</p></div></div>';
+  }
+  var SAR = function (x) { return AR((Math.round(x * 100) / 100).toLocaleString('en-US')) + ' ريال'; };
+  var CST = { pending: ['معلّقة', '#8a5d00', '#fff1d6'], due: ['مستحقة', '#17633f', '#e1f4ea'], paid: ['مدفوعة', '#1b3a5c', '#e7eef6'], cancelled: ['ملغاة', '#b4321f', '#fbe6e2'] };
+  function loadRef() {
+    fetch('/api/account/ref', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+      var box = document.getElementById('refBox'); if (!box) return;
+      if (d.error) { box.innerHTML = '<div class="card"><p class="m">' + esc(d.error) + '</p></div>'; return; }
+      var subd = d.registered.filter(function (r) { return r.subscribed; }), msg = 'منصة البوابة التعليمية لاختبارات القدرات 👇\n' + d.link;
+      var h = '<div class="card"><h2>🔗 رابطك الخاص</h2><p class="m" style="margin-bottom:10px">شاركه مع أصدقائك. لا يحتاجون كتابة أي كود؛ يكفي أن يفتحوا الرابط وينشئوا حسابهم. تُحتسب عمولتك (' + AR(d.rate) + '٪) عندما يدفع الطالب ويشترك في أول قسم.</p>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="rl" value="' + esc(d.link) + '" dir="ltr" readonly style="flex:1;min-width:200px"><button type="button" class="btn" id="cp">نسخ الرابط</button><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(msg) + '">مشاركة عبر واتساب</a></div><p class="msg" id="cpm"></p></div>'
+        + '<div class="grid2" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">' + [['سجّلوا من رابطك', AR(d.registered.length)], ['اشتركوا فعلًا', AR(subd.length)], ['عمولات مستحقة', SAR(d.totals.due)], ['معلّقة (فترة الانتظار)', SAR(d.totals.pending)], ['صُرفت لك', SAR(d.totals.paid)]].map(function (k) { return '<div class="card" style="margin:0;text-align:center;padding:14px"><div class="m">' + k[0] + '</div><b style="font:700 22px Readex Pro,sans-serif;color:var(--navy)">' + k[1] + '</b></div>'; }).join('') + '</div>'
+        + '<div class="card"><h2>من سجّلوا من خلالك</h2>' + (d.registered.length ? '<div class="subs">' + d.registered.map(function (r) { return '<div class="sub' + (r.subscribed ? ' s-active' : '') + '"><div><h3 style="font-size:15.5px">' + esc(r.name) + '</h3><div class="d">سجّل ' + dt(r.date) + (r.courses.length ? ' · ' + esc(r.courses.join('، ')) : '') + '</div></div><span class="left">' + (r.subscribed ? 'مشترك' : 'لم يشترك بعد') + '</span></div>'; }).join('') + '</div>' : '<p class="m">لم يسجّل أحد من رابطك بعد. شاركه الآن!</p>') + '</div>'
+        + '<div class="card"><h2>عمولاتي</h2>' + (d.commissions.length ? '<div class="subs">' + d.commissions.map(function (c) { var s2 = CST[c.state] || [c.state, '#333', '#eee']; return '<div class="sub"><div><h3 style="font-size:15.5px">' + esc(c.name) + (c.title ? ' · ' + esc(c.title) : '') + '</h3><div class="d">' + AR(c.rate) + '٪ من ' + SAR(c.base) + ' · ' + dt(c.date) + (c.paid_at ? ' · صُرفت ' + dt(c.paid_at) : '') + '</div></div><span class="left" style="color:' + s2[1] + ';background:' + s2[2] + '">' + SAR(c.amount) + ' · ' + s2[0] + '</span></div>'; }).join('') + '</div><p class="m" style="margin-top:8px">العمولة «معلّقة» حتى تمر فترة الانتظار بعد الدفع، ثم تصبح «مستحقة»، وتُصرف لك يدويًا من الإدارة.</p>' : '<p class="m">لا توجد عمولات بعد.</p>') + '</div>';
+      box.innerHTML = h;
+      document.getElementById('cp').onclick = function () { var i = document.getElementById('rl'), m = document.getElementById('cpm'); var ok = function () { m.className = 'msg ok'; m.textContent = 'تم نسخ الرابط ✓'; }; if (navigator.clipboard) navigator.clipboard.writeText(i.value).then(ok, function () { i.select(); document.execCommand('copy'); ok(); }); else { i.select(); document.execCommand('copy'); ok(); } };
+    });
+  }
   function bind(P) {
     P.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { var box = b.closest('.sub').querySelector('.rn'); box.classList.toggle('hidden'); }; });
     P.querySelectorAll('[data-send]').forEach(function (b) { b.onclick = function () {

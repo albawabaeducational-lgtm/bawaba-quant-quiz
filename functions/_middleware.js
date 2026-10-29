@@ -104,6 +104,18 @@ export async function onRequest({ request, env, next }) {
   const SHORT = { '/kamy': '/aksam%20kamy.html', '/lafzi': '/aksam%20lafzi.html', '/mock': '/muhaky%20mohawsab.html', '/mohawsab': '/muhaky%20mohawsab.html', '/tasis': '/tasis%20lafzi.html.html', '/paper': '/waraqi.html', '/account': '/account.html', '/signup': '/account.html?tab=signup', '/my': '/account.html?tab=exams', '/aktar': '/aktar%20kamy.html', '/level': '/placement.html' };
   const sp = SHORT[p.replace(/\/+$/, '').toLowerCase()];
   if (sp) return new Response(null, { status: 302, headers: { location: sp + url.search + url.hash } });
+  // رابط الإحالة: /r/CODE يحفظ المُحيل ٣٠ يومًا (أول رابط يُفتح هو المعتمد) ثم يفتح صفحة إنشاء الحساب
+  const rm = p.match(/^\/r\/([a-z0-9]{4,12})\/?$/i);
+  if (rm && env.DB) {
+    let to = '/account.html?tab=signup&ref=1', ck2 = '';
+    try {
+      const a = await env.DB.prepare('SELECT student_id FROM accounts WHERE ref_code=?').bind(rm[1].toLowerCase()).first();
+      if (a && !cookie(request, 'bw_ref')) ck2 = `bw_ref=${a.student_id}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`;
+      if (!a) to = '/';
+    } catch (e) { to = '/'; }
+    const h = new Headers({ location: to }); if (ck2) h.append('set-cookie', ck2);
+    return new Response(null, { status: 302, headers: h });
+  }
   const isPage = request.method === 'GET' && (p === '/' || !/\.[a-z0-9]+$/i.test(p) || /\.html$/i.test(p));
   if (!env.DB || !isPage || /^\/(login|admin|api\/)/.test(p)) return next();
   const now = Date.now(), iso = new Date(now).toISOString();

@@ -225,10 +225,16 @@ const ensureAcctSchema = async DB => {
     DB.prepare("CREATE TABLE IF NOT EXISTS renewal_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT NOT NULL, days INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, handled_by TEXT, handled_at TEXT, note TEXT)"),
     DB.prepare('CREATE INDEX IF NOT EXISTS renew_status ON renewal_requests(status, created_at)'),
     DB.prepare('CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT, amount REAL NOT NULL DEFAULT 0, note TEXT, created_by TEXT, created_at TEXT NOT NULL)'),
-    DB.prepare('CREATE INDEX IF NOT EXISTS payments_student ON payments(student_id)')
+    DB.prepare('CREATE INDEX IF NOT EXISTS payments_student ON payments(student_id)'),
+    DB.prepare("CREATE TABLE IF NOT EXISTS commissions (id INTEGER PRIMARY KEY AUTOINCREMENT, referrer_id INTEGER NOT NULL, referred_id INTEGER NOT NULL, payment_id INTEGER, course TEXT, base_amount REAL NOT NULL DEFAULT 0, rate REAL NOT NULL DEFAULT 0, amount REAL NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, available_at TEXT, paid_at TEXT, paid_by TEXT, note TEXT)"),
+    DB.prepare('CREATE INDEX IF NOT EXISTS comm_ref ON commissions(referrer_id, status)')
   ]);
+  // أعمدة أُضيفت لاحقًا (تُتجاهل إن كانت موجودة)
+  for (const c of ['marketer INTEGER NOT NULL DEFAULT 0', 'ref_rate REAL']) { try { await DB.prepare('ALTER TABLE accounts ADD COLUMN ' + c).run(); } catch (e) { } }
   acctReady = true;
 };
+const refCodeNew = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (const x of crypto.getRandomValues(new Uint8Array(7))) s += a[x % a.length]; return s; };
+const commState = (c, nowIso) => c.status === 'pending' && c.available_at && c.available_at <= nowIso ? 'due' : c.status;
 const emailOk = e => /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i.test(e);
 const subRow = (r, nowIso) => { const end = new Date(r.end_at).getTime(), left = Math.ceil((end - Date.parse(nowIso)) / 864e5); return { id: r.id, course: r.course, title: SUB_TITLE[r.course] || r.course, start: r.start_at, end: r.end_at, days: Math.max(0, left), state: r.status !== 'active' ? 'cancelled' : r.end_at <= nowIso ? 'expired' : left <= 3 ? 'soon' : 'active' }; };
 const SKILL_BANKS = { 'aksam kamy': 'kamy', 'aktar kamy': 'kamy', 'aksam lafzi': 'lafzi' };
@@ -586,8 +592,10 @@ export async function onRequest({ request, env, params }) {
     let c = '', r = null;
     for (let i = 0; i < 5 && !r; i++) { c = 'A' + newCode().slice(1); try { r = await DB.prepare("INSERT INTO students (name,code,created_at,kind,max_devices) VALUES (?,?,?,'account',3)").bind(name, c, iso).run(); } catch (e) { r = null; } }
     if (!r) return J({ error: 'تعذّر إنشاء الحساب، حاول مرة أخرى' }, 500);
-    const sid = r.meta.last_row_id, refBy = +ck(request, 'bw_ref') || null;
-    try { await DB.prepare('INSERT INTO accounts (student_id,email,phone,pass_hash,created_at,ref_by) VALUES (?,?,?,?,?,?)').bind(sid, em, ph, await passwordHash(pw), iso, refBy).run(); }
+    const sid = r.meta.last_row_id; let refBy = +ck(request, 'bw_ref') || null;
+    // المُحيل يُسجَّل مرة واحدة عند إنشاء الحساب ولا يتغير بعدها، ويجب أن يكون حسابًا موجودًا
+    if (refBy && !(await DB.prepare('SELECT 1 x FROM accounts WHERE student_id=?').bind(refBy).first())) refBy = null;
+    try { await DB.prepare('INSERT INTO accounts (student_id,email,phone,pass_hash,created_at,ref_by,marketer) VALUES (?,?,?,?,?,?,?)').bind(sid, em, ph, await passwordHash(pw), iso, refBy, b.marketer ? 1 : 0).run(); }
     catch (e) { await DB.prepare('DELETE FROM students WHERE id=?').bind(sid).run(); return J({ error: 'هذا الجوال أو البريد مسجّل من قبل' }, 409); }
     return admit(await DB.prepare('SELECT * FROM students WHERE id=?').bind(sid).first(), c);
   }
@@ -624,6 +632,20 @@ export async function onRequest({ request, env, params }) {
     }
     if (st.length) await DB.batch(st);
     return J({ ok: 1 });
+  }
+  // ===================== سفيري: رابط الإحالة وإحصاءاته وعمولاته =====================
+  if (p === 'account/ref') {
+    const s = await byCode(norm(ck(request, 'bw_code'))); if (!s) return J({ error: 'سجّل دخولك أولًا' }, 401);
+    await ensureAcctSchema(DB);
+    let a = await DB.prepare('SELECT * FROM accounts WHERE student_id=?').bind(s.id).first(); if (!a) return J({ error: 'سفيري متاح لأصحاب الحسابات فقط' }, 400);
+    if (!a.ref_code) { for (let i = 0; i < 5 && !a.ref_code; i++) { const c = refCodeNew(); try { await DB.prepare('UPDATE accounts SET ref_code=? WHERE student_id=? AND ref_code IS NULL').bind(c, s.id).run(); a = await DB.prepare('SELECT * FROM accounts WHERE student_id=?').bind(s.id).first(); } catch (e) { } } }
+    const reg = (await DB.prepare("SELECT s.id,s.name,a.created_at FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_by=? ORDER BY a.created_at DESC").bind(s.id).all()).results || [];
+    const subs = (await DB.prepare("SELECT x.student_id,x.course FROM subscriptions x JOIN accounts a ON a.student_id=x.student_id WHERE a.ref_by=? AND x.status!='cancelled'").bind(s.id).all()).results || [];
+    const com = ((await DB.prepare('SELECT c.*,s.name FROM commissions c JOIN students s ON s.id=c.referred_id WHERE c.referrer_id=? ORDER BY c.created_at DESC').bind(s.id).all()).results || []).map(c => ({ ...c, title: SUB_TITLE[c.course] || '', state: commState(c, iso) }));
+    const tot = { pending: 0, due: 0, paid: 0 }; com.forEach(c => { if (tot[c.state] !== undefined) tot[c.state] += c.amount; });
+    const by = {}; subs.forEach(x => { (by[x.student_id] = by[x.student_id] || new Set()).add(SUB_TITLE[x.course] || x.course); });
+    const rate = a.ref_rate != null ? a.ref_rate : (+(await setting('ref_rate')) || 20);
+    return J({ code: a.ref_code, link: new URL('/r/' + a.ref_code, request.url).toString(), rate, registered: reg.map(r => ({ name: r.name, date: r.created_at, subscribed: !!by[r.id], courses: by[r.id] ? [...by[r.id]] : [] })), totals: tot, commissions: com.map(c => ({ name: c.name, title: c.title, amount: c.amount, base: c.base_amount, rate: c.rate, state: c.state, date: c.created_at, paid_at: c.paid_at })) });
   }
   // طلب تجديد: يصل للأدمن في «الاشتراكات ← طلبات التجديد» ويوافق عليه أو يرفضه (الدفع يتم عبر واتساب)
   if (p === 'account/renew' && m === 'POST') {
@@ -861,6 +883,56 @@ export async function onRequest({ request, env, params }) {
   const deny = (msg = 'ليس لديك صلاحية لهذه العملية') => J({ error: msg }, 403);
   const isSuper = A.role === 'super_admin';
 
+  // ---------- المسوّقون والعمولات ----------
+  if (p.startsWith('admin/ref')) {
+    await ensureAcctSchema(DB);
+    if (!can('students.view')) return deny();
+    const W = m === 'POST'; if (W && !can('students.edit')) return deny();
+    const b = W ? await body() : {};
+    if (p === 'admin/ref/overview') {
+      const defRate = +(await setting('ref_rate')) || 20;
+      const rows = await all("SELECT s.id,s.name,a.phone,a.email,a.ref_code,a.ref_rate,a.marketer,(SELECT COUNT(*) FROM accounts r WHERE r.ref_by=a.student_id) reg,(SELECT COUNT(DISTINCT x.student_id) FROM subscriptions x JOIN accounts r ON r.student_id=x.student_id WHERE r.ref_by=a.student_id AND x.status!='cancelled') subs FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_code IS NOT NULL OR a.marketer=1 OR EXISTS (SELECT 1 FROM accounts r WHERE r.ref_by=a.student_id) ORDER BY reg DESC, s.id DESC LIMIT 300");
+      const com = await all("SELECT c.*,s.name referred FROM commissions c JOIN students s ON s.id=c.referred_id ORDER BY c.created_at DESC LIMIT 1000");
+      const tot = {}; com.forEach(c => { const st2 = commState(c, iso), t = tot[c.referrer_id] || (tot[c.referrer_id] = { pending: 0, due: 0, paid: 0, cancelled: 0 }); t[st2] = (t[st2] || 0) + c.amount; });
+      return J({ defRate, rule: (await setting('ref_rule')) || 'first', wait: (v => v === '' || v == null || isNaN(+v) ? 7 : +v)(await setting('ref_wait_days')), rows: rows.map(r => ({ ...r, rate: r.ref_rate != null ? r.ref_rate : defRate, totals: tot[r.id] || { pending: 0, due: 0, paid: 0, cancelled: 0 } })), commissions: com.map(c => ({ ...c, state: commState(c, iso), title: SUB_TITLE[c.course] || '' })) });
+    }
+    if (p === 'admin/ref/referred') {
+      const id = int(new URL(request.url).searchParams.get('id'));
+      const rows = await all("SELECT s.id,s.name,a.phone,a.created_at,(SELECT GROUP_CONCAT(course) FROM subscriptions x WHERE x.student_id=s.id AND x.status!='cancelled') courses FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_by=? ORDER BY a.created_at DESC", id);
+      return J({ rows: rows.map(r => ({ ...r, courses: String(r.courses || '').split(',').filter(Boolean).map(k => SUB_TITLE[k] || k) })) });
+    }
+    if (p === 'admin/ref/rate' && W) {
+      const id = int(b.student_id), rate = b.rate === '' || b.rate == null ? null : Math.max(0, Math.min(100, +b.rate));
+      await DB.batch([DB.prepare('UPDATE accounts SET ref_rate=? WHERE student_id=?').bind(rate, id), audit(A, 'ref_rate', 'student', id, rate == null ? 'النسبة الافتراضية' : rate + '٪')]);
+      return J({ ok: 1 });
+    }
+    if (p === 'admin/ref/settings' && W) {
+      const st2 = [];
+      if (b.rate !== undefined) st2.push(putSetting('ref_rate', String(Math.max(0, Math.min(100, +b.rate || 0)))));
+      if (b.wait !== undefined) st2.push(putSetting('ref_wait_days', String(Math.max(0, Math.min(90, Math.round(+b.wait || 0))))));
+      if (b.rule === 'first' || b.rule === 'all') st2.push(putSetting('ref_rule', b.rule));
+      if (st2.length) await DB.batch(st2.concat(audit(A, 'ref_settings', 'settings', null, JSON.stringify(b).slice(0, 200))));
+      return J({ ok: 1 });
+    }
+    if (p === 'admin/ref/pay' && W) {
+      // «تم الدفع»: تنتقل العمولات المستحقة للمسوّق (أو عمولة واحدة) إلى «مدفوعة» مع التاريخ وملاحظة اختيارية
+      const note = String(b.note || '').slice(0, 200) || null;
+      let rows = b.id ? await all('SELECT * FROM commissions WHERE id=?', int(b.id)) : await all("SELECT * FROM commissions WHERE referrer_id=? AND status='pending'", int(b.referrer_id));
+      rows = rows.filter(c => commState(c, iso) === 'due' || (b.id && b.force && c.status === 'pending'));
+      if (!rows.length) return J({ error: 'لا توجد عمولات مستحقة للدفع' }, 400);
+      const total = rows.reduce((x, c) => x + c.amount, 0);
+      await DB.batch(rows.map(c => DB.prepare("UPDATE commissions SET status='paid',paid_at=?,paid_by=?,note=? WHERE id=?").bind(iso, A.name, note, c.id)).concat(audit(A, 'ref_paid', 'student', rows[0].referrer_id, total + ' ريال (' + rows.length + ' عمولة)')));
+      return J({ ok: 1, total, n: rows.length });
+    }
+    if (p === 'admin/ref/cancel' && W) {
+      const c = await one('SELECT * FROM commissions WHERE id=?', int(b.id)); if (!c) return J({ error: 'غير موجودة' }, 404);
+      if (c.status === 'paid') return J({ error: 'عمولة مدفوعة بالفعل' }, 400);
+      await DB.batch([DB.prepare("UPDATE commissions SET status='cancelled',note=? WHERE id=?").bind(String(b.note || 'استرداد المبلغ').slice(0, 200), c.id), audit(A, 'ref_cancel', 'student', c.referrer_id, c.amount + ' ريال')]);
+      return J({ ok: 1 });
+    }
+    return J({ error: 'not found' }, 404);
+  }
+
   // ---------- الاشتراكات لكل قسم (حسابات الطلاب) ----------
   if (p.startsWith('admin/subs')) {
     await ensureAcctSchema(DB);
@@ -925,7 +997,19 @@ export async function onRequest({ request, env, params }) {
       const amt = Math.max(0, +b.amount || 0), c = SUB_KEYS.includes(b.course) ? b.course : null;
       const r = await DB.prepare('INSERT INTO payments (student_id,course,amount,note,created_by,created_at) VALUES (?,?,?,?,?,?)').bind(sid, c, amt, String(b.note || '').slice(0, 200) || null, A.name, iso).run();
       await audit(A, 'payment', 'student', sid, (c ? SUB_TITLE[c] + ' · ' : '') + amt + ' ريال').run();
-      return J({ ok: 1, id: r.meta.last_row_id });
+      // عمولة المسوّق: تُحتسب فقط بالدفع الفعلي، وعلى أول اشتراك مدفوع فقط (قابل للتغيير من الإعدادات: ref_rule = all)
+      let commission = null;
+      const acc = await one('SELECT ref_by FROM accounts WHERE student_id=?', sid);
+      if (acc && acc.ref_by && acc.ref_by !== sid && amt > 0) {
+        const rule = (await setting('ref_rule')) || 'first', prev = await one("SELECT COUNT(*) n FROM commissions WHERE referred_id=? AND status!='cancelled'", sid);
+        if (rule === 'all' || !prev.n) {
+          const ra = await one('SELECT ref_rate FROM accounts WHERE student_id=?', acc.ref_by), rate = ra && ra.ref_rate != null ? ra.ref_rate : (+(await setting('ref_rate')) || 20), wv = await setting('ref_wait_days'), wait = wv === '' || wv == null || isNaN(+wv) ? 7 : Math.max(0, +wv);
+          const amount = Math.round(amt * rate) / 100, avail = new Date(now + wait * 864e5).toISOString();
+          const cr = await DB.prepare('INSERT INTO commissions (referrer_id,referred_id,payment_id,course,base_amount,rate,amount,status,created_at,available_at) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(acc.ref_by, sid, r.meta.last_row_id, c, amt, rate, amount, 'pending', iso, avail).run();
+          commission = { id: cr.meta.last_row_id, amount };
+        }
+      }
+      return J({ ok: 1, id: r.meta.last_row_id, commission });
     }
     if (p === 'admin/subs/account' && W) {
       // تعديل بيانات حساب الطالب أو إعادة تعيين كلمة المرور من الأدمن
