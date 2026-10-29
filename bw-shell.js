@@ -283,3 +283,14 @@ window.__bwSideH = function (b) {
 })();
 // أيقونة الشخص وقائمة الحساب في شريط كل الاختبارات
 (function () { if (!document.getElementById('bw-shell') || window.__bwAcct) return; var s = document.createElement('script'); s.src = '/bw-account.js'; s.defer = true; document.head.appendChild(s); })();
+
+// إخفاء شريط «وضع المعلم» وزر التحرير العائم أثناء ظهور سؤال، في كل الاختبارات (كي لا يأخذ مساحة فيظهر تمرير)
+(function () {
+  if (!document.getElementById('bw-shell')) return;
+  var st = document.createElement('style'); st.textContent = 'body.bw-inq #bwe-bar,body.bw-inq #bwe-fab{display:none!important}'; document.head.appendChild(st);
+  var on = null, pend = 0;
+  function chk() { pend = 0; var q = [].some.call(document.querySelectorAll('.opt'), function (o) { return o.offsetParent; }); if (q === on) return; on = q; document.body.classList.toggle('bw-inq', q); try { dispatchEvent(new Event('resize')); } catch (e) { } }
+  function later() { if (pend) return; pend = 1; requestAnimationFrame(chk); }
+  new MutationObserver(later).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
+  later();
+})();
