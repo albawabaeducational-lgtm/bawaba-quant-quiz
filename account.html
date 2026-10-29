@@ -71,7 +71,7 @@
   function post(u, b) { return fetch(u, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return [r.ok, d]; }); }); }
   function go(u) { location.href = u; }
   function nextUrl() { var n = Q.get('next') || ''; if (Q.get('marketer') === '1') return '/account.html?tab=ref'; return n.charAt(0) === '/' && n.charAt(1) !== '/' ? n : '/account.html?tab=exams'; }
-  function load(force) { (window.bwMe ? window.bwMe(force) : fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.json(); })).then(function (me) { ME = me; me.logged ? logged() : guest(); }); }
+  function load(force) { (window.bwMe ? window.bwMe(force) : fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.json(); })).then(function (me) { ME = me; (me.logged && !(!me.account && (tab === 'signup' || tab === 'login'))) ? logged() : guest(); }); }
 
   // ===== زائر: تسجيل الدخول / إنشاء حساب =====
   function guest() {
@@ -80,7 +80,7 @@
       + '<div class="tabs"><button type="button" data-t="login" class="' + (su ? '' : 'on') + '">تسجيل الدخول</button><button type="button" data-t="signup" class="' + (su ? 'on' : '') + '">إنشاء حساب</button></div>'
       + (su ? '<form id="fs"><label class="f">الاسم الكامل<input name="name" autocomplete="name" required maxlength="80"></label><label class="f">رقم الجوال<input name="phone" type="tel" inputmode="tel" dir="ltr" autocomplete="tel" required placeholder="05xxxxxxxx"></label><label class="f">البريد الإلكتروني<input name="email" type="email" dir="ltr" autocomplete="email" required></label><label class="f">كلمة المرور<input name="password" type="password" autocomplete="new-password" required minlength="6" placeholder="٦ أحرف على الأقل"></label><button class="btn gold block" type="submit">إنشاء الحساب</button><p class="msg" id="em"></p></form>'
         : '<form id="fl"><label class="f">الجوال أو البريد الإلكتروني<input name="id" dir="ltr" autocomplete="username" required></label><label class="f">كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="btn block" type="submit">دخول</button><p class="msg" id="em"></p></form>')
-      + '</div><p class="alt">عندك كود من المنصة أو حساب على منصة الدورات؟ <a href="/login' + (Q.get('next') ? '?next=' + encodeURIComponent(Q.get('next')) : '') + '">ادخل من هنا</a></p></div>';
+      + '</div>' + (ME && ME.logged && !ME.account ? '<p class="alt">أنت داخل الآن بكود «' + esc(ME.name) + '». بعد ' + (su ? 'إنشاء الحساب' : 'الدخول') + ' ستُستخدم بيانات حسابك بدلًا من الكود. <a href="/account.html?tab=exams">رجوع</a></p>' : '') + '<p class="alt">عندك كود من المنصة أو حساب على منصة الدورات؟ <a href="/login' + (Q.get('next') ? '?next=' + encodeURIComponent(Q.get('next')) : '') + '">ادخل من هنا</a></p></div>';
     acc.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; history.replaceState(null, '', '?tab=' + tab + (Q.get('next') ? '&next=' + encodeURIComponent(Q.get('next')) : '') + (Q.get('marketer') ? '&marketer=1' : '')); guest(); }; });
     var f = acc.querySelector('form'), em = document.getElementById('em');
     f.onsubmit = function (e) {
@@ -107,7 +107,7 @@
   function waLink(course, d) { var t = 'السلام عليكم ورحمة الله وبركاته\nأرغب في ' + (d.renew ? 'تجديد' : 'الاشتراك في') + ' «' + course + '» لمدة ' + days(d.days) + '.\nالاسم: ' + ME.name + (ME.phone ? '\nالجوال: ' + ME.phone : '') + (ME.email ? '\nالبريد: ' + ME.email : '') + '\nأرجو إرسال بيانات الدفع.'; return 'https://wa.me/' + String(ME.contact || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(t); }
   function rnBox(key, renew) { return '<div class="rn hidden" data-rn="' + esc(key) + '" data-renew="' + (renew ? 1 : 0) + '"><span>المدة:</span><select><option value="30">شهر</option><option value="60">شهرين</option><option value="90">٣ أشهر</option><option value="180">٦ أشهر</option></select><button type="button" class="btn wa sm" data-send>إرسال الطلب ومتابعة الدفع عبر واتساب</button></div>'; }
   function exams() {
-    if (!ME.account) return '<div class="card"><h2>اختباراتك</h2><p class="m" style="margin-bottom:12px">دخلت بكود من المنصة، وكل الاختبارات المتاحة في كودك تظهر لك في الصفحة الرئيسية.</p><a class="btn" href="/">الصفحة الرئيسية</a></div>';
+    if (!ME.account) return '<div class="card"><h2>اختباراتك</h2><p class="m" style="margin-bottom:12px">دخلت بكود من المنصة، وكل الاختبارات المتاحة في كودك تظهر لك في الصفحة الرئيسية. لمتابعة اشتراكاتك وتجديدها أنشئ حسابًا.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/">الصفحة الرئيسية</a><a class="btn gold" href="/account.html?tab=signup">✨ إنشاء حساب</a><a class="btn ghost" href="/account.html?tab=login">تسجيل الدخول بحساب</a></div></div>';
     var subs = ME.subs || [], pend = {}; (ME.pending || []).forEach(function (p) { pend[p.course] = p; });
     var need = Q.get('need'), have = {}; subs.forEach(function (s) { if (s.state === 'active' || s.state === 'soon') have[s.course] = 1; });
     var h = '';
@@ -131,7 +131,7 @@
       + '<div class="card"><button type="button" class="btn ghost" data-out>⎋ تسجيل الخروج</button></div>';
   }
   function ref() {
-    if (!ME.account) return '<div class="card"><h2>🤝 سفيري</h2><p class="m">رابط الإحالة متاح لأصحاب الحسابات. <a href="/account.html?tab=signup&marketer=1">أنشئ حسابًا</a>.</p></div>';
+    if (!ME.account) return '<div class="card"><h2>🤝 سفيري</h2><p class="m" style="margin-bottom:12px">رابط الإحالة الخاص بك يظهر هنا بعد إنشاء حساب (دقيقة واحدة). أنت داخل الآن بكود، والكود لا يملك رابط إحالة.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn gold" href="/account.html?tab=signup&marketer=1">✨ أنشئ حسابًا واحصل على رابطك</a><a class="btn ghost" href="/account.html?tab=login&next=%2Faccount.html%3Ftab%3Dref">لديّ حساب: تسجيل الدخول</a></div></div>';
     setTimeout(loadRef, 0); return '<div id="refBox"><div class="card"><p class="m">جارٍ التحميل…</p></div></div>';
   }
   var SAR = function (x) { return AR((Math.round(x * 100) / 100).toLocaleString('en-US')) + ' ريال'; };
