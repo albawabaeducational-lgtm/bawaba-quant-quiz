@@ -69,9 +69,9 @@
     .plan b { display: block; color: var(--bw-navy); font-size: 16.5px; }
     .plan p { margin: 2px 0 10px; color: #5a6b80; font-size: 14.5px; }
     .rv { border-top: 1px solid #eef3f8; padding: 14px 0; }
-    .rv .stem { font-size: 16px; margin-bottom: 8px; }
-    .rv .stem img { max-width: 420px; margin: 0; }
-    .rv .ans { font-size: 14.5px; }
+    .rv .stem { font-size: clamp(21px, 1.2vw + 16px, 26px); font-weight: 800; margin-bottom: 8px; }
+    .rv .stem img { width: 100%; max-width: 100%; height: auto; margin: 0; cursor: zoom-in; }
+    .rv .ans { font-size: 17px; font-weight: 600; }
     .rv .ans .x { color: #c2412f; font-weight: 600; } .rv .ans .ok { color: #1d8a58; font-weight: 600; }
     .note { color: #5a6b80; font-size: 13.5px; text-align: center; }
     .prev { background: var(--bw-gold-soft); color: #6b4a00; border-radius: 14px; padding: 10px 14px; font-weight: 600; margin-bottom: 18px; font-size: 14.5px; }
@@ -254,6 +254,9 @@
   }
 })();
 </script>
-<script src="/bw-shell.js"></script>
+<script src="/bw-shell.js">
+// تكبير صورة السؤال في المراجعة بالضغط عليها
+document.addEventListener('click', function (e) { var im = e.target.closest && e.target.closest('.rv .stem img'); if (!im) return; var d = document.createElement('div'); d.style.cssText = 'position:fixed;inset:0;z-index:2147483400;background:#0c2440ee;display:grid;place-items:center;padding:16px;cursor:zoom-out'; d.innerHTML = '<img src="' + im.src + '" alt="" style="max-width:100%;max-height:92vh;border-radius:12px;background:#fff">'; d.onclick = function () { d.remove(); }; document.body.appendChild(d); });
+</script>
 </body>
 </html>

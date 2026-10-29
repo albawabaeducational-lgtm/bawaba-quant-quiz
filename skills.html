@@ -72,6 +72,21 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
 #app:has(> .qhead) > .card .qimg img { max-height: 100%; width: auto; max-width: 100%; margin: auto; object-fit: contain; }
 #app:has(> .qhead) > .card .opts, #app:has(> .qhead) > .card .qnav, #app:has(> .qhead) > .card .fb { flex: none; }
 #app:has(> .qhead) > .row { margin-top: 4px !important; }
+
+.btn.red { background: #fbe6e2; color: #b4321f; } .btn.sm { padding: 6px 14px; font-size: 13.5px; }
+.qhead { align-items: center; } .qhead .sk-a { color: #42566c; } .qhead .sk-tm { background: var(--bw-gold); color: var(--bw-night); border-radius: 10px; padding: 2px 12px; font-weight: 700; }
+.btn.flg { background: #fff6e0; box-shadow: inset 0 0 0 1.5px #e3a92b; color: #8a5d00; }
+.skmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 5px; margin-top: 8px; max-height: 76px; overflow: auto; flex: none; }
+.skmap button { height: 30px; border-radius: 8px; border: 1.5px solid var(--bw-line); background: #fff; font: 600 12.5px "IBM Plex Sans Arabic", sans-serif; color: #5a6b80; cursor: pointer; position: relative; padding: 0; }
+.skmap button.a { background: #eaf2f9; border-color: #c3d6e8; color: var(--bw-navy); }
+.skmap button.ok { background: #e1f4ea; border-color: #9fd6b9; color: #17633f; } .skmap button.no { background: #fbe6e2; border-color: #f0b9ae; color: #b4321f; }
+.skmap button.c { box-shadow: 0 0 0 2px var(--bw-navy); } .skmap button.f::after { content: ""; position: absolute; top: 3px; left: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--bw-gold); }
+.skcf { position: fixed; inset: 0; z-index: 2147483300; background: #0c244088; display: grid; place-items: center; padding: 16px; }
+.skcf-b { background: #fff; border-radius: 18px; padding: 20px; max-width: 420px; width: 100%; } .skcf-b h3 { margin: 0 0 8px; color: var(--bw-navy); }
+.wr { display: grid; grid-template-columns: 34px 1fr; gap: 2px 10px; width: 100%; text-align: start; background: #fff; border: 0; border-top: 1px solid #eef3f8; padding: 10px 4px; cursor: pointer; font: inherit; color: inherit; }
+.wr:hover { background: #f6f9fc; } .wr b { grid-row: span 2; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: #fbe6e2; color: #b4321f; }
+.wr small { color: #5a6b80; } .wr em { font-style: normal; color: #17633f; font-weight: 700; }
+#app:has(> .qhead) > .skmap { flex: none; }
 </style>
 </head>
 <body class="bwt-hub">
@@ -128,36 +143,67 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
       app.innerHTML = h; window.scrollTo(0, 0);
     }).catch(function (e) { app.innerHTML = '<div class="card"><p class="m">' + esc(e.message) + '</p><button class="btn" data-a="back">رجوع</button></div>'; });
   }
-  function go() {
-    var items = cur.items.slice(); if (opt.order === 'rand') shuffle(items); if (opt.n) items = items.slice(0, opt.n);
-    S = { items: items, pos: 0, ans: {}, show: {}, t0: Date.now(), total: opt.mode === 'test' ? items.length * 60 : 0 };
+  function go(only) {
+    var items = only || cur.items.slice(); if (!only) { if (opt.order === 'rand') shuffle(items); if (opt.n) items = items.slice(0, opt.n); }
+    S = { items: items, pos: 0, ans: {}, show: {}, flag: {}, t0: Date.now(), total: opt.mode === 'test' ? items.length * 60 : 0, rev: null };
     clearInterval(window.__skT); if (S.total) window.__skT = setInterval(tick, 1000);
     document.body.classList.toggle('present', opt.mode === 'present'); draw();
   }
   function fmt(x) { x = Math.max(0, Math.round(x)); return AR(Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0')); }
-  function tick() { if (!S || !S.total) return; var l = S.total - (Date.now() - S.t0) / 1000, e = document.getElementById('sktm'); if (e) e.textContent = '⏱ ' + fmt(l); if (l <= 0) { clearInterval(window.__skT); end(true); } }
+  function tick() { if (!S || !S.total || S.done) return; var l = S.total - (Date.now() - S.t0) / 1000, e = document.getElementById('sktm'); if (e) e.textContent = '⏱ ' + fmt(l); if (l <= 0) { clearInterval(window.__skT); end(true); } }
+  // جسم السؤال: نفس المكوّن في الاختبار والمراجعة (نفس الحجم)
+  function qBody(it, i) {
+    return it.img ? '<div class="qimg"><img src="' + esc(it.img) + '" alt="السؤال ' + AR(i + 1) + '" data-z="' + esc(it.img) + '"></div>'
+      : '<div class="tq"><span class="ty">' + esc(TYN[it.t] || '') + '</span>' + (it.p ? '<div class="psg">' + esc(it.p) + '</div>' : '') + '<div class="stem">' + esc(it.s) + '</div></div>';
+  }
+  function optsHtml(it, a, shown, lock) {
+    var opts = it.img ? L : (it.o || []);
+    return '<div class="opts' + (it.img ? '' : ' txt') + '">' + opts.map(function (o, i) { var c = 'opt'; if (shown) { if (i === it.c) c += ' ok'; else if (i === a) c += ' no'; } else if (a === i) c += ' on'; return '<button type="button" class="' + c + '" data-ans="' + i + '"' + (lock ? ' disabled' : '') + '>' + (it.img ? o : L[i] + ') ' + esc(o)) + '</button>'; }).join('') + '</div>';
+  }
+  function mapHtml() {
+    var tr = opt.mode !== 'test';
+    return '<div class="skmap" aria-label="خريطة الأسئلة">' + S.items.map(function (it, i) { var a = S.ans[i], c = ''; if (a !== undefined) c = tr ? (a === it.c ? 'ok' : 'no') : 'a'; if (S.flag[i]) c += ' f'; if (i === S.pos) c += ' c'; return '<button type="button" class="' + c + '" data-g="' + i + '">' + AR(i + 1) + '</button>'; }).join('') + '</div>';
+  }
   function draw() {
     var it = S.items[S.pos], n = S.items.length, a = S.ans[S.pos], shown = opt.mode === 'train' ? a !== undefined : opt.mode === 'test' ? false : !!S.show[S.pos], done = Object.keys(S.ans).length;
-    var body = it.img ? '<div class="qimg"><img src="' + esc(it.img) + '" alt="السؤال ' + AR(S.pos + 1) + '" data-z="' + esc(it.img) + '"></div>'
-      : '<div class="tq"><span class="ty">' + esc(TYN[it.t] || '') + '</span>' + (it.p ? '<div class="psg">' + esc(it.p) + '</div>' : '') + '<div class="stem">' + esc(it.s) + '</div></div>';
-    var opts = it.img ? L : (it.o || []);
-    var h = '<div class="qhead"><span>' + esc(cur.skill.name) + ' · السؤال ' + AR(S.pos + 1) + ' من ' + AR(n) + '</span>' + (S.total ? '<span id="sktm" style="background:var(--bw-gold);color:var(--bw-night);border-radius:10px;padding:2px 12px;font-weight:700">⏱ ' + fmt(S.total - (Date.now() - S.t0) / 1000) + '</span>' : '<span>' + esc(it.bank) + ' · ' + esc(it.sec || '') + '</span>') + '</div><div class="qtrack"><i style="width:' + ((S.pos + 1) / n * 100) + '%"></i></div>'
-      + '<div class="card">' + body + '<div class="opts' + (it.img ? '' : ' txt') + '">' + opts.map(function (o, i) { var c = 'opt'; if (shown) { if (i === it.c) c += ' ok'; else if (i === a) c += ' no'; } else if (a === i) c += opt.mode === 'test' ? ' on' : ' no'; return '<button type="button" class="' + c + '" data-ans="' + i + '"' + (opt.mode === 'train' && shown ? ' disabled' : '') + '>' + (it.img ? o : L[i] + ') ' + esc(o)) + '</button>'; }).join('') + '</div>'
+    var h = '<div class="qhead"><span class="sk-t">' + esc(cur.skill.name) + ' · السؤال <b>' + AR(S.pos + 1) + '</b> من ' + AR(n) + '</span><span class="sk-a">أجبت <b>' + AR(done) + '</b> · متبقٍ <b>' + AR(n - done) + '</b></span>' + (S.total ? '<span id="sktm" class="sk-tm">⏱ ' + fmt(S.total - (Date.now() - S.t0) / 1000) + '</span>' : '') + '<button type="button" class="btn red sm" data-a="end">تسليم</button></div><div class="qtrack"><i style="width:' + (done / n * 100) + '%"></i></div>'
+      + '<div class="card">' + qBody(it, S.pos) + optsHtml(it, a, shown, opt.mode === 'train' && shown)
       + (shown ? '<div class="fb ' + (a === undefined ? 'in">الإجابة الصحيحة: ' + L[it.c] : a === it.c ? 'ok">✓ إجابة صحيحة' : 'no">✗ الإجابة الصحيحة: ' + L[it.c]) + '</div>' : '')
-      + '<div class="qnav"><button class="btn ghost" data-a="prev"' + (S.pos ? '' : ' disabled') + '>السابق</button>' + (opt.mode === 'present' && !shown ? '<button class="btn soft" data-a="show">أظهر الإجابة</button>' : '') + (S.pos < n - 1 ? '<button class="btn" data-a="next">التالي</button>' : '<button class="btn gold" data-a="end">إنهاء</button>') + '</div></div>'
-      + '<div class="row"><button class="btn ghost" data-a="setup">تغيير الإعدادات</button><button class="btn ghost" data-a="back">كل المهارات</button></div>';
+      + '<div class="qnav"><button class="btn ghost" data-a="prev"' + (S.pos ? '' : ' disabled') + '>السابق</button><button class="btn ghost' + (S.flag[S.pos] ? ' flg' : '') + '" data-a="flag">' + (S.flag[S.pos] ? '⚑ معلَّم' : '⚐ علّم للمراجعة') + '</button>' + (opt.mode === 'present' && !shown ? '<button class="btn soft" data-a="show">أظهر الإجابة</button>' : '') + (S.pos < n - 1 ? '<button class="btn" data-a="next">التالي</button>' : '<button class="btn gold" data-a="end">إنهاء</button>') + '</div></div>'
+      + mapHtml() + '<div id="skcf"></div>';
     app.innerHTML = h;
     if (S.pos < n - 1 && S.items[S.pos + 1].img) { var pre = new Image(); pre.src = S.items[S.pos + 1].img; }
   }
+  function askEnd() {
+    var n = S.items.length, left = n - Object.keys(S.ans).length, fl = Object.keys(S.flag).filter(function (k) { return S.flag[k]; }).length, box = document.getElementById('skcf'); if (!box) return end();
+    box.innerHTML = '<div class="skcf"><div class="skcf-b"><h3>إنهاء الاختبار؟</h3><p>' + (left ? 'باقي <b>' + AR(left) + '</b> ' + (left === 1 ? 'سؤال' : 'أسئلة') + ' بدون إجابة.' : 'أجبت عن كل الأسئلة.') + (fl ? ' ولديك <b>' + AR(fl) + '</b> معلَّم للمراجعة.' : '') + '</p><div class="row"><button class="btn gold" data-a="endok">إنهاء وعرض النتيجة</button><button class="btn ghost" data-a="endno">العودة للاختبار</button></div></div></div>';
+  }
+  // ===== النتيجة: تقرير الأخطاء فورًا + «مراجعة الأخطاء» و«اختبار الأخطاء» =====
   function end(auto) {
-    clearInterval(window.__skT);
+    clearInterval(window.__skT); S.done = true;
     var n = S.items.length, g = 0, an = 0; S.items.forEach(function (it, i) { if (S.ans[i] !== undefined) { an++; if (S.ans[i] === it.c) g++; } });
-    // إتقان المهارة: يُحفظ في تقدم الطالب ويظهر في صفحة «تقدمي»
     if (opt.mode !== 'present' && an) { try { var tn = opt.mode === 'test' ? n : an, SKV = JSON.parse(localStorage.getItem('bw-skill-v1') || '{}') || {}, r = SKV[cur.skill.id] || { t: 0, c: 0 }; r.n = cur.skill.name; r.s = cur.skill.subject; r.t += tn; r.c += g; r.d = new Date().toISOString(); r.h = (r.h || []).concat([[r.d, tn, g]]).slice(-12); SKV[cur.skill.id] = r; localStorage.setItem('bw-skill-v1', JSON.stringify(SKV)); } catch (e) { } }
-    document.body.classList.remove('present');
-    var test = opt.mode === 'test', h = '<section class="hero"><p style="color:var(--bw-gold);font-weight:600">' + esc(cur.skill.name) + (auto ? ' · انتهى الوقت' : '') + '</p><h1>' + AR(g) + ' / ' + AR(test ? n : (an || n)) + '</h1><p>' + (an ? 'دقتك في هذه المهارة ' + AR(Math.round(g / (test ? n : an) * 100)) + '٪' : 'انتهى العرض') + '</p></section><div class="row" style="margin-bottom:16px"><button class="btn gold" data-a="go">أعد ' + (test ? 'الاختبار' : 'التدريب') + '</button><button class="btn ghost" data-a="back">كل المهارات</button></div>';
-    if (test) h += '<div class="card"><h2>مراجعة الإجابات</h2>' + S.items.map(function (it, i) { var a = S.ans[i], ok = a === it.c; return '<div style="border-top:1px solid #eef3f8;padding:12px 0"><b style="color:' + (ok ? '#17633f' : '#b4321f') + '">' + AR(i + 1) + '. ' + (a === undefined ? '— لم تُجب' : ok ? '✓ صحيحة' : '✗ خاطئة') + '</b> · ' + (a !== undefined ? 'إجابتك ' + L[a] + ' · ' : '') + 'الصحيحة <b>' + L[it.c] + '</b>' + (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" data-z="' + esc(it.img) + '" style="display:block;max-width:420px;width:100%;margin-top:8px;border-radius:10px;border:1px solid var(--bw-line);cursor:zoom-in">' : '<div class="m" style="margin-top:4px">' + esc(it.s) + '</div>') + '</div>'; }).join('') + '</div>';
+    document.body.classList.remove('present'); result(auto);
+  }
+  function wrongIdx() { var w = []; S.items.forEach(function (it, i) { if (S.ans[i] !== undefined && S.ans[i] !== it.c) w.push(i); }); return w; }
+  function skipIdx() { var w = []; S.items.forEach(function (it, i) { if (S.ans[i] === undefined) w.push(i); }); return w; }
+  function snip(it) { return it.img ? 'سؤال بصورة' : esc(String(it.s || '').slice(0, 70)) + (String(it.s || '').length > 70 ? '…' : ''); }
+  function result(auto) {
+    var n = S.items.length, g = 0; S.items.forEach(function (it, i) { if (S.ans[i] === it.c) g++; });
+    var W = wrongIdx(), K = skipIdx(), pc = Math.round(g / n * 100);
+    var row = function (i) { var it = S.items[i], a = S.ans[i]; return '<button type="button" class="wr" data-rv="' + i + '"><b>' + AR(i + 1) + '</b><span>' + snip(it) + '</span><small>' + (a === undefined ? 'لم تُجب' : 'إجابتك: ' + L[a]) + ' · الصحيحة: <em>' + L[it.c] + '</em></small></button>'; };
+    var h = '<section class="hero"><p style="color:var(--bw-gold);font-weight:600">' + esc(cur.skill.name) + (auto ? ' · انتهى الوقت' : '') + '</p><h1>' + AR(g) + ' / ' + AR(n) + '</h1><p>نسبة الصحيح ' + AR(pc) + '٪ · خاطئة ' + AR(W.length) + ' · بلا إجابة ' + AR(K.length) + '</p></section>'
+      + '<div class="row" style="margin-bottom:14px">' + (W.length ? '<button class="btn soft" data-a="rvall">📖 مراجعة الأخطاء</button><button class="btn gold" data-a="retest">🔁 اختبار الأخطاء</button>' : '') + '<button class="btn ghost" data-a="go">أعد الاختبار</button><button class="btn ghost" data-a="back">كل المهارات</button></div>'
+      + (W.length ? '<div class="card"><h2>الأسئلة الخاطئة (' + AR(W.length) + ')</h2><p class="m" style="margin-bottom:8px">اضغط على أي سؤال لتراجعه بحجمه الكامل.</p>' + W.map(row).join('') + '</div>' : '<div class="card"><h2>✓ لا أخطاء</h2><p class="m">أحسنت، كل إجاباتك صحيحة.</p></div>')
+      + (K.length ? '<div class="card"><h2>بلا إجابة (' + AR(K.length) + ')</h2>' + K.map(row).join('') + '</div>' : '');
     app.innerHTML = h; window.scrollTo(0, 0);
+  }
+  // المراجعة: نفس عرض السؤال في الاختبار بنفس الحجم، مع إجابتك والإجابة الصحيحة، بلا درجة
+  function review(list, k) {
+    S.rev = { list: list, k: k || 0 }; var i = list[S.rev.k], it = S.items[i], a = S.ans[i];
+    app.innerHTML = '<div class="qhead"><span class="sk-t">مراجعة الأخطاء · ' + AR(S.rev.k + 1) + ' من ' + AR(list.length) + ' (السؤال ' + AR(i + 1) + ')</span><button type="button" class="btn ghost sm" data-a="res">← النتيجة</button></div><div class="qtrack"><i style="width:' + ((S.rev.k + 1) / list.length * 100) + '%"></i></div>'
+      + '<div class="card">' + qBody(it, i) + optsHtml(it, a, true, true) + '<div class="fb ' + (a === undefined ? 'in">لم تُجب · الصحيحة: ' + L[it.c] : 'no">إجابتك: ' + L[a] + ' · الصحيحة: ' + L[it.c]) + '</div>'
+      + '<div class="qnav"><button class="btn ghost" data-a="rvp"' + (S.rev.k ? '' : ' disabled') + '>السابق</button>' + (S.rev.k < list.length - 1 ? '<button class="btn" data-a="rvn">التالي</button>' : '<button class="btn gold" data-a="res">انتهيت</button>') + '</div></div>';
   }
   app.addEventListener('click', function (e) {
     var z = e.target.closest('[data-z]'); if (z) { var d = document.createElement('div'); d.className = 'lb'; d.innerHTML = '<img src="' + esc(z.getAttribute('data-z')) + '" alt="">'; d.onclick = function () { d.remove(); }; document.body.appendChild(d); return; }
@@ -167,19 +213,29 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
     if (x.m) { opt.mode = x.m; [].forEach.call(b.parentNode.children, function (c) { c.classList.toggle('on', c === b); }); return; }
     if (x.n !== undefined) { opt.n = +x.n; [].forEach.call(b.parentNode.children, function (c) { c.classList.toggle('on', c === b); }); return; }
     if (x.o) { opt.order = x.o; [].forEach.call(b.parentNode.children, function (c) { c.classList.toggle('on', c === b); }); return; }
-    if (x.ans !== undefined) { if (opt.mode === 'train' && S.ans[S.pos] !== undefined) return; S.ans[S.pos] = +x.ans; if (opt.mode === 'present') S.show[S.pos] = 1; draw(); if (opt.mode === 'test' && S.pos < S.items.length - 1) { var at = S.pos; setTimeout(function () { if (S && S.pos === at) { S.pos++; draw(); } }, 250); } return; }
+    if (x.rv !== undefined) { var all = wrongIdx().concat(skipIdx()); return review(all, Math.max(0, all.indexOf(+x.rv))); }
+    if (x.g !== undefined && S && !S.done) { S.pos = +x.g; return draw(); }
+    if (x.ans !== undefined) { if (!S || S.done) return; if (opt.mode === 'train' && S.ans[S.pos] !== undefined) return; S.ans[S.pos] = +x.ans; if (opt.mode === 'present') S.show[S.pos] = 1; draw(); if (opt.mode === 'test' && S.pos < S.items.length - 1) { var at = S.pos; setTimeout(function () { if (S && !S.done && S.pos === at) { S.pos++; draw(); } }, 250); } return; }
     switch (x.a) {
       case 'go': return go();
       case 'back': clearInterval(window.__skT); history.replaceState(null, '', location.pathname); return list();
-      case 'setup': return setup(cur.skill.id);
+      case 'setup': clearInterval(window.__skT); return setup(cur.skill.id);
       case 'prev': S.pos--; return draw();
       case 'next': S.pos++; return draw();
+      case 'flag': S.flag[S.pos] = !S.flag[S.pos]; return draw();
       case 'show': S.show[S.pos] = 1; return draw();
-      case 'end': if (opt.mode === 'test' && Object.keys(S.ans).length < S.items.length && !confirm('لم تُجب عن كل الأسئلة. إنهاء الاختبار؟')) return; return end();
+      case 'end': return askEnd();
+      case 'endno': var cf = document.getElementById('skcf'); if (cf) cf.innerHTML = ''; return;
+      case 'endok': return end();
+      case 'rvall': return review(wrongIdx(), 0);
+      case 'rvp': return review(S.rev.list, S.rev.k - 1);
+      case 'rvn': return review(S.rev.list, S.rev.k + 1);
+      case 'res': return result();
+      case 'retest': var it2 = wrongIdx().map(function (i) { return S.items[i]; }); opt.mode = 'train'; return go(it2);
     }
   });
   document.addEventListener('keydown', function (e) {
-    if (!S || document.querySelector('.lb')) { if (e.key === 'Escape') { var o = document.querySelector('.lb'); if (o) o.remove(); } return; }
+    if (!S || S.done || document.querySelector('.lb')) { if (e.key === 'Escape') { var o = document.querySelector('.lb'); if (o) o.remove(); } return; }
     if (e.key === 'ArrowLeft' && S.pos < S.items.length - 1) { S.pos++; draw(); }
     else if (e.key === 'ArrowRight' && S.pos > 0) { S.pos--; draw(); }
     else if (e.key === ' ' && opt.mode === 'present') { e.preventDefault(); S.show[S.pos] = 1; draw(); }

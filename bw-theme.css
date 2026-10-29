@@ -251,3 +251,12 @@ html body .qcard:has(.qbody img) > .meta::after { content: "🔍 اضغط على
 @media (max-width: 600px) { html body .qcard:has(.qbody img) > .meta::after { content: "🔍 اضغط للتكبير"; font-size: 10.5px; padding: 1px 8px; } }
 .qimg { display: flex; flex-direction: column-reverse; }
 .qimg .zoom { position: static !important; align-self: flex-start; margin: 0 0 6px; }
+
+/* ===== ملخص الأخطاء في صفحة النتيجة ===== */
+.wsum { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.wq { display: grid; grid-template-columns: 30px 1fr; gap: 0 8px; align-items: center; text-align: start; background: #fff; border: 1.5px solid #f0c9c1; border-radius: 12px; padding: 7px 9px; cursor: pointer; font: 600 12.5px "IBM Plex Sans Arabic", sans-serif; color: #42566c; }
+.wq b { grid-row: span 2; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #fbe6e2; color: #b4321f; font-size: 13px; }
+.wq.na { border-color: #d7e1ec; } .wq.na b { background: #eef2f6; color: #42566c; }
+.wq em { font-style: normal; color: #17633f; font-weight: 700; }
+.wq:hover { box-shadow: 0 4px 12px #0c244018; }
+.rc.hl { box-shadow: 0 0 0 3px var(--bw-gold) !important; transition: box-shadow .3s; }

@@ -147,6 +147,7 @@ html:has(#app .qcard),html:has(#app .qcard) body{height:100%;overflow:hidden}
 #app:has(.qcard) > .nav:last-child .btn{padding:4px 12px!important;min-height:0!important;font-size:13px!important}
 #app:has(.qcard) #end2{display:none!important}
 @media(max-width:700px){#app:has(.qcard) .map{grid-template-columns:repeat(13,minmax(0,1fr))}#app:has(.qcard) .stem{font-size:24px!important}#app:has(.qcard) .opt{min-height:42px!important}}
+.rvi .s{font-size:clamp(22px,1.2vw + 17px,28px)!important;font-weight:800}.rvi .l{font-size:18px!important;font-weight:600}
 </style>
 <link rel="stylesheet" href="/bw-theme.css">
 </head>
@@ -273,7 +274,7 @@ function finish(){
   const n=st.qs.length,right=st.qs.filter((q,k)=>st.ans[k]===q.a).length,blank=st.ans.filter(x=>x==null).length;
   const pct=Math.round(right/n*100),secs=Math.floor((Date.now()-st.t0)/1000);
   if(st.idx!=null&&(best[st.idx]==null||pct>best[st.idx])){best[st.idx]=pct;store.set("tanazur.best",best)}
-  results({right,blank,pct,secs,onlyWrong:false});
+  results({right,blank,pct,secs,onlyWrong:right<n});
 }
 function results(r){
   const n=st.qs.length,wrong=n-r.right-r.blank;
@@ -286,7 +287,7 @@ function results(r){
     <div class="stats num"><span class="ok">صحيحة ${AR(r.right)}</span><span class="no">خاطئة ${AR(wrong)}</span><span>بدون إجابة ${AR(r.blank)}</span><span>النسبة ${AR(r.pct)}٪</span><span>الوقت ${fmt(r.secs)}</span></div>
     <div class="actions">
       <button class="btn primary" id="again">أعد الاختبار</button>
-      ${wrong+r.blank?'<button class="btn" id="wrongs">أعد الأسئلة الخاطئة فقط</button>':""}
+      ${wrong+r.blank?'<button class="btn" id="rvw">📖 مراجعة الأخطاء</button><button class="btn" id="wrongs">🔁 اختبار الأخطاء</button>':""}
       <button class="btn" id="back">قائمة الاختبارات</button></div>
   </section>
   <div class="sec-h" style="margin-top:22px"><h2>مراجعة الإجابات</h2>
@@ -299,6 +300,7 @@ function results(r){
   m_("again",()=>start(qs,name,idx));
   m_("wrongs",()=>start(qs.filter((q,k)=>st.ans[k]!==q.a),name+" · الأخطاء",null));
   m_("back",home);
+  m_("rvw",()=>{results({...r,onlyWrong:true});const v=document.querySelector(".rv");if(v)v.scrollIntoView({behavior:"smooth"})});
   m_("f-all",()=>results({...r,onlyWrong:false}));m_("f-bad",()=>results({...r,onlyWrong:true}));
   window.scrollTo(0,0);
 }

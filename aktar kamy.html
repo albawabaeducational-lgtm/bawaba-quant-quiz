@@ -153,6 +153,7 @@
   body.testing .qnav { margin-top: 8px; }
   body.testing .card { margin-bottom: 0; }
 }
+.rv { grid-template-columns: 1fr !important; } .rv img { max-width: 900px; margin: 0 auto; } .rv .ans { font-size: 17px; font-weight: 600; }
 </style>
 </head>
 <body class="bwt-hub">
@@ -303,7 +304,7 @@
     if (R.kind === 'bank') { prev = hist.length ? hist[hist.length - 1] : null; hist.push({ d: now, n: n, g: g, p: p, u: used, m: R.mode }); put(K.hist, hist.slice(-50)); markSeen(R.ids, R.newRound); }
     R.done = true; clearRun();
     var res = { n: n, g: g, na: na, p: p, used: used, auto: auto, prev: prev };
-    report(res, 'all');
+    report(res, (n - g) ? 'no' : 'all');
   }
   function level(p) { return p >= 85 ? 'ممتاز' : p >= 70 ? 'جيد جدًا' : p >= 55 ? 'جيد' : p >= 40 ? 'يحتاج تدريبًا' : 'ابدأ بالتأسيس'; }
   var lastRes = null;
@@ -317,7 +318,7 @@
     if (avg > 75 && R.total) adv.push('<b>سرعتك:</b> ' + AR(avg) + ' ثانية للسؤال. حاول النزول تدريجيًا إلى أقل من دقيقة.');
     else if (avg < 25 && res.p < 60) adv.push('<b>تمهّل:</b> إجاباتك سريعة جدًا ودقتك منخفضة. اقرأ السؤال والخيارات كاملة.');
     if (res.p >= 85) adv.push('<b>أداء ممتاز!</b> جرّب اختبار ٥٥ سؤالًا بمؤقت المحاكاة لتختبر قدرتك على التركيز طوال الوقت.');
-    h += '<div class="card"><h2>خطوتك التالية</h2><ul class="advice">' + adv.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul><div class="row" style="margin-top:12px"><button class="btn gold" data-a="home">اختبار جديد</button>' + (wrong + res.na ? '<button class="btn soft" data-a="retry">أعد الأسئلة الخاطئة (تدريب)</button>' : '') + '<a class="btn ghost" href="progress.html">تقدمي</a></div></div>';
+    h += '<div class="card"><h2>خطوتك التالية</h2><ul class="advice">' + adv.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul><div class="row" style="margin-top:12px"><button class="btn gold" data-a="home">اختبار جديد</button>' + (wrong + res.na ? '<button class="btn soft" data-rf="no">📖 مراجعة الأخطاء</button><button class="btn soft" data-a="retry">🔁 اختبار الأخطاء</button>' : '') + '<a class="btn ghost" href="progress.html">تقدمي</a></div></div>';
     var F = { all: 'الكل', no: 'الخاطئة', na: 'بدون إجابة', f: 'المعلَّمة', ok: 'الصحيحة' };
     var items = R.ids.map(function (id, i) { var a = R.ans[i], q = BY[id]; return { i: i, id: id, a: a, q: q, st: a === undefined ? 'na' : a === q.c ? 'ok' : 'no', f: !!R.flag[i] }; });
     var shownItems = items.filter(function (x) { return filter === 'all' || (filter === 'f' ? x.f : x.st === filter); });
@@ -329,7 +330,7 @@
   // ===== مجلد الأخطاء =====
   function errorsView() {
     var E = get(K.err, {}) || {}, arr = Object.keys(E).map(function (k) { return E[k]; }).filter(function (e) { return BY[e.id]; }).sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
-    var h = '<div class="card"><div class="row" style="justify-content:space-between"><div><h2>مجلد الأخطاء (' + AR(arr.length) + ')</h2><p class="m">يخرج السؤال من المجلد بعد أن تجيبه صحيحًا ٣ مرات.</p></div><div class="row"><button class="btn" data-a="errtrain"' + (arr.length ? '' : ' disabled') + '>تدرّب عليها</button><button class="btn ghost" data-a="home">رجوع</button></div></div></div>';
+    var h = '<div class="card"><div class="row" style="justify-content:space-between"><div><h2>📖 مجلد الأخطاء (' + AR(arr.length) + ')</h2><p class="m">يخرج السؤال من المجلد بعد أن تجيبه صحيحًا ٣ مرات.</p></div><div class="row"><button class="btn" data-a="errtrain"' + (arr.length ? '' : ' disabled') + '>🔁 اختبار الأخطاء</button><button class="btn ghost" data-a="home">رجوع</button></div></div></div>';
     h += '<div class="card">' + (arr.map(function (e) { var q = BY[e.id]; return '<div class="rv"><img src="' + img(e.id) + '" alt="" loading="lazy" data-z="' + e.id + '"><div><div class="ans">' + (e.sel != null ? 'إجابتك: <b style="color:#b4321f">' + L[e.sel] + '</b> · ' : 'لم تُجب · ') + 'الصحيحة: <b style="color:#17633f">' + L[q.c] + '</b></div>' + (e.ok ? '<div class="m" style="color:#17633f">✓ أجبته صحيحًا ' + (e.ok === 1 ? 'مرة' : 'مرتين') + ' من ٣</div>' : '') + '<div class="m">' + esc(MN[q.m] || '') + '</div><button class="btn red sm" style="margin-top:8px" data-del="' + e.id + '">حذف من المجلد</button></div></div>'; }).join('') || '<p class="m">المجلد فارغ. أحسنت!</p>') + '</div>';
     app.innerHTML = h; window.scrollTo(0, 0);
   }
