@@ -401,6 +401,7 @@
       .pl-ic { width: 42px; height: 42px; }
     }
     @media (max-width: 480px) { header.top .brand b { font-size: 13px; line-height: 1.3; max-width: 7.5em; } header.top .brand img { width: 36px; height: 36px; } header.top .btn { padding: 8px 11px; font-size: 13px; } header.top .wrap { gap: 6px; } .lms-strip .lx { display: none; } .lms-strip { font-size: 13px; } .lms-strip .wrap { gap: 6px; padding: 7px 0; } header.top .brand b small { font-size: 10.5px; } }
+    #bwThemeToggle { min-width: 38px; padding: 7px 10px !important; font: 700 17px/1 Tahoma, Arial, sans-serif !important; }
     @media (max-width: 350px) { header.top .brand b { display: none; } }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; animation: none !important; } .pathway-link .shine { display: none; } }
 
@@ -626,19 +627,30 @@
       th = th || {}; var rs = document.documentElement.style, de = document.documentElement;
       de.classList.remove('th-light'); de.removeAttribute('data-cards'); de.removeAttribute('data-top');
       ['--navy', '--deep', '--night', '--sea', '--gold', '--gold-2', '--gold-soft', '--paper', '--paper-2', '--hero-1', '--hero-2'].forEach(function (k) { rs.removeProperty(k); });
-      if (!(th.main || th.accent || th.bg || th.mode || th.cards || th.top || th.hero)) return;
+      // الافتراضي هو مظهر الإدارة (th.mode)، ويتغير فقط إن اختار الزائر فاتح/داكن بنفسه من الزر
+      var userMode = ''; try { var um = localStorage.getItem('bw-user-theme'); userMode = um === 'light' || um === 'dark' ? um : ''; } catch (e) { }
+      window.__bwHomeMode = userMode || (th.mode === 'light' ? 'light' : 'dark');
         var hx = function (c) { c = c.replace('#', ''); return [0, 2, 4].map(function (i) { return parseInt(c.substr(i, 2), 16); }); };
         var mix = function (c, w, k) { var a = hx(c), b = hx(w); return '#' + a.map(function (v, i) { return ('0' + Math.round(v + (b[i] - v) * k).toString(16)).slice(-2); }).join(''); };
         var rs = document.documentElement.style;
         if (th.main) { rs.setProperty('--navy', th.main); rs.setProperty('--deep', mix(th.main, '#000000', .28)); rs.setProperty('--night', mix(th.main, '#000000', .45)); rs.setProperty('--sea', mix(th.main, '#ffffff', .22)); }
         if (th.accent) { rs.setProperty('--gold', th.accent); rs.setProperty('--gold-2', mix(th.accent, '#ffffff', .35)); rs.setProperty('--gold-soft', mix(th.accent, '#ffffff', .85)); }
         if (th.bg) { rs.setProperty('--paper', th.bg); rs.setProperty('--paper-2', mix(th.bg, '#000000', .04)); }
-      if (th.mode === 'light') { de.classList.add('th-light'); var hb = th.hero || mix(th.main || '#1b3a5c', '#ffffff', .9); de.style.setProperty('--hero-1', mix(hb, '#ffffff', .35)); de.style.setProperty('--hero-2', hb); }
+      var mode = window.__bwHomeMode;
+      if (mode === 'light') { de.classList.add('th-light'); var hb = th.hero || mix(th.main || '#1b3a5c', '#ffffff', .9); de.style.setProperty('--hero-1', mix(hb, '#ffffff', .35)); de.style.setProperty('--hero-2', hb); }
       if (th.cards && th.cards !== 'white') de.setAttribute('data-cards', th.cards);
       if (th.top && th.top !== 'dark') de.setAttribute('data-top', th.top);
     } catch (e) { }
   };
-  try { var __th = JSON.parse(localStorage.getItem('bw-home-theme') || 'null'); if (__th) window.bwTheme(__th); } catch (e) { }
+  try { var __th = JSON.parse(localStorage.getItem('bw-home-theme') || 'null'); if (__th) window.bwTheme(__th); else window.bwTheme({}); } catch (e) { }
+  function initBWThemeToggle() {
+    var b = document.getElementById('bwThemeToggle'); if (!b) return;
+    var cfg = function () { var t = {}; try { t = JSON.parse(localStorage.getItem('bw-home-theme') || '{}') || {}; } catch (e) { } return t; };
+    function paint() { var m = window.__bwHomeMode || 'dark'; b.dataset.mode = m; b.textContent = m === 'dark' ? '☀' : '☾'; b.title = m === 'dark' ? 'التبديل إلى المظهر الفاتح' : 'التبديل إلى المظهر الداكن'; b.setAttribute('aria-label', b.title); }
+    b.onclick = function () { var next = (window.__bwHomeMode || 'dark') === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('bw-user-theme', next); } catch (e) { } window.bwTheme(cfg()); paint(); };
+    window.__bwThemePaint = paint; paint();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBWThemeToggle); else initBWThemeToggle();
 </script>
 </head>
 <body>
@@ -654,6 +666,7 @@
         <a class="guest-only" href="#courses">الدورات</a>
         <a href="#join">تواصل معنا</a>
       </nav>
+      <button class="btn btn-line hb-sm" id="bwThemeToggle" type="button" aria-label="تغيير مظهر الصفحة">☀</button>
       <a class="btn btn-lms hb-lms" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener" title="ركن الدورات">🎓<span> ركن الدورات</span></a>
       <a class="btn btn-line guest-only hb-sm" href="/account.html?tab=signup">إنشاء حساب</a>
       <a class="btn btn-gold guest-only hb-sm" href="/account.html">تسجيل الدخول</a>
@@ -761,15 +774,15 @@
 
     <section class="block toppers" id="toppers" aria-labelledby="topTitle">
       <div class="wrap">
-        <div class="sec-head"><div><span class="eyebrow">لوحة الشرف</span><h2 id="topTitle" data-edit="top_title" data-label="عنوان «الأوائل»" data-group="عناوين الأقسام">الأوائل هذا الأسبوع</h2><span class="top-week" id="topWeek"></span></div></div>
+        <div class="sec-head"><div><span class="eyebrow">لوحة الشرف</span><h2 id="topTitle" data-edit="top_title" data-label="عنوان «الأوائل»" data-group="عناوين الأقسام">متفوقو البوابة</h2><span class="top-week" id="topWeek"></span></div></div>
         <div class="tbl-wrap">
           <table class="toppers-table">
-            <caption class="sr-only">جدول الأوائل هذا الأسبوع: الترتيب والطالب ومجال التميز ومعدل الإنجاز</caption>
+            <caption class="sr-only">قائمة الطلاب المتفوقين: الترتيب والطالب ومجال التميز ومعدل الإنجاز</caption>
             <thead><tr><th scope="col">الترتيب</th><th scope="col">الطالب</th><th scope="col" class="col-subj">مجال التميز</th><th scope="col" class="col-rate">معدل الإنجاز</th><th scope="col" class="col-solved">الأسئلة المحلولة</th></tr></thead>
             <tbody id="topBody"></tbody>
           </table>
         </div>
-        <div class="top-note"><span data-edit="top_note" data-label="ملاحظة أسفل جدول الأوائل" data-group="عناوين الأقسام">يُحدَّث الجدول أسبوعيًا بناءً على معدل الإنجاز في التدريب.</span><span id="topUpd"></span></div>
+        <div class="top-note"><span data-edit="top_note" data-label="ملاحظة أسفل جدول الأوائل" data-group="عناوين الأقسام">تتغير الأسماء المعروضة كل ثلاثة أيام، ويُرتَّب المتفوقون تنازليًا حسب معدل الإنجاز.</span><span id="topUpd"></span></div>
       </div>
     </section>
 
@@ -892,14 +905,41 @@
 
   function weekLabel() { try { var d = new Date(), back = (d.getDay() + 1) % 7, s = new Date(d.getFullYear(), d.getMonth(), d.getDate() - back), e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6), f = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { day: 'numeric', month: 'long' }); return 'من ' + f.format(s) + ' إلى ' + f.format(e); } catch (x) { return ''; } }
 
+  var TOPPER_PERIOD = 3 * 864e5, TOPPER_POOL = [], TOPPER_START = '', TOPPER_UPDATED = '', TOPPER_TIMER = 0;
+  function topperSeed(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function topperShuffle(a, seed) { var r = function () { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }; for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+  function rotateToppers(input, startAt) {
+    var src = Array.isArray(input) ? input.filter(function (x) { return x && String(x.name || '').trim(); }) : [], pool = [], names = {};
+    src.forEach(function (x) { var k = String(x.name).trim().toLocaleLowerCase(); if (!names[k]) { names[k] = 1; pool.push(x); } });
+    if (pool.length <= 5) return pool;
+    var started = Date.parse(startAt || ''); if (!Number.isFinite(started)) started = Date.parse(TOPPER_UPDATED || ''); if (!Number.isFinite(started)) started = Date.UTC(2026, 0, 1); if (started > Date.now()) started = Date.now();
+    var turns = Math.max(0, Math.min(5000, Math.floor((Date.now() - started) / TOPPER_PERIOD))), seedBase = topperSeed(pool.map(function (x) { return String(x.name).trim().toLocaleLowerCase(); }).sort().join('|') + '|' + started), cycle = 0;
+    var order = topperShuffle(pool.slice(), (seedBase + cycle) >>> 0), active = order.slice(0, 5), cursor = 5;
+    for (var t = 1; t <= turns; t++) {
+      if (cursor >= order.length) { cycle++; order = topperShuffle(pool.slice(), (seedBase + Math.imul(cycle, 2654435761)) >>> 0); active = order.slice(0, 5); cursor = 5; continue; }
+      var seed = (seedBase ^ Math.imul(t, 2246822519)) >>> 0, rand = function () { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }, slots = [0, 1, 2, 3, 4];
+      for (var j = slots.length - 1; j > 0; j--) { var k = Math.floor(rand() * (j + 1)), z = slots[j]; slots[j] = slots[k]; slots[k] = z; }
+      var replace = Math.min(1 + Math.floor(rand() * 5), order.length - cursor);
+      for (var n = 0; n < replace; n++) active[slots[n]] = order[cursor++];
+    }
+    return active;
+  }
+  function refreshToppers() {
+    if (TOPPER_POOL === false) { renderToppers(false); return; }
+    renderToppers(rotateToppers(TOPPER_POOL, TOPPER_START), TOPPER_UPDATED);
+    clearTimeout(TOPPER_TIMER);
+    var start = Date.parse(TOPPER_START || TOPPER_UPDATED || ''); if (!Number.isFinite(start)) start = Date.UTC(2026, 0, 1);
+    var next = start + (Math.floor((Date.now() - start) / TOPPER_PERIOD) + 1) * TOPPER_PERIOD;
+    TOPPER_TIMER = setTimeout(refreshToppers, Math.max(1000, Math.min(2147483647, next - Date.now())));
+  }
   function renderToppers(list, upd) {
     var sec = $('#toppers'), nav = $('#navTop'), body = $('#topBody'); if (!sec || !body) return;
     if (list === false) { sec.hidden = true; if (nav) nav.hidden = true; return; }
     if (!list || !list.length) {
       body.textContent = ''; var er = el('tr', 'empty'), et = el('td'); et.colSpan = 5;
-      var eb = el('div', 'top-empty'); eb.appendChild(el('span', 'te-ic', '🏆')); var ex = el('div'); ex.appendChild(el('b', '', 'تُعلن أسماء أوائل هذا الأسبوع قريبًا')); ex.appendChild(el('small', '', 'اجتهد في التدريب هذا الأسبوع، وقد يكون اسمك أول القائمة.')); eb.appendChild(ex); et.appendChild(eb); er.appendChild(et); body.appendChild(er);
+      var eb = el('div', 'top-empty'); eb.appendChild(el('span', 'te-ic', '🏆')); var ex = el('div'); ex.appendChild(el('b', '', 'قائمة المتفوقين ستُعلن قريبًا')); ex.appendChild(el('small', '', 'أدخل القائمة المعتمدة من لوحة التحكم لتظهر الأسماء هنا.')); eb.appendChild(ex); et.appendChild(eb); er.appendChild(et); body.appendChild(er);
       $$('.col-solved', sec).forEach(function (e) { e.hidden = true; }); $$('th.col-rate', sec).forEach(function (e) { e.hidden = false; });
-      $('#topWeek').textContent = '📅 ' + weekLabel(); sec.hidden = false; if (nav) nav.hidden = false; return;
+      $('#topWeek').textContent = '📅 تُحدَّث الأسماء كل ٣ أيام'; sec.hidden = false; if (nav) nav.hidden = false; return;
     }
     var L = list.slice().sort(function (a, b) { return ((b.rate == null ? -1 : b.rate) - (a.rate == null ? -1 : a.rate)) || ((b.solved || 0) - (a.solved || 0)); }), anyS = L.some(function (x) { return x.solved != null; }), anyR = L.some(function (x) { return x.rate != null; });
     body.textContent = '';
@@ -914,7 +954,7 @@
     });
     $$('.col-solved', sec).forEach(function (e) { if (e.tagName === 'TH') e.hidden = !anyS; });
     $$('th.col-rate', sec).forEach(function (e) { e.hidden = !anyR; });
-    $('#topWeek').textContent = '📅 ' + weekLabel();
+    $('#topWeek').textContent = '📅 تُحدَّث الأسماء كل ٣ أيام';
     var u = $('#topUpd'); if (u) { u.textContent = ''; if (upd) { try { u.textContent = 'آخر تحديث: ' + new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', { day: 'numeric', month: 'long' }).format(new Date(upd)); } catch (e) { } } }
     sec.hidden = false; if (nav) nav.hidden = false;
     var fire = function () { $$('.rate .bar i', sec).forEach(function (i) { i.style.width = i.getAttribute('data-w') + '%'; }); };
@@ -981,11 +1021,11 @@
     try {
       h = h || {};
       var f = FONTS[h.font]; if (f) { var lk = el('link'); lk.rel = 'stylesheet'; lk.href = 'https://fonts.googleapis.com/css2?family=' + f[0] + '&display=swap'; document.head.appendChild(lk); var fam = f[1] + ', Tahoma, sans-serif'; document.documentElement.style.setProperty('--display', fam); document.documentElement.style.setProperty('--body', fam); }
-      var th = h.theme || {}; try { localStorage.setItem('bw-home-theme', JSON.stringify(th)); } catch (e) { } window.bwTheme(th);
+      var th = h.theme || {}; try { localStorage.setItem('bw-home-theme', JSON.stringify(th)); } catch (e) { } window.bwTheme(th); if (window.__bwThemePaint) window.__bwThemePaint();
       var t = h.t || {}; Object.keys(t).forEach(function (k) { $$('[data-edit="' + k + '"]').forEach(function (e) { e.textContent = t[k]; }); });
       var c = h.counts || {}; Object.keys(c).forEach(function (k) { setCount(k, +c[k] || 0); });
       var sh = h.show || {};
-      renderToppers(sh.toppers === false ? false : (h.toppers || []), h.updated);
+      TOPPER_POOL = sh.toppers === false ? false : (h.toppers || []); TOPPER_START = h.topperCycleAt || h.updated || ''; TOPPER_UPDATED = h.updated || ''; refreshToppers();
       renderReviews(sh.reviews === false ? [] : (h.reviews && h.reviews.length ? h.reviews : DEFAULT_REVIEWS));
     } catch (e) { if (window.console) console.error('bwHome', e); }
   };

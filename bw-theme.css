@@ -260,3 +260,47 @@ html body .qcard:has(.qbody img) > .meta::after { content: "🔍 اضغط على
 .wq em { font-style: normal; color: #17633f; font-weight: 700; }
 .wq:hover { box-shadow: 0 4px 12px #0c244018; }
 .rc.hl { box-shadow: 0 0 0 3px var(--bw-gold) !important; transition: box-shadow .3s; }
+
+
+/* ---------- الوضع الداكن: عكس ألوان موحّد يحافظ على تباين كل نص مع خلفيته في كل محركات الاختبارات،
+   مع إعادة الصور والرسوم لألوانها الأصلية (صور أسئلة الكمي والقطع والرسوم البيانية) ---------- */
+html.bw-user-dark { filter: invert(.9) hue-rotate(180deg); background: #fff; }
+html.bw-user-dark img, html.bw-user-dark video, html.bw-user-dark canvas, html.bw-user-dark picture, html.bw-user-dark svg image,
+html.bw-user-dark .bw-question-zoom, html.bw-user-dark [data-bw-keep] { filter: invert(1) hue-rotate(180deg); }
+html.bw-user-dark .bw-question-zoom img { filter: none; }
+#bw-shell .bws-theme { flex: none; min-width: 38px; min-height: 36px; padding: 5px 10px; border: 0; border-radius: 10px; background: #ffffff14; color: #fff; font: 700 17px/1 Tahoma, Arial, sans-serif; cursor: pointer; }
+#bw-shell .bws-theme:hover { background: #ffffff28; }
+
+.bw-admin-theme { position: fixed; z-index: 1000; top: 12px; left: 12px; min-width: 38px; height: 38px; border: 1px solid #ffffff55; border-radius: 11px; background: #12345a; color: #fff; cursor: pointer; font: 700 17px Tahoma,Arial,sans-serif; box-shadow: 0 4px 14px #0002; }
+.bw-account-theme { flex: none; min-width: 40px; height: 40px; border: 1px solid #ffffff55; border-radius: 11px; background: #ffffff14; color: #fff; cursor: pointer; font: 700 17px Tahoma,Arial,sans-serif; }
+html.th-light .bw-account-theme { background: #fff; color: var(--navy); border-color: #0000002a; }
+
+
+/* نتائج موحدة، ورسالة واضحة للأزرار المفوضة إلى واجهة الاختبار الأصلية */
+.bw-result-summary { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; margin:0 0 14px; padding:16px; border:1px solid var(--bw-line,#dbe5ee); border-top:4px solid var(--bw-gold,#e3a92b); border-radius:16px; background:#fff; color:#142338; }
+.bwrs-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.bwrs-head h3 { margin:0 0 4px; color:var(--bw-navy,#12345a); }
+.bwrs-head p { margin:0; color:#5a6b80; }
+.bwrs-donut { flex:none; width:94px; height:94px; border-radius:50%; display:grid; place-items:center; position:relative; }
+.bwrs-donut::before { content:""; position:absolute; inset:10px; border-radius:50%; background:#fff; }
+.bwrs-donut span { position:relative; display:grid; text-align:center; line-height:1.25; }
+.bwrs-donut b { font-size:18px; color:#142338; }
+.bwrs-donut small { color:#5a6b80; }
+.bwrs-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.bwrs-stats div { display:grid; text-align:center; padding:8px 4px; border-radius:11px; background:#f5f8fb; }
+.bwrs-stats b { font-size:20px; }.bwrs-stats span { font-size:13px; color:#536276; }
+.bwrs-stats .is-ok b { color:#16834a; }.bwrs-stats .is-no b { color:#c93636; }.bwrs-stats .is-skip b { color:#778293; }
+.bwrs-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+.bwrs-actions button { border:0; border-radius:10px; padding:9px 14px; background:#12345a; color:#fff; font:inherit; font-weight:600; font-size:14px; cursor:pointer; }
+.bw-question-zoom { position:fixed; inset:0; z-index:2147483500; background:#061629ed; display:grid; place-items:center; padding:24px; cursor:zoom-out; }
+.bw-question-zoom img { max-width:min(96vw,1500px); max-height:92vh; width:auto; height:auto; object-fit:contain; background:#fff; border-radius:12px; box-shadow:0 18px 60px #0008; }
+.bwqz-close { position:absolute; top:14px; right:14px; width:44px; height:44px; border:0; border-radius:50%; background:#fff; color:#10243a; font-size:28px; cursor:pointer; }
+.bw-question-zoom img:focus-visible,.qbody img:focus-visible,.psg img:focus-visible { outline:3px solid #e3a92b; outline-offset:3px; }
+/* لا نفرض ارتفاعًا أدنى كبيرًا على سؤال لفظي قصير؛ الطويل يمرّر داخليًا بدل تمرير الصفحة أو قص النص. */
+body.testing .mainc, body.testing .exam, body.testing .qcard, body.testing .qbody { min-height:0; }
+body.testing .mainc .qbody { flex:0 1 auto; }
+body.testing .psg { min-height:0 !important; max-height:min(38vh,420px); overflow:auto; overscroll-behavior:contain; overflow-wrap:anywhere; }
+body.testing .psg *, body.testing .qbody .qt { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+body.testing .qbody .qt { max-height:min(36vh,420px); overflow:auto; overscroll-behavior:contain; }
+.qbody img,.qimg img,.psg img { max-width:100%; height:auto; }
+@media(max-width:700px){ .bw-result-summary{padding:12px}.bwrs-donut{width:78px;height:78px}.bwrs-donut::before{inset:9px}.bw-question-zoom{padding:12px} }

@@ -105,6 +105,19 @@
     #app:has(.qhead) > .card .dots { flex: none; margin-top: 8px !important; gap: 4px !important; }
     #app:has(.qhead) > .card .dots button { width: 28px !important; height: 28px !important; font-size: 12px !important; }
     #app:has(.qhead) > .card .ty { flex: none; margin-bottom: 4px !important; }
+    /* الشاشات القصيرة: نضغط المسافات وخريطة الأسئلة؛ وكحل أخير لسؤال طويل جدًا تتمرر البطاقة من داخلها بدل قصّ «التالي» */
+    @media (max-height: 820px) {
+      #app:has(.qhead) { padding-top: 6px !important; }
+      #app:has(.qhead) .track { margin: 4px 0 6px !important; }
+      #app:has(.qhead) > .card { padding: 10px 12px !important; }
+      #app:has(.qhead) > .card .opts { gap: 5px !important; }
+      #app:has(.qhead) > .card .opt { padding-block: 5px !important; line-height: 1.45 !important; }
+      #app:has(.qhead) > .card .nav { margin-top: 6px !important; }
+      #app:has(.qhead) > .card .nav .btn { padding-block: 8px !important; }
+      #app:has(.qhead) > .card .dots { margin-top: 6px !important; gap: 3px !important; }
+      #app:has(.qhead) > .card .dots button { width: 24px !important; height: 24px !important; font-size: 11px !important; }
+    }
+    #app:has(.qhead) > .card { overflow-y: auto !important; overscroll-behavior: contain; }
   </style>
 </head>
 <body class="bwt-hub">
@@ -137,7 +150,11 @@
     if (!V || !K || !V.qs || !K.qs) { app.innerHTML = '<div class="card"><h3>تعذّر تحميل الأسئلة</h3><p class="sub">تأكد من الاتصال بالإنترنت ثم أعد تحميل الصفحة.</p><button class="btn btn-navy" onclick="location.reload()">إعادة المحاولة</button></div>'; return; }
     var VN = {}, KN = {}; V.secs.forEach(function (s) { VN[s.id] = s.name; }); K.secs.forEach(function (s) { KN[s.id] = s.name; });
 
+    // lastWrong: أخطاء آخر اختبار؛ pending: تُملأ فقط عند ضغط «أعد تدريب الخاطئ والمتروك»؛ practiceRun: الجولة الحالية تدريب لا يُسجَّل كمستوى
+    var lastWrong = null, pending = null, practiceRun = false;
     function build() {
+      practiceRun = false;
+      if (pending && pending.length) { var selected = pending; pending = null; practiceRun = true; return selected; }
       var vq = V.qs.filter(function (a) { return VN[a[1]] !== undefined && a[5] && a[5].length === 4; }), out = [];
       var byT = {}; vq.forEach(function (a) { (byT[a[2]] = byT[a[2]] || []).push(a); });
       [[0, 2], [1, 2], [2, 2], [4, 1]].forEach(function (x) { pick(byT[x[0]] || [], x[1]).forEach(function (a) { out.push({ s: 'v', a: a }); }); });
@@ -219,7 +236,7 @@
       });
       put('verbal-quiz-errors-v1', EV); put('quant-quiz-errors-v1', EK);
       var pc = function (x) { return x[1] ? Math.round(x[0] / x[1] * 100) : 0; }, P = pc([R.v[0] + R.k[0], R.v[1] + R.k[1]]), pv = pc(R.v), pk = pc(R.k), L2 = level(P);
-      var hist = get(PK, []) || []; hist.push({ d: date, p: P, v: pv, k: pk, t: R.t, lvl: L2[0], u: used }); put(PK, hist.slice(-10));
+      if (!practiceRun) { var hist = get(PK, []) || []; hist.push({ d: date, p: P, v: pv, k: pk, t: R.t, lvl: L2[0], u: used }); put(PK, hist.slice(-10)); }
 
       // الخطة: خطوات مرتبة حسب نتيجتك
       var weakT = Object.keys(R.t).map(function (k) { return { t: +k, p: pc(R.t[k]) }; }).filter(function (x) { return x.p < 60; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 3);
@@ -235,13 +252,15 @@
       if (wrong.length) steps.push(['راجع أخطاء هذا الاختبار', 'حُفظ ' + CNT(wrong.length, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالًا') + ' في مجلد الأسئلة الخاطئة لتراجعها لاحقًا، وتجد حلولها في الأسفل الآن.', '<a class="btn btn-soft" href="#review">اعرض الحلول</a>']);
       steps.push(['تابع تقدمك', 'صفحة «تقدمي» تقترح عليك خطوتك التالية بعد كل تدريب. أعد هذا الاختبار بعد أسبوعين لترى الفرق.', '<a class="btn btn-soft" href="/progress.html">افتح تقدمي</a>']);
 
-      var h = '<section class="lvl"><small>مستواك الآن</small><h2>' + L2[0] + '</h2><p>' + L2[1] + '</p><div class="score"><div><b>' + AR(P) + '٪</b><span>النتيجة العامة</span></div><div><b>' + AR(pv) + '٪</b><span>اللفظي</span></div><div><b>' + AR(pk) + '٪</b><span>الكمي</span></div></div></section>';
+      var skipped = Q.filter(function (_, i) { return ans[i] === undefined; }).length, totalCorrect = R.v[0] + R.k[0], totalWrong = Q.length - totalCorrect - skipped;
+      lastWrong = wrong.map(function (i) { return Q[i]; });
+      var h = window.bwRenderResultSummary({total:Q.length,correct:totalCorrect,wrong:totalWrong,skipped:skipped,review:'#review',practice:'#practiceWrong'}) + '<section class="lvl"><small>' + (practiceRun ? 'تدريب على أخطائك · لا يُحتسب في مستواك' : 'مستواك الآن') + '</small><h2>' + L2[0] + '</h2><p>' + L2[1] + '</p><div class="score"><div><b>' + AR(P) + '٪</b><span>النتيجة العامة</span></div><div><b>' + AR(pv) + '٪</b><span>اللفظي</span></div><div><b>' + AR(pk) + '٪</b><span>الكمي</span></div></div></section>';
       h += '<div class="card"><h3>مهاراتك في هذا الاختبار</h3>' + Object.keys(R.t).sort().map(function (k) { var x = R.t[k], p = pc(x); return '<div class="sk lv-' + lv(p) + '"><span>' + TYN[k] + '</span><span class="bar"><i style="width:' + Math.max(4, p) + '%"></i></span><b>' + AR(x[0]) + '/' + AR(x[1]) + '</b></div>'; }).join('')
         + '<div class="sk lv-' + lv(pk) + '"><span>الكمي</span><span class="bar"><i style="width:' + Math.max(4, pk) + '%"></i></span><b>' + AR(R.k[0]) + '/' + AR(R.k[1]) + '</b></div>'
         + '<p class="note" style="text-align:start;margin:10px 0 0">الوقت: ' + fmt(used) + ' دقيقة · عدد الأسئلة قليل، فاعتبر النتيجة مؤشرًا للبداية وليست درجة نهائية.</p></div>';
       h += '<div class="card"><h3>خطتك من الآن</h3><ol class="plan">' + steps.map(function (s) { return '<li><div><b>' + esc(s[0]) + '</b><p>' + esc(s[1]) + '</p>' + s[2] + '</div></li>'; }).join('') + '</ol></div>';
       if (wrong.length) h += '<div class="card" id="review"><h3>حلول الأسئلة التي أخطأت فيها</h3>' + wrong.map(function (i, j) { var q = Q[i], a = q.a, pq = j ? Q[wrong[j - 1]].a : null, same = q.s === 'v' && pq && a[3] >= 0 && pq[3] === a[3] && pq[1] === a[1], opt = function (k) { return q.s === 'k' ? L[k] : L[k] + ') ' + esc(a[5][k]); }; return '<div class="rv">' + (q.s === 'v' ? '<span class="ty">' + TYN[a[2]] + '</span>' : '') + stemHtml(q, same) + '<div class="ans">' + (ans[i] === undefined ? '<span class="x">لم تجب</span>' : 'إجابتك: <span class="x">' + opt(ans[i]) + '</span>') + ' · الصحيحة: <span class="ok">' + opt(a[6]) + '</span></div></div>'; }).join('') + '</div>';
-      h += '<p style="text-align:center"><button class="btn btn-soft" id="again">أعد اختبار تحديد المستوى</button></p>';
+      h += '<p style="text-align:center"><button class="btn btn-soft" id="again">أعد اختبار تحديد المستوى</button>' + (wrong.length ? ' <button class="btn btn-navy" id="practiceWrong">أعد تدريب الخاطئ والمتروك (' + AR(wrong.length) + ')</button>' : '') + '</p>';
       app.innerHTML = h; scrollTo(0, 0);
     }
     app.addEventListener('click', function (e) {
@@ -249,6 +268,7 @@
       var b = e.target.closest('button'); if (!b) return;
       if (b.dataset.pr) { try { localStorage.setItem(b.dataset.pr === 'kamy' ? 'bw-sel-v1' : 'bwv-sel-v1', JSON.stringify(b.dataset.ids.split(',').map(Number))); } catch (x) { } location.href = b.dataset.pr === 'kamy' ? '/aksam%20kamy.html' : '/aksam%20lafzi.html'; }
       else if (b.id === 'again') start();
+      else if (b.id === 'practiceWrong' && lastWrong && lastWrong.length) { pending = lastWrong.slice(); start(); }
     });
     Q = build(); intro();
   }

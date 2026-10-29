@@ -61,7 +61,9 @@
     + '.bwf-m{position:fixed;inset:0;z-index:2147483000;background:#0c2440b3;display:flex;align-items:center;justify-content:center;padding:16px}'
     + '.bwf-m>div{background:#fff;color:#0c2440;border-radius:18px;max-width:420px;width:100%;padding:22px 20px;text-align:center;box-shadow:0 20px 60px #0006;font-family:inherit}'
     + '.bwf-m h3{margin:0 0 8px;font-size:20px}.bwf-m p{margin:0 0 12px;line-height:1.8;color:#3b4b63}.bwf-m .b{display:block;margin:8px 0;padding:11px;border-radius:12px;text-decoration:none;font-weight:700;border:0;width:100%;font:inherit;font-weight:700;cursor:pointer}'
-    + '.bwf-m .b1{background:#0c2440;color:#fff}.bwf-m .b2{background:#e3a92b;color:#0c2440}.bwf-m .b3{background:#25d366;color:#fff}.bwf-m .b4{background:#eef3fb;color:#0c2440}.bwf-m small{display:block;color:#6b7a90;line-height:1.7;margin-top:6px}';
+    + '.bwf-m .b1{background:#0c2440;color:#fff}.bwf-m .b2{background:#e3a92b;color:#0c2440}.bwf-m .b3{background:#25d366;color:#fff}.bwf-m .b4{background:#eef3fb;color:#0c2440}.bwf-m small{display:block;color:#6b7a90;line-height:1.7;margin-top:6px}'
+    + '.bwf-card-tag{display:inline-block;vertical-align:middle;margin-inline-start:8px;padding:1px 8px;border-radius:999px;border:1px solid #e3c06a;background:#fff6dc;color:#6b4e0e;font:600 11px/1.6 Tahoma,Arial,sans-serif;letter-spacing:0;white-space:nowrap}'
+    + '.bwf-pill{display:inline-flex;align-items:center;white-space:nowrap;border:1px solid #e5c46e;background:#fff7df;color:#684c0b;border-radius:999px;padding:3px 9px;font:600 11.5px/1.4 Tahoma,Arial,sans-serif}.bwf-skill-note{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:#5a6b80;font-size:13px}.bwf-skill-note .bwf-pill{font-size:11px}#bw-shell .bwf-pill{border-color:#ffffff45;background:#ffffff14;color:#ffe19b}';
   var st = document.createElement('style'); st.textContent = css; (document.head || document.documentElement).appendChild(st);
 
   var nxt = encodeURIComponent(location.pathname + location.search);
@@ -110,8 +112,16 @@
       a.setAttribute('data-msg', 'النموذج الأول متاح لك مجانًا. النموذج الثاني وباقي الاختبارات للمشتركين.');
     });
   }
+  // وسم صغير «نسخة مجانية» داخل كروت الاختبارات في الصفحة الرئيسية فقط (لا شيء داخل شاشة الاختبار)
+  function badge() {
+    [].forEach.call(document.querySelectorAll('a.pathway-link[data-vis], a.exam-main[data-vis]'), function (a) {
+      if (a.querySelector('.bwf-card-tag') || a.classList.contains('pending') || a.getAttribute('data-vis') === 'placement') return;
+      var host = a.querySelector('.pl-tx strong') || a.querySelector('h3'); if (!host) return;
+      var t = document.createElement('span'); t.className = 'bwf-card-tag'; t.textContent = 'نسخة مجانية'; host.appendChild(t);
+    });
+  }
   var pend = 0;
-  function sched() { if (pend) return; pend = 1; requestAnimationFrame(function () { pend = 0; locks(); }); }
+  function sched() { if (pend) return; pend = 1; requestAnimationFrame(function () { pend = 0; locks(); badge(); }); }
 
   function bar() {
     if (!F.why && PAGE !== 'aktar kamy' && PAGE !== 'skills') return;
@@ -122,7 +132,7 @@
     document.body.insertBefore(b, document.body.firstChild);
   }
   function boot() {
-    /* شريط «أنت على النسخة المجانية» أُلغي بطلب الإدارة: القفل 🔒 على الأجزاء المغلقة يكفي */ locks();
+    badge(); locks();
     new MutationObserver(sched).observe(document.body, { childList: true, subtree: true });
     if (/[?&]locked=1/.test(location.search)) { modal('هذا الاختبار للمشتركين. النموذج الأول متاح لك مجانًا.'); try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { } }
   }

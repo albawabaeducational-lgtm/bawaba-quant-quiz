@@ -2,6 +2,30 @@
 // ويضيف زر «إبلاغ عن خطأ» الذي يرسل رقم السؤال الحالي للمعلم.
 (function () {
   var sh = document.getElementById('bw-shell'); if (!sh) return;
+  // ملخص نتائج مرئي موحّد؛ كل صفحة تمرّر أعدادها من محركها الأصلي ولا يعاد احتساب التصحيح هنا.
+  window.bwRenderResultSummary = function (x) {
+    var AR = function (v) { return String(v).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
+    x = x || {}; var total = Math.max(0, +x.total || 0), correct = Math.max(0, +x.correct || 0), wrong = Math.max(0, +x.wrong || 0), skipped = Math.max(0, +x.skipped || 0);
+    var den = correct + wrong + skipped; if (den !== total) total = den;
+    var c = total ? correct / total * 100 : 0, w = total ? wrong / total * 100 : 0, end = c + w, score = total ? Math.round(c) : 0;
+    var h = '<section class="bw-result-summary" aria-label="ملخص نتيجة الاختبار"><div class="bwrs-head"><div><h3>ملخص النتيجة</h3><p>عدد الأسئلة <b>' + AR(total) + '</b> · أجبت عن <b>' + AR(correct + wrong) + '</b></p></div><div class="bwrs-donut" role="img" aria-label="الصحيح ' + correct + '، الخطأ ' + wrong + '، المتروك ' + skipped + '" style="background:conic-gradient(#16834a 0 ' + c + '%,#c93636 ' + c + '% ' + end + '%,#9aa4b2 ' + end + '% 100%)"><span><b>' + AR(score) + '٪</b><small>صحيح</small></span></div></div><div class="bwrs-stats"><div class="is-ok"><b>' + AR(correct) + '</b><span>صحيح</span></div><div class="is-no"><b>' + AR(wrong) + '</b><span>خطأ</span></div><div class="is-skip"><b>' + AR(skipped) + '</b><span>متروك</span></div></div>';
+    if ((wrong + skipped) > 0 && (x.review || x.practice)) h += '<div class="bwrs-actions">' + (x.review ? '<button type="button" data-bwrs-target="' + String(x.review).replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '">مراجعة الخاطئ والمتروك</button>' : '') + (x.practice ? '<button type="button" data-bwrs-target="' + String(x.practice).replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '">إعادة تدريب الخاطئ والمتروك</button>' : '') + '</div>';
+    return h + '</section>';
+  };
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('[data-bwrs-target]'); if (a) { var t = document.querySelector(a.getAttribute('data-bwrs-target')); if (t) { if (t.matches('button,a,[role=button]')) t.click(); else t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
+    var im = e.target.closest && e.target.closest('.qbody img, .psg img, .qimg img, img.qimg, .rv img');
+    if (!im || im.closest('#zm, [data-z], .graph-zoom-overlay') || document.getElementById('bw-question-zoom')) return;
+    if (!(im.closest('.qbody,.psg,.qimg,.rv,.exam,#simQ,#simRv'))) return;
+    e.preventDefault();
+    var ov = document.createElement('div'); ov.id = 'bw-question-zoom'; ov.className = 'bw-question-zoom'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','تكبير صورة السؤال');
+    ov.innerHTML = '<button type="button" class="bwqz-close" aria-label="إغلاق">×</button><img alt="صورة السؤال المكبرة">'; ov.querySelector('img').src = im.currentSrc || im.src; ov.querySelector('img').alt = im.alt || 'صورة السؤال';
+    function close(){ document.removeEventListener('keydown', key); ov.remove(); }
+    function key(ev){ if(ev.key==='Escape'){close();} }
+    ov.addEventListener('click', function(ev){ if(ev.target===ov || ev.target.closest('.bwqz-close')) close(); }); document.addEventListener('keydown',key); document.body.appendChild(ov); ov.querySelector('.bwqz-close').focus();
+  });
+  var qzObs = new MutationObserver(function () { document.querySelectorAll('.qbody img,.psg img,.qimg img,img.qimg,.rv img').forEach(function (im) { if (im.closest('#zm,[data-z],.graph-zoom-overlay')) return; im.tabIndex = 0; im.setAttribute('role','button'); im.setAttribute('aria-label', (im.alt || 'صورة السؤال') + ' — اضغط للتكبير'); }); });
+  qzObs.observe(document.documentElement, { childList: true, subtree: true });
   var tools = sh.querySelector('.bws-tools');
   var hr = document.querySelector('header.top .hr');
   if (hr && tools) { while (hr.firstChild) tools.appendChild(hr.firstChild); }
@@ -9,6 +33,16 @@
   // رابط ثابت للعودة إلى منصة الدورات
   var back = sh.querySelector('.bws-back');
   if (back && !sh.querySelector('.bws-lms')) { var lms = document.createElement('a'); lms.className = 'bws-lms'; lms.href = 'https://albawaba-edu.com/e/'; lms.target = '_blank'; lms.rel = 'noopener'; lms.title = 'منصة الدورات'; lms.innerHTML = '🎓<span> منصة الدورات</span>'; sh.insertBefore(lms, back); }
+  // المظهر: فاتح افتراضيًا، وداكن فقط حين يختاره الطالب (يُحفظ في هذا المتصفح ويسري على كل صفحات التدريب)
+  (function () {
+    var KEY = 'bw-user-theme', H = document.documentElement, mode = 'light';
+    try { mode = localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light'; } catch (e) { }
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'bws-theme';
+    function apply() { H.classList.toggle('bw-user-dark', mode === 'dark'); b.textContent = mode === 'dark' ? '☀' : '☾'; b.title = mode === 'dark' ? 'التبديل إلى المظهر الفاتح' : 'التبديل إلى المظهر الداكن'; b.setAttribute('aria-label', b.title); b.setAttribute('aria-pressed', mode === 'dark' ? 'true' : 'false'); }
+    b.onclick = function () { mode = mode === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, mode); } catch (e) { } apply(); };
+    if (tools) tools.appendChild(b); else sh.insertBefore(b, back || null);
+    apply();
+  })();
   // أدوات سهولة القراءة: تكبير الخط، خط أوضح، تباين أعلى، إيقاف الحركة (تُحفظ لهذا الجهاز)
   (function () {
     var KEY = 'bw-a11y', H = document.documentElement, O = {};

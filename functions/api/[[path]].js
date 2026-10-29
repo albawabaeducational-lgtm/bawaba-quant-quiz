@@ -8,6 +8,14 @@ const STAFF_COOKIE = 'Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Strict
 const TRIALS = [0, 120, 720, 1440, 2880, 10080, 14400, 43200];
 const DEF_PLANS = [{ name: 'اشتراك شهري', days: 30, price: 50 }, { name: '٣ شهور', days: 90, price: 100 }, { name: '٦ شهور', days: 180, price: 150 }];
 const plansOf = v => { try { const a = JSON.parse(v); if (Array.isArray(a) && a.length) return a; } catch (e) { } return DEF_PLANS; };
+const PACKAGE_GROUPS = ['computer_quant', 'computer_verbal', 'computer_combined', 'paper'];
+const DEF_PACKAGES = [
+  { id: 'computer_quant', name: 'الكمي المحوسب', category: 'computer_quant', days: 30, price: 0, groups: ['computer_quant'], courses: [] },
+  { id: 'computer_verbal', name: 'اللفظي المحوسب', category: 'computer_verbal', days: 30, price: 0, groups: ['computer_verbal'], courses: [] },
+  { id: 'computer_combined', name: 'المشترك المحوسب', category: 'computer_combined', days: 30, price: 0, groups: ['computer_quant', 'computer_verbal', 'computer_combined'], courses: [] },
+  { id: 'paper', name: 'الورقي', category: 'paper', days: 30, price: 0, groups: ['paper'], courses: [] }
+];
+const packagesOf = v => { let a; try { a = JSON.parse(v || 'null'); } catch (e) { a = null; } if (!Array.isArray(a)) a = DEF_PACKAGES; return a.slice(0, 12).map((x, i) => ({ id: String(x.id || ('custom_' + i)).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40), name: String(x.name || '').trim().slice(0, 50), category: PACKAGE_GROUPS.includes(x.category) ? x.category : 'custom', days: Math.max(1, Math.min(3650, parseInt(x.days) || 30)), price: Math.max(0, Math.min(99999, Number.isFinite(+x.price) ? +x.price : 0)), groups: Array.isArray(x.groups) ? [...new Set(x.groups.filter(g => PACKAGE_GROUPS.includes(g)))] : [], courses: Array.isArray(x.courses) ? [...new Set(x.courses.filter(c => typeof c === 'string' && c.length <= 40))] : [] })).filter(x => x.id && x.name); };
 const phone = v => { let d = String(v || '').replace(/[٠-٩]/g, x => '٠١٢٣٤٥٦٧٨٩'.indexOf(x)).replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); if (d.startsWith('0') && d.length === 10) d = '966' + d.slice(1); else if (d.startsWith('5') && d.length === 9) d = '966' + d; return d.slice(0, 20); };
 const pauseLeft = s => Math.max(0, Math.floor((s.duration_minutes || 0) * 0.10) - (s.pause_used || 0));
 const fmtMin = m => m >= 1440 ? Math.floor(m / 1440) + ' يوم' + (m % 1440 >= 60 ? ' و' + Math.floor(m % 1440 / 60) + ' ساعة' : '') : Math.floor(m / 60) + ' ساعة';
@@ -149,7 +157,7 @@ let schemaReady = false, leadsReady = false, moodleReady = false;
 const GOOGLE_CLIENT_ID = '1017687433947-oscl9bci17amtnqp8hlrgogk1p29ub23.apps.googleusercontent.com';
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
-const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-skill-v1', 'bw-rank-off'];
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-study-plan-v1', 'bw-skill-v1', 'bw-rank-off'];
 let progressReady = false;
 const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
@@ -197,9 +205,9 @@ const homeAvatar = x => { x = String(x || ''); if (/^\/assets\/avatars\/[A-Za-z0
 const homeClean = o => {
   o = o && typeof o === 'object' ? o : {};
   const arr = (a, n) => (Array.isArray(a) ? a : []).slice(0, n);
-  const out = { counts: {}, toppers: [], reviews: [], t: {}, font: HOME_FONTS.includes(o.font) ? o.font : '', show: { toppers: !(o.show && o.show.toppers === false), reviews: !(o.show && o.show.reviews === false) }, updated: homeStr(o.updated, 40) };
+  const out = { counts: {}, toppers: [], reviews: [], t: {}, font: HOME_FONTS.includes(o.font) ? o.font : '', show: { toppers: !(o.show && o.show.toppers === false), reviews: !(o.show && o.show.reviews === false) }, updated: homeStr(o.updated, 40), topperCycleAt: homeStr(o.topperCycleAt, 40) };
   for (const k of ['students', 'kamy', 'lafzi', 'secs', 'papers']) { const v = o.counts && o.counts[k]; if (v !== '' && v != null && Number.isFinite(+v)) out.counts[k] = Math.round(homeNum(v, 0, 99999999, 0)); }
-  out.toppers = arr(o.toppers, 20).map(x => ({ name: homeStr(x && x.name, 60), subjects: arr(x && x.subjects, 4).filter(k => VIS.some(v => v[0] === k)), rate: x && x.rate !== '' && x.rate != null && Number.isFinite(+x.rate) ? Math.round(homeNum(x.rate, 0, 100, 0) * 10) / 10 : null, solved: x && x.solved !== '' && x.solved != null && Number.isFinite(+x.solved) ? Math.round(homeNum(x.solved, 0, 9999999, 0)) : null, avatar: homeAvatar(x && x.avatar) })).filter(x => x.name);
+  out.toppers = arr(o.toppers, 100).map(x => ({ name: homeStr(x && x.name, 60), subjects: arr(x && x.subjects, 4).filter(k => VIS.some(v => v[0] === k)), rate: x && x.rate !== '' && x.rate != null && Number.isFinite(+x.rate) ? Math.round(homeNum(x.rate, 0, 100, 0) * 10) / 10 : null, solved: x && x.solved !== '' && x.solved != null && Number.isFinite(+x.solved) ? Math.round(homeNum(x && x.solved, 0, 9999999, 0)) : null, avatar: homeAvatar(x && x.avatar) })).filter(x => x.name);
   out.reviews = arr(o.reviews, 30).map(x => ({ name: homeStr(x && x.name, 50), role: homeStr(x && x.role, 60), text: homeStr(x && x.text, 500), rating: Math.round(homeNum(x && x.rating, 1, 5, 5)), avatar: homeAvatar(x && x.avatar) })).filter(x => x.name && x.text);
   const hexc = x => /^#[0-9a-fA-F]{6}$/.test(String(x || '')) ? String(x).toLowerCase() : '';
   if (o.theme && typeof o.theme === 'object') { const pickv = (v, l) => l.includes(v) ? v : ''; const th = { main: hexc(o.theme.main), accent: hexc(o.theme.accent), bg: hexc(o.theme.bg), hero: hexc(o.theme.hero), mode: pickv(o.theme.mode, ['dark', 'light']), cards: pickv(o.theme.cards, ['white', 'pastel', 'tint', 'main', 'glass']), top: pickv(o.theme.top, ['dark', 'light', 'sand', 'sky', 'mint']) }; Object.keys(th).forEach(k => { if (!th[k]) delete th[k]; }); if (Object.keys(th).length) out.theme = th; }
@@ -214,29 +222,38 @@ const SUB_KEYS = VIS.map(v => v[0]).filter(k => k !== 'placement');
 const SUB_TITLE = Object.fromEntries(VIS);
 // أي البنوك يحتاجها كل اشتراك (لتحميل بيانات الاختبارات المرتبطة كاملة)
 const SUB_LINKS = { 'muhaky mohawsab': ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
+const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'skills:kamy': ['computer_quant'], 'skills:lafzi': ['computer_verbal'] };
+const packageIncludes = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}; const groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; const need = PACKAGE_COURSE_GROUPS[key] || []; if (need.some(g => groups.includes(g))) return true; if (key === 'skills') return groups.includes('computer_quant') || groups.includes('computer_verbal'); return false; } catch (e) { return false; } };
 let acctReady = false;
 const ensureAcctSchema = async DB => {
   if (acctReady) return;
   await DB.batch([
     DB.prepare('CREATE TABLE IF NOT EXISTS accounts (student_id INTEGER PRIMARY KEY, email TEXT UNIQUE, phone TEXT UNIQUE, pass_hash TEXT NOT NULL, show_counter INTEGER NOT NULL DEFAULT 1, ref_code TEXT UNIQUE, ref_by INTEGER, created_at TEXT NOT NULL)'),
-    DB.prepare("CREATE TABLE IF NOT EXISTS subscriptions (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT NOT NULL, start_at TEXT NOT NULL, end_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active', created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT, note TEXT)"),
+    DB.prepare("CREATE TABLE IF NOT EXISTS subscriptions (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT NOT NULL, start_at TEXT NOT NULL, end_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active', created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT, note TEXT, package_id TEXT, package_name TEXT, package_access TEXT)"),
     DB.prepare('CREATE INDEX IF NOT EXISTS subs_student ON subscriptions(student_id, status)'),
     DB.prepare('CREATE INDEX IF NOT EXISTS subs_course ON subscriptions(course, status)'),
     DB.prepare("CREATE TABLE IF NOT EXISTS renewal_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT NOT NULL, days INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, handled_by TEXT, handled_at TEXT, note TEXT)"),
     DB.prepare('CREATE INDEX IF NOT EXISTS renew_status ON renewal_requests(status, created_at)'),
-    DB.prepare('CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT, amount REAL NOT NULL DEFAULT 0, note TEXT, created_by TEXT, created_at TEXT NOT NULL)'),
+    DB.prepare('CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT, amount REAL NOT NULL DEFAULT 0, note TEXT, created_by TEXT, created_at TEXT NOT NULL, sale_key TEXT)'),
     DB.prepare('CREATE INDEX IF NOT EXISTS payments_student ON payments(student_id)'),
-    DB.prepare("CREATE TABLE IF NOT EXISTS commissions (id INTEGER PRIMARY KEY AUTOINCREMENT, referrer_id INTEGER NOT NULL, referred_id INTEGER NOT NULL, payment_id INTEGER, course TEXT, base_amount REAL NOT NULL DEFAULT 0, rate REAL NOT NULL DEFAULT 0, amount REAL NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, available_at TEXT, paid_at TEXT, paid_by TEXT, note TEXT)"),
-    DB.prepare('CREATE INDEX IF NOT EXISTS comm_ref ON commissions(referrer_id, status)')
+    DB.prepare("CREATE TABLE IF NOT EXISTS commissions (id INTEGER PRIMARY KEY AUTOINCREMENT, referrer_id INTEGER NOT NULL, referred_id INTEGER NOT NULL, payment_id INTEGER, course TEXT, base_amount REAL NOT NULL DEFAULT 0, rate REAL NOT NULL DEFAULT 0, amount REAL NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, available_at TEXT, paid_at TEXT, paid_by TEXT, note TEXT, sale_key TEXT)"),
+    DB.prepare('CREATE INDEX IF NOT EXISTS comm_ref ON commissions(referrer_id, status)'),
+    DB.prepare("CREATE TABLE IF NOT EXISTS package_sales (id INTEGER PRIMARY KEY AUTOINCREMENT, sale_key TEXT NOT NULL UNIQUE, student_id INTEGER NOT NULL, package_id TEXT NOT NULL, package_name TEXT NOT NULL, amount REAL NOT NULL DEFAULT 0, days INTEGER NOT NULL, rate_override REAL, created_by TEXT NOT NULL, created_at TEXT NOT NULL)"),
+    DB.prepare('CREATE INDEX IF NOT EXISTS package_sales_student ON package_sales(student_id, created_at)')
   ]);
   // أعمدة أُضيفت لاحقًا (تُتجاهل إن كانت موجودة)
   for (const c of ['marketer INTEGER NOT NULL DEFAULT 0', 'ref_rate REAL']) { try { await DB.prepare('ALTER TABLE accounts ADD COLUMN ' + c).run(); } catch (e) { } }
+  for (const c of ['package_id TEXT', 'package_name TEXT', 'package_access TEXT']) { try { await DB.prepare('ALTER TABLE subscriptions ADD COLUMN ' + c).run(); } catch (e) { } }
+  for (const c of ['sale_key TEXT']) { try { await DB.prepare('ALTER TABLE commissions ADD COLUMN ' + c).run(); } catch (e) { } try { await DB.prepare('ALTER TABLE payments ADD COLUMN ' + c).run(); } catch (e) { } }
+  try { await DB.prepare('CREATE UNIQUE INDEX IF NOT EXISTS payments_sale_once ON payments(sale_key) WHERE sale_key IS NOT NULL').run(); } catch (e) { }
+  try { await DB.prepare('CREATE UNIQUE INDEX IF NOT EXISTS comm_sale_once ON commissions(sale_key) WHERE sale_key IS NOT NULL').run(); } catch (e) { }
+  try { await DB.prepare('CREATE UNIQUE INDEX IF NOT EXISTS package_sub_student_once ON subscriptions(student_id,package_id) WHERE package_id IS NOT NULL').run(); } catch (e) { }
   acctReady = true;
 };
 const refCodeNew = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (const x of crypto.getRandomValues(new Uint8Array(7))) s += a[x % a.length]; return s; };
 const commState = (c, nowIso) => c.status === 'pending' && c.available_at && c.available_at <= nowIso ? 'due' : c.status;
 const emailOk = e => /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i.test(e);
-const subRow = (r, nowIso) => { const end = new Date(r.end_at).getTime(), left = Math.ceil((end - Date.parse(nowIso)) / 864e5); return { id: r.id, course: r.course, title: SUB_TITLE[r.course] || r.course, start: r.start_at, end: r.end_at, days: Math.max(0, left), state: r.status !== 'active' ? 'cancelled' : r.end_at <= nowIso ? 'expired' : left <= 3 ? 'soon' : 'active' }; };
+const subRow = (r, nowIso) => { const end = new Date(r.end_at).getTime(), left = Math.ceil((end - Date.parse(nowIso)) / 864e5); return { id: r.id, course: r.course, package_id: r.package_id || null, title: r.package_name || SUB_TITLE[r.course] || r.course, start: r.start_at, end: r.end_at, days: Math.max(0, left), state: r.status !== 'active' ? 'cancelled' : r.end_at <= nowIso ? 'expired' : left <= 3 ? 'soon' : 'active' }; };
 const SKILL_BANKS = { 'aksam kamy': 'kamy', 'aktar kamy': 'kamy', 'aksam lafzi': 'lafzi' };
 const SUBJECTS = { kamy: 'الكمي', lafzi: 'اللفظي' };
 const SEED_SKILLS = {
@@ -304,7 +321,7 @@ const cleanQ = q => {
 // أسئلة البنك كما يراها الطالب (الملف الأصلي + تعديلات المعلمين)، مع ذاكرة مؤقتة داخل العامل
 const bankCache = {};
 const bankItems = async (env, request, DB, slug) => {
-  const c = COURSE[slug]; if (!c || !SKILL_BANKS[slug]) return [];
+  const c = COURSE[slug]; if (!c || (!SKILL_BANKS[slug] && c.model !== 'bank' && c.model !== 'static')) return [];
   const res = await fetchAsset(env, request, c.file); if (!res) return [];
   let pv = { n: 0, m: '' };
   try { pv = await DB.prepare('SELECT COUNT(*) n, MAX(updated_at) m FROM exam_patch WHERE course=?').bind(slug).first() || pv; } catch (e) { }
@@ -329,8 +346,8 @@ const bankItems = async (env, request, DB, slug) => {
     }
     const SN = Object.fromEntries(secs.map(x => [x.id, x.name]));
     qs = qs.filter(q => SN[q[1]] !== undefined);
-    if (slug === 'aksam lafzi') items = qs.map(q => ({ key: String(q[0]), sec: SN[q[1]], t: q[2], p: q[3] >= 0 && D.ps ? D.ps[q[3]] || '' : '', s: q[4], o: q[5], c: q[6] }));
-    else items = qs.map(q => { const m = /\/api\/exam\/img\/\d+/.exec(q[4] || ''); return { key: String(q[0]), sec: SN[q[1]], img: m ? m[0] : '/img/' + q[0] + '.webp', c: q[6], h: q[7] || '' }; });
+    if (slug === 'aksam lafzi') items = qs.map(q => ({ key: String(q[0]), secId: q[1], sec: SN[q[1]], t: q[2], p: q[3] >= 0 && D.ps ? D.ps[q[3]] || '' : '', s: q[4], o: q[5], c: q[6] }));
+    else items = qs.map(q => { const m = /\/api\/exam\/img\/\d+/.exec(q[4] || ''); return { key: String(q[0]), secId: q[1], sec: SN[q[1]], img: m ? m[0] : '/img/' + q[0] + '.webp', c: q[6], h: q[7] || '' }; });
   }
   bankCache[slug] = { sig, items };
   return items;
@@ -400,7 +417,12 @@ export async function onRequest({ request, env, params }) {
   const hasSubFor = async (sid, c) => {
     await ensureAcctSchema(DB);
     const keys = [c].concat(Object.keys(SUB_LINKS).filter(k => SUB_LINKS[k].includes(c)));
-    return !!(await DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND status='active' AND end_at>? AND course IN (" + keys.map(() => '?').join(',') + ')').bind(sid, iso, ...keys).first());
+    if (c && c.startsWith('skills:')) keys.push('skills');
+    if (keys.length && await DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND status='active' AND end_at>? AND course IN (" + keys.map(() => '?').join(',') + ')').bind(sid, iso, ...keys).first()) return true;
+    // الاشتراك القديم «skills» كان يفتح المهارات كاملة؛ نحافظ على صلاحيته.
+    if (c && c.startsWith('skills:') && await DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND status='active' AND end_at>? AND course IN (" + SUB_KEYS.map(() => '?').join(',') + ')').bind(sid, iso, ...SUB_KEYS).first()) return true;
+    const rows = await DB.prepare("SELECT package_access FROM subscriptions WHERE student_id=? AND status='active' AND end_at>? AND package_id IS NOT NULL").bind(sid, iso).all();
+    return (rows.results || []).some(r => packageIncludes(r.package_access, c));
   };
   const fullAccess = async (c) => {
     const st = await byCode(norm(ck(request, 'bw_code'))), tm = +(await setting('trial_minutes')) || 0, ts = +ck(request, 'bw_trial') || 0;
@@ -453,7 +475,7 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
   // الصفحة الرئيسية تعرض «تفاصيل الدورات» من نفس رسالة واتساب التي تُرسل للمهتمين (تُعدَّل من لوحة التحكم ← الإعدادات)
-  if (p === 'public') return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0', google: env.MOODLE_TOKEN ? ((await setting('google_client_id')) || GOOGLE_CLIENT_ID) : '', hidden: hiddenOf(await setting('hidden_courses')), home: homeOf(await setting('home_config')) });
+  if (p === 'public') { const gTitle = { computer_quant: 'الكمي المحوسب', computer_verbal: 'اللفظي المحوسب', computer_combined: 'المحاكي المحوسب المشترك', paper: 'الاختبارات الورقية' }; const packages = packagesOf(await setting('packages')).filter(x => x.price > 0 && (x.groups.length || x.courses.length)).map(x => ({ ...x, inclusions: [...x.groups.map(g => gTitle[g] || g), ...x.courses.map(c => SUB_TITLE[c] || c)] })); return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), packages, courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0', google: env.MOODLE_TOKEN ? ((await setting('google_client_id')) || GOOGLE_CLIENT_ID) : '', hidden: hiddenOf(await setting('hidden_courses')), home: homeOf(await setting('home_config')) }); }
 
   if (p === 'login' && m === 'POST') {
     if (await tooMany(ip)) return J({ error: 'محاولات خاطئة كثيرة. حاول بعد ربع ساعة.' }, 429);
@@ -614,7 +636,7 @@ export async function onRequest({ request, env, params }) {
     if (!s) return J({ logged: false });
     await ensureAcctSchema(DB);
     const a = await DB.prepare('SELECT email,phone,show_counter,ref_code FROM accounts WHERE student_id=?').bind(s.id).first();
-    const subs = ((await DB.prepare('SELECT * FROM subscriptions WHERE student_id=? ORDER BY end_at DESC').bind(s.id).all()).results || []).map(r => subRow(r, iso));
+    const subs = ((await DB.prepare('SELECT * FROM subscriptions WHERE student_id=? ORDER BY end_at DESC').bind(s.id).all()).results || []).map(r => { const x = subRow(r, iso); if (r.package_id) x.covers = SUB_KEYS.filter(k => k !== 'placement' && packageIncludes(r.package_access, k)); return x; });
     const pend = ((await DB.prepare("SELECT course,days,created_at FROM renewal_requests WHERE student_id=? AND status='pending'").bind(s.id).all()).results || []);
     return J({ logged: true, account: !!a, name: s.name, email: a ? a.email : '', phone: a ? a.phone : '', code: a ? '' : s.code, showCounter: a ? !!a.show_counter : true, subs, pending: pend, contact: await setting('contact'), courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })) });
   }
@@ -641,7 +663,7 @@ export async function onRequest({ request, env, params }) {
     if (!a.ref_code) { for (let i = 0; i < 5 && !a.ref_code; i++) { const c = refCodeNew(); try { await DB.prepare('UPDATE accounts SET ref_code=? WHERE student_id=? AND ref_code IS NULL').bind(c, s.id).run(); a = await DB.prepare('SELECT * FROM accounts WHERE student_id=?').bind(s.id).first(); } catch (e) { } } }
     const reg = (await DB.prepare("SELECT s.id,s.name,a.created_at FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_by=? ORDER BY a.created_at DESC").bind(s.id).all()).results || [];
     const subs = (await DB.prepare("SELECT x.student_id,x.course FROM subscriptions x JOIN accounts a ON a.student_id=x.student_id WHERE a.ref_by=? AND x.status!='cancelled'").bind(s.id).all()).results || [];
-    const com = ((await DB.prepare('SELECT c.*,s.name FROM commissions c JOIN students s ON s.id=c.referred_id WHERE c.referrer_id=? ORDER BY c.created_at DESC').bind(s.id).all()).results || []).map(c => ({ ...c, title: SUB_TITLE[c.course] || '', state: commState(c, iso) }));
+    const com = ((await DB.prepare('SELECT c.*,s.name FROM commissions c JOIN students s ON s.id=c.referred_id WHERE c.referrer_id=? ORDER BY c.created_at DESC').bind(s.id).all()).results || []).map(c => ({ ...c, title: SUB_TITLE[c.course] || c.course || '', state: commState(c, iso) }));
     const tot = { pending: 0, due: 0, paid: 0 }; com.forEach(c => { if (tot[c.state] !== undefined) tot[c.state] += c.amount; });
     const by = {}; subs.forEach(x => { (by[x.student_id] = by[x.student_id] || new Set()).add(SUB_TITLE[x.course] || x.course); });
     const rate = a.ref_rate != null ? a.ref_rate : (+(await setting('ref_rate')) || 20);
@@ -652,7 +674,8 @@ export async function onRequest({ request, env, params }) {
     const s = await byCode(norm(ck(request, 'bw_code'))); if (!s) return J({ error: 'سجّل دخولك أولًا' }, 401);
     await ensureAcctSchema(DB);
     const b = await body(), course = String(b.course || ''), days = Math.max(1, Math.min(366, Math.round(+b.days || 30)));
-    if (!SUB_KEYS.includes(course)) return J({ error: 'اختر القسم' }, 400);
+    const pkgM = /^package:([A-Za-z0-9_-]{1,40})$/.exec(course);
+    if (pkgM ? !(await DB.prepare('SELECT 1 x FROM subscriptions WHERE student_id=? AND package_id=?').bind(s.id, pkgM[1]).first()) : !SUB_KEYS.includes(course)) return J({ error: 'اختر القسم' }, 400);
     if (await DB.prepare("SELECT 1 x FROM renewal_requests WHERE student_id=? AND course=? AND status='pending'").bind(s.id, course).first()) return J({ ok: 1, already: 1 });
     await DB.prepare('INSERT INTO renewal_requests (student_id,course,days,created_at) VALUES (?,?,?,?)').bind(s.id, course, days, iso).run();
     return J({ ok: 1 });
@@ -754,6 +777,29 @@ export async function onRequest({ request, env, params }) {
     return J({ off: false, list });
   }
 
+  // إحصاء آمن لأعداد الأسئلة التي يستطيع هذا الزائر حلها؛ لا يعيد نصوص الأسئلة أو إجاباتها.
+  if (p === 'exam/counts' && m === 'GET') {
+    const u = new URL(request.url), rawRequested = (u.searchParams.get('c') || '').split('|').filter(Boolean);
+    const allowed = new Set(COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => c.slug));
+    let configured = []; try { configured = JSON.parse(await setting('study_plan_banks') || 'null'); } catch (e) { }
+    if (!Array.isArray(configured) || !configured.length) configured = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi'];
+    const requested = rawRequested.length ? rawRequested : configured.filter(x => allowed.has(x));
+    if (!requested.length || requested.length > allowed.size || requested.some(x => !allowed.has(x))) return J({ error: 'مقررات غير صالحة' }, 400);
+    const n = await freeN(), by = {};
+    for (const slug of requested) {
+      const rows = await bankItems(env, request, DB, slug), full = await fullAccess(slug), map = new Map();
+      for (const q of rows) {
+        const id = String(q.secId == null ? q.sec : q.secId), name = String(q.sec || '');
+        if (!id || !name) continue;
+        const x = map.get(id) || { id, name, questions: 0 }; x.questions++; map.set(id, x);
+      }
+      let sections = [...map.values()].sort((a, b) => (+a.id) - (+b.id));
+      if (!full) sections = sections.slice(0, n);
+      by[slug] = { title: COURSE[slug].title, subject: (SKILL_BANKS[slug] === 'lafzi' || /لفظي/.test(COURSE[slug].title) || slug.indexOf('lafzi') >= 0) ? 'v' : 'q', sections, questions: sections.reduce((sum, x) => sum + x.questions, 0), full: !!full };
+    }
+    return J({ by, calculatedAt: iso });
+  }
+
   // بيانات أسئلة «أقسام الكمي» و«أقسام اللفظي» يستخدمها المحاكي المحوسب مباشرة،
   // فأي قسم أو سؤال يُضاف في ملف الأقسام يظهر في المحاكي تلقائيًا بدون رفع أي ملف آخر.
   if (p === 'exam/data' && m === 'GET') {
@@ -806,7 +852,7 @@ export async function onRequest({ request, env, params }) {
     const out = [];
     for (const slug of Object.keys(by)) { const items = await bankItems(env, request, DB, slug); for (const it of items) if (by[slug].has(it.key)) out.push({ course: slug, bank: COURSE[slug].title, ...it }); }
     // النسخة المجانية: غير المشترك (بعد انتهاء التجربة) يرى أول N سؤال فقط من كل مهارة
-    if (out.length && !(await fullAccess())) { const n = await freeN(); if (out.length > n) return J({ skill: sk, items: out.slice(0, n), locked: out.length - n, total: out.length }); }
+    if (out.length && !(await fullAccess(sk.subject === 'lafzi' ? 'skills:lafzi' : 'skills:kamy'))) { const n = await freeN(); if (out.length > n) return J({ skill: sk, items: out.slice(0, n), locked: out.length - n, total: out.length }); }
     return J({ skill: sk, items: out });
   }
 
@@ -890,20 +936,23 @@ export async function onRequest({ request, env, params }) {
     const W = m === 'POST'; if (W && !can('students.edit')) return deny();
     const b = W ? await body() : {};
     if (p === 'admin/ref/overview') {
-      const defRate = +(await setting('ref_rate')) || 20;
+      const rateRaw = await setting('ref_rate'), defRate = rateRaw === '' || rateRaw == null || !Number.isFinite(+rateRaw) ? 20 : Math.max(0, Math.min(100, +rateRaw));
       const rows = await all("SELECT s.id,s.name,a.phone,a.email,a.ref_code,a.ref_rate,a.marketer,(SELECT COUNT(*) FROM accounts r WHERE r.ref_by=a.student_id) reg,(SELECT COUNT(DISTINCT x.student_id) FROM subscriptions x JOIN accounts r ON r.student_id=x.student_id WHERE r.ref_by=a.student_id AND x.status!='cancelled') subs FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_code IS NOT NULL OR a.marketer=1 OR EXISTS (SELECT 1 FROM accounts r WHERE r.ref_by=a.student_id) ORDER BY reg DESC, s.id DESC LIMIT 300");
       const com = await all("SELECT c.*,s.name referred FROM commissions c JOIN students s ON s.id=c.referred_id ORDER BY c.created_at DESC LIMIT 1000");
-      const tot = {}; com.forEach(c => { const st2 = commState(c, iso), t = tot[c.referrer_id] || (tot[c.referrer_id] = { pending: 0, due: 0, paid: 0, cancelled: 0 }); t[st2] = (t[st2] || 0) + c.amount; });
-      return J({ defRate, rule: (await setting('ref_rule')) || 'first', wait: (v => v === '' || v == null || isNaN(+v) ? 7 : +v)(await setting('ref_wait_days')), rows: rows.map(r => ({ ...r, rate: r.ref_rate != null ? r.ref_rate : defRate, totals: tot[r.id] || { pending: 0, due: 0, paid: 0, cancelled: 0 } })), commissions: com.map(c => ({ ...c, state: commState(c, iso), title: SUB_TITLE[c.course] || '' })) });
+      const totals = await all("SELECT referrer_id,SUM(CASE WHEN status='pending' AND available_at<=? THEN amount ELSE 0 END) due,SUM(CASE WHEN status='pending' AND (available_at>? OR available_at IS NULL) THEN amount ELSE 0 END) pending,SUM(CASE WHEN status='paid' THEN amount ELSE 0 END) paid,SUM(CASE WHEN status='cancelled' THEN amount ELSE 0 END) cancelled FROM commissions GROUP BY referrer_id", iso, iso);
+      const tot = {}; totals.forEach(t => { tot[t.referrer_id] = { due: +t.due || 0, pending: +t.pending || 0, paid: +t.paid || 0, cancelled: +t.cancelled || 0 }; });
+      return J({ defRate, rule: (await setting('ref_rule')) || 'first', wait: (v => v === '' || v == null || isNaN(+v) ? 7 : +v)(await setting('ref_wait_days')), rows: rows.map(r => ({ ...r, rate: r.ref_rate != null ? r.ref_rate : defRate, totals: tot[r.id] || { pending: 0, due: 0, paid: 0, cancelled: 0 } })), commissions: com.map(c => ({ ...c, state: commState(c, iso), title: SUB_TITLE[c.course] || c.course || '' })) });
     }
     if (p === 'admin/ref/referred') {
       const id = int(new URL(request.url).searchParams.get('id'));
-      const rows = await all("SELECT s.id,s.name,a.phone,a.created_at,(SELECT GROUP_CONCAT(course) FROM subscriptions x WHERE x.student_id=s.id AND x.status!='cancelled') courses FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_by=? ORDER BY a.created_at DESC", id);
+      const rows = await all("SELECT s.id,s.name,a.phone,a.created_at,(SELECT GROUP_CONCAT(COALESCE(package_name,course)) FROM subscriptions x WHERE x.student_id=s.id AND x.status!='cancelled') courses FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_by=? ORDER BY a.created_at DESC", id);
       return J({ rows: rows.map(r => ({ ...r, courses: String(r.courses || '').split(',').filter(Boolean).map(k => SUB_TITLE[k] || k) })) });
     }
     if (p === 'admin/ref/rate' && W) {
-      const id = int(b.student_id), rate = b.rate === '' || b.rate == null ? null : Math.max(0, Math.min(100, +b.rate));
-      await DB.batch([DB.prepare('UPDATE accounts SET ref_rate=? WHERE student_id=?').bind(rate, id), audit(A, 'ref_rate', 'student', id, rate == null ? 'النسبة الافتراضية' : rate + '٪')]);
+      const id = int(b.student_id), rate = b.rate === '' || b.rate == null ? null : +b.rate;
+      if (!id || !await one('SELECT 1 x FROM accounts WHERE student_id=?', id)) return J({ error: 'حساب المسوّق غير موجود' }, 404);
+      if (rate != null && (!Number.isFinite(rate) || rate < 0 || rate > 100)) return J({ error: 'النسبة يجب أن تكون بين 0 و100' }, 400);
+      await DB.batch([DB.prepare('UPDATE accounts SET ref_rate=? WHERE student_id=?').bind(rate == null ? null : Math.round(rate * 100) / 100, id), audit(A, 'ref_rate', 'student', id, rate == null ? 'النسبة الافتراضية' : rate + '٪')]);
       return J({ ok: 1 });
     }
     if (p === 'admin/ref/settings' && W) {
@@ -941,11 +990,23 @@ export async function onRequest({ request, env, params }) {
     const qp = new URL(request.url).searchParams, b = W ? await body() : {};
     const endFrom = (base, days, end) => { if (end && /^\d{4}-\d{2}-\d{2}/.test(String(end))) return new Date(String(end).slice(0, 10) + 'T23:59:59.000Z').toISOString(); const d = Math.max(1, Math.min(3660, Math.round(+days || 30))); return new Date(Math.max(Date.parse(base || iso), now) + d * 864e5).toISOString(); };
     const student = async id => DB.prepare("SELECT s.id,s.name,s.status,s.created_at,s.last_seen,a.email,a.phone FROM students s LEFT JOIN accounts a ON a.student_id=s.id WHERE s.id=?").bind(id).first();
-    const grant = async (sid, course, days, end, note) => {
+    const grant = async (sid, course, days, end, note, pkg = null) => {
       const cur = await DB.prepare("SELECT * FROM subscriptions WHERE student_id=? AND course=? AND status='active' ORDER BY end_at DESC").bind(sid, course).first();
       if (cur) { const e2 = endFrom(cur.end_at, days, end); await DB.prepare('UPDATE subscriptions SET end_at=?,updated_at=?,note=COALESCE(?,note) WHERE id=?').bind(e2, iso, note || null, cur.id).run(); return { id: cur.id, end: e2, extended: true }; }
-      const e2 = endFrom(iso, days, end), r = await DB.prepare('INSERT INTO subscriptions (student_id,course,start_at,end_at,status,created_by,created_at,note) VALUES (?,?,?,?,?,?,?,?)').bind(sid, course, iso, e2, 'active', A.name, iso, note || null).run();
+      const e2 = endFrom(iso, days, end);
+      const r = pkg ? await DB.prepare('INSERT INTO subscriptions (student_id,course,start_at,end_at,status,created_by,created_at,note,package_id,package_name,package_access) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind(sid, course, iso, e2, 'active', A.name, iso, note || null, pkg.id, pkg.name, JSON.stringify({ groups: pkg.groups, courses: pkg.courses })).run() : await DB.prepare('INSERT INTO subscriptions (student_id,course,start_at,end_at,status,created_by,created_at,note) VALUES (?,?,?,?,?,?,?,?)').bind(sid, course, iso, e2, 'active', A.name, iso, note || null).run();
       return { id: r.meta.last_row_id, end: e2, extended: false };
+    };
+    const packageCommission = async (sid, amt, course, paymentId, saleKey, override) => {
+      const old = await one('SELECT id,amount FROM commissions WHERE sale_key=?', saleKey); if (old) return { id: old.id, amount: old.amount, duplicate: true };
+      const acc = await one('SELECT ref_by FROM accounts WHERE student_id=?', sid); if (!acc || !acc.ref_by || acc.ref_by === sid || amt <= 0) return null;
+      const prev = await one("SELECT COUNT(*) n FROM commissions WHERE referred_id=? AND status!='cancelled'", sid), rule = (await setting('ref_rule')) || 'first';
+      if (rule !== 'all' && prev.n) return null;
+      const ra = await one('SELECT ref_rate FROM accounts WHERE student_id=?', acc.ref_by), globalRaw = await setting('ref_rate'), global = globalRaw === '' || globalRaw == null || !Number.isFinite(+globalRaw) ? 20 : Math.max(0, Math.min(100, +globalRaw));
+      const rate = override != null ? override : ra && ra.ref_rate != null ? +ra.ref_rate : global;
+      const roundedRate = Math.round(rate * 100) / 100, amount = Math.round(amt * roundedRate) / 100, wv = await setting('ref_wait_days'), wait = wv === '' || wv == null || isNaN(+wv) ? 7 : Math.max(0, +wv), avail = new Date(now + wait * 864e5).toISOString();
+      if (roundedRate <= 0 || amount <= 0) return null;
+      try { const r = await DB.prepare('INSERT INTO commissions (referrer_id,referred_id,payment_id,course,base_amount,rate,amount,status,created_at,available_at,sale_key) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind(acc.ref_by, sid, paymentId, course, amt, roundedRate, amount, 'pending', iso, avail, saleKey).run(); await audit(A, 'commission', 'student', sid, amount + ' ريال · ' + roundedRate + '%').run(); return { id: r.meta.last_row_id, amount }; } catch (e) { const again = await one('SELECT id,amount FROM commissions WHERE sale_key=?', saleKey); if (again) return { id: again.id, amount: again.amount, duplicate: true }; throw e; }
     };
     // تسجيل دفعة + عمولة المسوّق (مشترك بين: تسجيل دفعة، إضافة اشتراك بمبلغ، الموافقة على طلب بمبلغ)
     const pay = async (sid, amt0, c0, note0) => {
@@ -958,7 +1019,7 @@ export async function onRequest({ request, env, params }) {
       if (acc && acc.ref_by && acc.ref_by !== sid && amt > 0) {
         const rule = (await setting('ref_rule')) || 'first', prev = await one("SELECT COUNT(*) n FROM commissions WHERE referred_id=? AND status!='cancelled'", sid);
         if (rule === 'all' || !prev.n) {
-          const ra = await one('SELECT ref_rate FROM accounts WHERE student_id=?', acc.ref_by), rate = ra && ra.ref_rate != null ? ra.ref_rate : (+(await setting('ref_rate')) || 20), wv = await setting('ref_wait_days'), wait = wv === '' || wv == null || isNaN(+wv) ? 7 : Math.max(0, +wv);
+          const ra = await one('SELECT ref_rate FROM accounts WHERE student_id=?', acc.ref_by), rr = await setting('ref_rate'), globalRate = rr === '' || rr == null || !Number.isFinite(+rr) ? 20 : Math.max(0, Math.min(100, +rr)), rate = Math.round((ra && ra.ref_rate != null ? +ra.ref_rate : globalRate) * 100) / 100, wv = await setting('ref_wait_days'), wait = wv === '' || wv == null || isNaN(+wv) ? 7 : Math.max(0, +wv);
           const amount = Math.round(amt * rate) / 100, avail = new Date(now + wait * 864e5).toISOString();
           const cr = await DB.prepare('INSERT INTO commissions (referrer_id,referred_id,payment_id,course,base_amount,rate,amount,status,created_at,available_at) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(acc.ref_by, sid, r.meta.last_row_id, c, amt, rate, amount, 'pending', iso, avail).run();
           commission = { id: cr.meta.last_row_id, amount };
@@ -976,7 +1037,8 @@ export async function onRequest({ request, env, params }) {
       const counts = await all("SELECT course,COUNT(*) n,SUM(CASE WHEN end_at<=? THEN 1 ELSE 0 END) soon FROM subscriptions WHERE status='active' AND end_at>? GROUP BY course", new Date(now + 3 * 864e5).toISOString(), iso);
       const accounts = (await one('SELECT COUNT(*) n FROM accounts')).n;
       let prices = {}; try { prices = JSON.parse((await setting('sub_prices')) || '{}') || {}; } catch (e) { prices = {}; }
-      return J({ courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })), pending: pend.map(r => ({ ...r, title: SUB_TITLE[r.course] || r.course })), counts, accounts, prices });
+      const PKG_SET = await setting('packages');
+      return J({ courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })), pending: pend.map(r => { const pk = /^package:(.+)$/.exec(r.course), pd = pk ? packagesOf(PKG_SET).find(x => x.id === pk[1]) : null; return { ...r, title: SUB_TITLE[r.course] || (pd ? 'باقة: ' + pd.name : r.course) }; }), counts, accounts, prices, packages: packagesOf(PKG_SET) });
     }
     if (p === 'admin/subs/search') {
       const q = String(qp.get('q') || '').trim(), like = '%' + q + '%';
@@ -986,12 +1048,56 @@ export async function onRequest({ request, env, params }) {
     if (p === 'admin/subs/student') {
       const sid = int(qp.get('id')), s0 = await student(sid); if (!s0) return J({ error: 'الطالب غير موجود' }, 404);
       const subs = (await all('SELECT * FROM subscriptions WHERE student_id=? ORDER BY end_at DESC', sid)).map(r => ({ ...subRow(r, iso), note: r.note, by: r.created_by }));
-      return J({ student: s0, subs, payments: await all('SELECT * FROM payments WHERE student_id=? ORDER BY created_at DESC', sid), renewals: await all('SELECT * FROM renewal_requests WHERE student_id=? ORDER BY created_at DESC LIMIT 30', sid), courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })) });
+      const referrer = await one('SELECT a.student_id,s.name,a.ref_code,a.ref_rate FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.student_id=(SELECT ref_by FROM accounts WHERE student_id=?)', sid); const globalRateRaw = await setting('ref_rate'), defaultRate = globalRateRaw === '' || globalRateRaw == null || !Number.isFinite(+globalRateRaw) ? 20 : Math.max(0, Math.min(100, +globalRateRaw)); return J({ student: s0, referrer: referrer ? { id: referrer.student_id, name: referrer.name, code: referrer.ref_code, rate: referrer.ref_rate == null ? defaultRate : referrer.ref_rate } : null, subs, payments: await all('SELECT * FROM payments WHERE student_id=? ORDER BY created_at DESC', sid), renewals: await all('SELECT * FROM renewal_requests WHERE student_id=? ORDER BY created_at DESC LIMIT 30', sid), courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })) });
     }
     if (p === 'admin/subs/course') {
       const c = String(qp.get('c') || ''); if (!SUB_KEYS.includes(c)) return J({ error: 'قسم غير معروف' }, 400);
-      const rows = await all("SELECT x.*,s.name,a.phone,a.email FROM subscriptions x JOIN students s ON s.id=x.student_id LEFT JOIN accounts a ON a.student_id=x.student_id WHERE x.course=? AND x.status='active' ORDER BY x.end_at", c);
+      const direct = await all("SELECT x.*,s.name,a.phone,a.email FROM subscriptions x JOIN students s ON s.id=x.student_id LEFT JOIN accounts a ON a.student_id=x.student_id WHERE x.course=? AND x.status='active' ORDER BY x.end_at", c);
+      const bundles = await all("SELECT x.*,s.name,a.phone,a.email FROM subscriptions x JOIN students s ON s.id=x.student_id LEFT JOIN accounts a ON a.student_id=x.student_id WHERE x.package_id IS NOT NULL AND x.status='active' AND x.end_at>?", iso);
+      const rows = direct.concat(bundles.filter(r => packageIncludes(r.package_access, c)));
       return J({ rows: rows.map(r => ({ ...subRow(r, iso), name: r.name, phone: r.phone, email: r.email, student_id: r.student_id })) });
+    }
+    if (p === 'admin/subs/package' && W) {
+      const sid = int(b.student_id), s0 = await student(sid); if (!s0) return J({ error: 'الطالب غير موجود' }, 404);
+      const pkgs = packagesOf(await setting('packages')), pkg = pkgs.find(x => x.id === String(b.package_id || ''));
+      if (!pkg || !(pkg.groups.length || pkg.courses.length)) return J({ error: 'الباقة غير موجودة أو لم تُضبط محتوياتها' }, 400);
+      const days = Math.max(1, Math.min(3650, Math.round(+b.days || pkg.days)));
+      const amount = +b.amount; if (!Number.isFinite(amount) || amount < 0 || amount > 99999) return J({ error: 'المبلغ المدفوع غير صالح' }, 400);
+      const rateOverride = b.commission_rate === '' || b.commission_rate == null ? null : +b.commission_rate;
+      if (rateOverride != null && (!Number.isFinite(rateOverride) || rateOverride < 0 || rateOverride > 100)) return J({ error: 'نسبة العمولة يجب أن تكون بين ٠ و١٠٠' }, 400);
+      const saleKey = String(b.sale_key || '').slice(0, 80); if (!/^[A-Za-z0-9._-]{8,80}$/.test(saleKey)) return J({ error: 'معرّف العملية غير صالح' }, 400);
+      const prior = await one('SELECT * FROM package_sales WHERE sale_key=?', saleKey);
+      if (prior) {
+        if (prior.student_id !== sid || prior.package_id !== pkg.id || +prior.amount !== amount || +prior.days !== days || (prior.rate_override == null ? null : +prior.rate_override) !== rateOverride) return J({ error: 'مفتاح العملية مستخدم ببيانات مختلفة' }, 409);
+        const payRow = amount > 0 ? await one('SELECT id FROM payments WHERE sale_key=?', saleKey) : null;
+        if (payRow) await packageCommission(sid, amount, 'باقة: ' + prior.package_name, payRow.id, saleKey, rateOverride);
+        return J({ ok: 1, duplicate: true, message: 'سبق تسجيل العملية، لم تُكرر الصلاحية أو الدفعة' });
+      }
+      const saleEnd = b.end ? String(b.end).slice(0, 10) : null;
+      if (saleEnd && !/^\d{4}-\d{2}-\d{2}$/.test(saleEnd)) return J({ error: 'تاريخ الانتهاء غير صالح' }, 400);
+      const course = 'package:' + pkg.id, existing = await DB.prepare("SELECT * FROM subscriptions WHERE student_id=? AND package_id=? ORDER BY CASE WHEN status='active' THEN 0 ELSE 1 END,end_at DESC LIMIT 1").bind(sid, pkg.id).first();
+      const endAt = existing ? null : endFrom(iso, days, saleEnd);
+      const access = JSON.stringify({ groups: pkg.groups, courses: pkg.courses }), note = String(b.note || '').slice(0, 200) || null;
+      const stmts = [DB.prepare('INSERT INTO package_sales (sale_key,student_id,package_id,package_name,amount,days,rate_override,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?)').bind(saleKey, sid, pkg.id, pkg.name, amount, days, rateOverride, A.name, iso)];
+      if (existing) {
+        if (saleEnd) stmts.push(DB.prepare("UPDATE subscriptions SET course=?,start_at=CASE WHEN status='active' THEN start_at ELSE ? END,end_at=?,status='active',updated_at=?,created_by=?,note=COALESCE(?,note),package_name=?,package_access=? WHERE id=?").bind(course, iso, endFrom(iso, days, saleEnd), iso, A.name, note, pkg.name, access, existing.id));
+        else stmts.push(DB.prepare("UPDATE subscriptions SET course=?,start_at=CASE WHEN status='active' THEN start_at ELSE ? END,end_at=strftime('%Y-%m-%dT%H:%M:%fZ',(CASE WHEN status='active' THEN MAX(julianday(end_at),julianday(?)) ELSE julianday(?) END)+?),status='active',updated_at=?,created_by=?,note=COALESCE(?,note),package_name=?,package_access=? WHERE id=?").bind(course, iso, iso, iso, days, iso, A.name, note, pkg.name, access, existing.id));
+      } else stmts.push(DB.prepare('INSERT INTO subscriptions (student_id,course,start_at,end_at,status,created_by,created_at,note,package_id,package_name,package_access) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind(sid, course, iso, endAt, 'active', A.name, iso, note, pkg.id, pkg.name, access));
+      if (amount > 0) stmts.push(DB.prepare('INSERT INTO payments (student_id,course,amount,note,created_by,created_at,sale_key) VALUES (?,?,?,?,?,?,?)').bind(sid, 'باقة: ' + pkg.name, amount, String(b.payNote || ('تحويل متحقق · ' + pkg.name)).slice(0, 200), A.name, iso, saleKey));
+      stmts.push(audit(A, 'package_activate', 'student', sid, pkg.name + ' · ' + amount + ' ريال · ' + days + ' يوم'));
+      if (amount > 0) stmts.push(audit(A, 'payment', 'student', sid, 'تحويل متحقق · ' + pkg.name + ' · ' + amount + ' ريال'));
+      try { await DB.batch(stmts); } catch (err) {
+        const raced = await one('SELECT * FROM package_sales WHERE sale_key=?', saleKey);
+        if (!raced) throw err;
+        if (raced.student_id !== sid || raced.package_id !== pkg.id || +raced.amount !== amount || +raced.days !== days || (raced.rate_override == null ? null : +raced.rate_override) !== rateOverride) return J({ error: 'مفتاح العملية مستخدم ببيانات مختلفة' }, 409);
+        const rp = amount > 0 ? await one('SELECT id FROM payments WHERE sale_key=?', saleKey) : null;
+        const rc = rp ? await packageCommission(sid, amount, 'باقة: ' + raced.package_name, rp.id, saleKey, rateOverride) : null;
+        return J({ ok: 1, duplicate: true, payment: rp ? { id: rp.id, commission: rc } : null, message: 'سبق تسجيل العملية، لم تُكرر الصلاحية أو الدفعة' });
+      }
+      const granted = await one("SELECT end_at FROM subscriptions WHERE student_id=? AND package_id=? AND status='active' ORDER BY end_at DESC", sid, pkg.id);
+      const payRow = amount > 0 ? await one('SELECT id FROM payments WHERE sale_key=?', saleKey) : null;
+      let commission = null; if (payRow) commission = await packageCommission(sid, amount, 'باقة: ' + pkg.name, payRow.id, saleKey, rateOverride);
+      return J({ ok: 1, end: granted ? granted.end_at : endAt, payment: payRow ? { id: payRow.id, commission } : null });
     }
     if (p === 'admin/subs/add' && W) {
       const sid = int(b.student_id), s0 = await student(sid); if (!s0) return J({ error: 'الطالب غير موجود' }, 404);
@@ -1014,7 +1120,16 @@ export async function onRequest({ request, env, params }) {
     }
     if (p === 'admin/subs/renewal' && W) {
       const r = await one("SELECT * FROM renewal_requests WHERE id=? AND status='pending'", int(b.id)); if (!r) return J({ error: 'الطلب غير موجود أو تمت معالجته' }, 404);
-      if (b.action === 'approve') { const g = await grant(r.student_id, r.course, b.days || r.days, b.end, 'تجديد بطلب الطالب'); await DB.batch([DB.prepare("UPDATE renewal_requests SET status='approved',handled_by=?,handled_at=? WHERE id=?").bind(A.name, iso, r.id), audit(A, 'renew', 'student', r.student_id, (SUB_TITLE[r.course] || r.course) + ' حتى ' + g.end.slice(0, 10))]); const pm = +b.amount > 0 ? await pay(r.student_id, b.amount, r.course, 'طلب ' + (SUB_TITLE[r.course] || r.course)) : null; return J({ ok: 1, end: g.end, payment: pm }); }
+      if (b.action === 'approve') {
+        // طلب تجديد باقة: يمدّد صف الباقة نفسه (بصلاحياته) بدل إنشاء اشتراك عادي بلا محتوى
+        const pm0 = /^package:(.+)$/.exec(r.course); let g;
+        if (pm0) {
+          const row = await DB.prepare('SELECT * FROM subscriptions WHERE student_id=? AND package_id=? ORDER BY end_at DESC LIMIT 1').bind(r.student_id, pm0[1]).first();
+          if (!row) return J({ error: 'لا توجد باقة سابقة لهذا الطالب لتجديدها؛ فعّلها من «تفعيل باقة»' }, 400);
+          const d0 = Math.max(1, Math.min(3650, Math.round(+(b.days || r.days) || 30)));
+          await DB.prepare("UPDATE subscriptions SET start_at=CASE WHEN status='active' AND end_at>? THEN start_at ELSE ? END,end_at=strftime('%Y-%m-%dT%H:%M:%fZ',(CASE WHEN status='active' THEN MAX(julianday(end_at),julianday(?)) ELSE julianday(?) END)+?),status='active',updated_at=? WHERE id=?").bind(iso, iso, iso, iso, d0, iso, row.id).run();
+          g = { end: (await one('SELECT end_at FROM subscriptions WHERE id=?', row.id)).end_at };
+        } else g = await grant(r.student_id, r.course, b.days || r.days, b.end, 'تجديد بطلب الطالب'); await DB.batch([DB.prepare("UPDATE renewal_requests SET status='approved',handled_by=?,handled_at=? WHERE id=?").bind(A.name, iso, r.id), audit(A, 'renew', 'student', r.student_id, (SUB_TITLE[r.course] || r.course) + ' حتى ' + g.end.slice(0, 10))]); const pm = +b.amount > 0 ? await pay(r.student_id, b.amount, r.course, 'طلب ' + (SUB_TITLE[r.course] || r.course)) : null; return J({ ok: 1, end: g.end, payment: pm }); }
       await DB.batch([DB.prepare("UPDATE renewal_requests SET status='rejected',handled_by=?,handled_at=?,note=? WHERE id=?").bind(A.name, iso, String(b.note || '').slice(0, 200) || null, r.id), audit(A, 'renew_reject', 'student', r.student_id, SUB_TITLE[r.course] || r.course)]);
       return J({ ok: 1 });
     }
@@ -1670,12 +1785,12 @@ export async function onRequest({ request, env, params }) {
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;
     const settings = {};
-    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; }
+    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; settings.study_plan_options = COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => ({ slug: c.slug, title: c.title })); try { settings.study_plan_banks = JSON.parse(S.study_plan_banks || 'null'); } catch (e) { settings.study_plan_banks = null; } if (!Array.isArray(settings.study_plan_banks) || !settings.study_plan_banks.length) settings.study_plan_banks = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi']; }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
     if (can('settings.home')) { settings.home_config = homeOf(S.home_config); if (!can('settings.access')) { settings.vis = VIS; settings.hidden_courses = hiddenOf(S.hidden_courses); } }
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
     if (can('settings.contact') || can('leads.manage')) settings.lead_message = S.lead_message || DEFAULT_LEAD_MSG;
-    if (can('settings.plans')) out.plans = plansOf(S.plans);
+    if (can('settings.plans')) { out.plans = plansOf(S.plans); out.packages = packagesOf(S.packages); out.package_courses = SUB_KEYS.filter(k => k !== 'skills' && k !== 'placement').map(k => ({ key: k, title: SUB_TITLE[k] || k })); }
     out.settings = settings;
     return J(out);
   }
@@ -1765,12 +1880,31 @@ export async function onRequest({ request, env, params }) {
     else if (b.key === 'google_client_id') { if (!can('settings.access')) return deny(); v = String(b.value || '').trim(); if (v && !/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/.test(v)) return J({ error: 'Client ID غير صحيح؛ لازم ينتهي بـ .apps.googleusercontent.com' }, 400); }
     else if (b.key === 'free_mode') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
     else if (b.key === 'free_count') { if (!can('settings.access')) return deny(); v = String(Math.max(1, Math.min(50, int(b.value) || 10))); }
+    else if (b.key === 'study_plan_banks') { if (!can('settings.access')) return deny(); const allowed = new Set(COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => c.slug)); const a = Array.isArray(b.value) ? [...new Set(b.value.filter(x => typeof x === 'string' && allowed.has(x)))].slice(0, allowed.size) : []; if (!a.length) return J({ error: 'اختر بنكًا واحدًا على الأقل للخطة' }, 400); v = JSON.stringify(a); }
     else if (b.key === 'hidden_courses') { if (!can('settings.access') && !can('settings.home')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
-    else if (b.key === 'home_config') { if (!can('settings.home')) return deny(); const c = homeClean(b.value); c.updated = iso; v = JSON.stringify(c); if (v.length > 900000) return J({ error: 'حجم الصور كبير؛ قلّل عدد الصور أو استخدم صورًا أصغر' }, 400); }
+    else if (b.key === 'home_config') { if (!can('settings.home')) return deny(); const c = homeClean(b.value), old = homeOf(await setting('home_config')), pool = x => x.toppers.map(y => y.name.trim().toLocaleLowerCase()).sort().join('\n'); c.topperCycleAt = pool(old) === pool(c) ? (old.topperCycleAt || old.updated || iso) : iso; c.updated = iso; v = JSON.stringify(c); if (v.length > 900000) return J({ error: 'حجم الصور كبير؛ قلّل عدد الصور أو استخدم صورًا أصغر' }, 400); }
     else if (b.key === 'lead_message') { if (!can('settings.contact')) return deny(); v = String(b.value || '').slice(0, 3000); }
     else return J({ error: 'not found' }, 404);
     await DB.batch([putSetting(b.key, v), audit(A, 'setting', 'settings', null, b.key)]);
     return J({ ok: 1, value: v });
+  }
+  if (p === 'admin/packages') {
+    if (!can('settings.plans')) return deny();
+    const raw = Array.isArray(b.packages) ? b.packages : [];
+    if (raw.length > 12) return J({ error: 'الحد الأقصى ١٢ باقة' }, 400);
+    const ids = new Set();
+    const a = raw.map(x => {
+      const id = String(x.id || '').trim();
+      if (!/^[a-zA-Z0-9_-]{1,40}$/.test(id) || ids.has(id)) return null; ids.add(id);
+      const groups = Array.isArray(x.groups) ? [...new Set(x.groups.filter(g => PACKAGE_GROUPS.includes(g)))] : [];
+      const courses = Array.isArray(x.courses) ? [...new Set(x.courses.filter(c => SUB_KEYS.includes(c) && c !== 'skills' && c !== 'placement'))] : [];
+      const days = Number(x.days), price = Number(x.price);
+      if (!String(x.name || '').trim() || !Number.isFinite(days) || days < 1 || days > 3650 || !Number.isFinite(price) || price < 0 || price > 99999) return null;
+      return { id, name: String(x.name).trim().slice(0, 50), category: PACKAGE_GROUPS.includes(x.category) ? x.category : 'custom', days: Math.round(days), price: Math.round(price * 100) / 100, groups, courses };
+    });
+    if (a.some(x => !x) || !a.length) return J({ error: 'تحقق من معرّف كل باقة ومدتها وسعرها ومحتوياتها' }, 400);
+    await DB.batch([putSetting('packages', JSON.stringify(a)), audit(A, 'packages', 'settings', null, 'حفظ تعريف ' + a.length + ' باقات')]);
+    return J({ ok: 1, packages: a });
   }
   if (p === 'admin/plans') {
     if (!can('settings.plans')) return deny();

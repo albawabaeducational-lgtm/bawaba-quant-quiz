@@ -310,7 +310,7 @@
   var lastRes = null;
   function report(res, filter) {
     lastRes = res; var n = res.n, avg = Math.round(res.used / n), wrong = n - res.g - res.na;
-    var h = '<section class="res"><small>' + (res.auto ? 'انتهى الوقت وسُلِّم الاختبار تلقائيًا' : 'نتيجة الاختبار') + '</small><h2>' + AR(res.g) + ' / ' + AR(n) + ' · ' + AR(res.p) + '٪</h2><p>المستوى: ' + level(res.p) + (res.prev ? ' · محاولتك السابقة ' + AR(res.prev.p) + '٪ (' + (res.p > res.prev.p ? '+' + AR(res.p - res.prev.p) : res.p < res.prev.p ? '−' + AR(res.prev.p - res.p) : 'نفس المستوى') + ')' : '') + '</p>'
+    var h = window.bwRenderResultSummary({total:res.n,correct:res.g,wrong:res.n-res.g-res.na,skipped:res.na,review:'[data-rf="no"]',practice:'[data-a="retry"]'}) + '<section class="res"><small>' + (res.auto ? 'انتهى الوقت وسُلِّم الاختبار تلقائيًا' : 'نتيجة الاختبار') + '</small><h2>' + AR(res.g) + ' / ' + AR(n) + ' · ' + AR(res.p) + '٪</h2><p>المستوى: ' + level(res.p) + (res.prev ? ' · محاولتك السابقة ' + AR(res.prev.p) + '٪ (' + (res.p > res.prev.p ? '+' + AR(res.p - res.prev.p) : res.p < res.prev.p ? '−' + AR(res.prev.p - res.p) : 'نفس المستوى') + ')' : '') + '</p>'
       + '<div class="kp"><div><b>' + AR(res.g) + '</b><span>صحيحة</span></div><div><b>' + AR(wrong) + '</b><span>خاطئة</span></div><div><b>' + AR(res.na) + '</b><span>بدون إجابة</span></div><div><b>' + fmt(res.used) + '</b><span>الوقت · ' + AR(avg) + ' ث للسؤال</span></div></div></section>';
     var adv = [];
     if (wrong + res.na) adv.push('<b>راجع أخطاءك الآن:</b> حُفظ ' + cnt(wrong + res.na, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالًا') + ' في مجلد الأخطاء، وتجد الحلول في الأسفل.');

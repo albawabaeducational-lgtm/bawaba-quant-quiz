@@ -108,7 +108,8 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function cnt(n) { return n === 1 ? 'سؤال واحد' : n === 2 ? 'سؤالان' : AR(n) + (n <= 10 ? ' أسئلة' : ' سؤالًا'); }
-  var SK = null, sub = 'kamy', cur = null, S = null; // S = جلسة التدريب
+  var SK = null, cur = null, S = null; // S = جلسة التدريب
+  var sub = (function () { var q = new URLSearchParams(location.search).get('subject'), saved = ''; try { saved = localStorage.getItem('bw-skill-subject') || ''; } catch (e) { } return q === 'lafzi' || q === 'kamy' ? q : saved === 'lafzi' ? 'lafzi' : 'kamy'; })();
   var opt = { mode: 'train', n: 0, order: 'rand' };
 
   // ===== مهارات اللفظي: تُسحب تلقائيًا من بنوك اللفظي المحوسب (مختصر الأقسام وأي بنك لفظي يُضاف) حسب نوع السؤال =====
@@ -133,7 +134,7 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
     document.body.classList.remove('present'); S = null;
     var skills = sub === 'lafzi' ? VSK() : (SK.skills || []).filter(function (x) { return x.subject === sub; });
     var h = '<section class="hero"><h1>التدريب حسب المهارة</h1><p>اختر المهارة لتظهر لك كل أسئلتها من أقسام الكمي والأكثر تكرارًا وأقسام اللفظي، وتدرّب عليها بتصحيح فوري.</p><div class="tabs">' + Object.keys(SK.subjects).map(function (k) { return '<button type="button" data-sub="' + k + '" class="' + (k === sub ? 'on' : '') + '">' + esc(SK.subjects[k]) + '</button>'; }).join('') + '</div></section>';
-    h += '<div class="card"><div class="skg">' + (skills.map(function (x) { return '<button type="button" class="sk' + (x.n ? '' : ' empty') + '" data-sk="' + x.id + '"' + (x.n ? '' : ' disabled') + '><span>' + esc(x.name) + '</span><b>' + (x.n ? cnt(x.n) : 'قريبًا') + '</b></button>'; }).join('') || '<p class="m">لا توجد مهارات بعد.</p>') + '</div></div>';
+    h += '<div class="card">' + (window.__BWF ? '<div class="bwf-skill-note"><span class="bwf-pill">نسخة مجانية محدودة</span><span>عدد الأسئلة المتاح يختلف بحسب المهارة.</span></div>' : '') + '<div class="skg">' + (skills.map(function (x) { return '<button type="button" class="sk' + (x.n ? '' : ' empty') + '" data-sk="' + x.id + '"' + (x.n ? '' : ' disabled') + '><span>' + esc(x.name) + '</span><b>' + (x.n ? cnt(x.n) : 'قريبًا') + '</b></button>'; }).join('') || '<p class="m">لا توجد مهارات بعد.</p>') + '</div></div>';
     app.innerHTML = h; window.scrollTo(0, 0);
   }
   function setup(id) {
@@ -204,7 +205,7 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
       + '<div class="row" style="margin-bottom:14px">' + (W.length + K.length ? '<button class="btn soft" data-a="rvall">📖 مراجعة الأخطاء</button><button class="btn gold" data-a="retest">🔁 اختبار الأخطاء</button>' : '') + '<button class="btn ghost" data-a="go">أعد الاختبار</button><button class="btn ghost" data-a="back">كل المهارات</button></div>'
       + (W.length ? '<div class="card"><h2>الأسئلة الخاطئة (' + AR(W.length) + ')</h2><p class="m" style="margin-bottom:8px">اضغط على أي سؤال لتراجعه بحجمه الكامل.</p>' + W.map(row).join('') + '</div>' : !K.length ? '<div class="card"><h2>✓ لا أخطاء</h2><p class="m">أحسنت، كل إجاباتك صحيحة.</p></div>' : g ? '<div class="card"><h2>لا إجابات خاطئة</h2><p class="m">كل ما أجبت عنه صحيح، لكنك تركت ' + AR(K.length) + ' بلا إجابة. راجعها من الأسفل.</p></div>' : '<div class="card"><h2>لم تُجب عن أي سؤال</h2><p class="m">راجع الأسئلة وإجاباتها الصحيحة من الأسفل، ثم أعد الاختبار.</p></div>')
       + (K.length ? '<div class="card"><h2>بلا إجابة (' + AR(K.length) + ')</h2>' + K.map(row).join('') + '</div>' : '');
-    app.innerHTML = h; window.scrollTo(0, 0);
+    app.innerHTML = window.bwRenderResultSummary({total:n,correct:g,wrong:W.length,skipped:K.length,review:'[data-a="rvall"]',practice:'[data-a="retest"]'}) + h; window.scrollTo(0, 0);
   }
   // المراجعة: نفس عرض السؤال في الاختبار بنفس الحجم، مع إجابتك والإجابة الصحيحة، بلا درجة
   function review(list, k) {
@@ -216,7 +217,7 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
   app.addEventListener('click', function (e) {
     var z = e.target.closest('[data-z]'); if (z) { var d = document.createElement('div'); d.className = 'lb'; d.innerHTML = '<img src="' + esc(z.getAttribute('data-z')) + '" alt="">'; d.onclick = function () { d.remove(); }; document.body.appendChild(d); return; }
     var b = e.target.closest('button'); if (!b || b.disabled) return; var x = b.dataset;
-    if (x.sub) { sub = x.sub; return list(); }
+    if (x.sub) { sub = x.sub; try { localStorage.setItem('bw-skill-subject', sub); } catch (e) { } history.replaceState(null, '', location.pathname + '?subject=' + encodeURIComponent(sub)); return list(); }
     if (x.sk) return setup(+x.sk);
     if (x.m) { opt.mode = x.m; [].forEach.call(b.parentNode.children, function (c) { c.classList.toggle('on', c === b); }); return; }
     if (x.n !== undefined) { opt.n = +x.n; [].forEach.call(b.parentNode.children, function (c) { c.classList.toggle('on', c === b); }); return; }
@@ -226,7 +227,7 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
     if (x.ans !== undefined) { if (!S || S.done) return; if (opt.mode === 'train' && S.ans[S.pos] !== undefined) return; S.ans[S.pos] = +x.ans; if (opt.mode === 'present') S.show[S.pos] = 1; draw(); if (opt.mode === 'test' && S.pos < S.items.length - 1) { var at = S.pos; setTimeout(function () { if (S && !S.done && S.pos === at) { S.pos++; draw(); } }, 250); } return; }
     switch (x.a) {
       case 'go': return go();
-      case 'back': clearInterval(window.__skT); history.replaceState(null, '', location.pathname); return list();
+      case 'back': clearInterval(window.__skT); history.replaceState(null, '', location.pathname + '?subject=' + encodeURIComponent(sub)); return list();
       case 'setup': clearInterval(window.__skT); return setup(cur.skill.id);
       case 'prev': S.pos--; return draw();
       case 'next': S.pos++; return draw();

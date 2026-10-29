@@ -38,7 +38,7 @@
     } else {
       d.innerHTML = '<div class="bwp-h"><b>مرحبًا بك</b><small style="direction:rtl">سجّل دخولك لتصل لاختباراتك</small></div><a href="/account.html" class="p" role="menuitem">تسجيل الدخول</a><a href="/account.html?tab=signup" role="menuitem">✨ إنشاء حساب جديد</a><a href="' + LMS + '" target="_blank" rel="noopener" role="menuitem">🎓 منصة الدورات</a>';
     }
-    if (host.id === 'bw-shell') { var bk = host.querySelector('.bws-back'); host.insertBefore(w, bk ? bk.nextSibling : null); } else host.appendChild(w);
+    host.appendChild(w);
     var b = w.querySelector('.bwp-b');
     b.onclick = function (e) { e.stopPropagation(); d.hidden = !d.hidden; b.setAttribute('aria-expanded', d.hidden ? 'false' : 'true'); };
     document.addEventListener('click', function (e) { if (!w.contains(e.target)) { d.hidden = true; b.setAttribute('aria-expanded', 'false'); } });
@@ -55,28 +55,17 @@
     document.body.appendChild(x); var rm = function () { x.style.opacity = '0'; setTimeout(function () { x.remove(); }, 400); };
     x.querySelector('button').onclick = rm; setTimeout(rm, 8000);
   }
-  function freeCard() {
-    var tests = document.getElementById('tests'); if (!tests || document.getElementById('bwNoSub')) return;
-    var n = document.createElement('div'); n.id = 'bwNoSub'; n.style.cssText = 'background:#fff;border-radius:22px;padding:20px;text-align:center;margin:0 0 20px;box-shadow:0 10px 26px #0000001f;color:#1d2a39';
-    n.innerHTML = '<h3 style="margin:0 0 6px;color:#1b3a5c">🎁 حسابك جاهز وأمامك النسخة المجانية</h3><p style="margin:0 0 12px;color:#5d6b7c">ادخل أي اختبار من الأسفل وتدرّب على الأجزاء المفتوحة مجانًا. ولفتح الاختبارات كاملة اطلب الاشتراك في القسم الذي تريده.</p><a href="/account.html?tab=exams" style="display:inline-block;background:#c9a45c;color:#1d2a39;border-radius:12px;padding:10px 20px;font-weight:700;text-decoration:none">اطلب الاشتراك</a>';
-    var w2 = tests.querySelector('.wrap'); if (w2) w2.insertBefore(n, w2.firstChild);
-  }
   // الصفحة الرئيسية: الطالب صاحب الحساب يرى فقط ما اشترك فيه (عزل المحتوى)
   function isolate(me) {
     if (!me.account || !document.querySelector('.pathways')) return;
-    var mine = (me.subs || []).filter(function (s) { return s.state === 'active' || s.state === 'soon'; }).map(function (s) { return s.course; });
-    // بلا اشتراك ساري: يرى الصفحة كاملة بالنسخة المجانية مثل الزائر، مع بطاقة توضح ذلك
-    if (!mine.length) { freeCard(); return; }
+    var mine = []; (me.subs || []).filter(function (s) { return s.state === 'active' || s.state === 'soon'; }).forEach(function (s) { mine.push(s.course); (s.covers || []).forEach(function (k) { mine.push(k); }); });
+    // بلا اشتراك ساري: يرى الصفحة كاملة؛ لا نعرض بطاقة إعلان كبيرة أعلى قائمة الاختبارات.
+    if (!mine.length) return;
     var hide = (me.courses || []).map(function (c) { return c.key; }).filter(function (k) { return mine.indexOf(k) < 0; });
     document.documentElement.classList.add('bw-in', 'bw-acct');
     [].forEach.call(document.querySelectorAll('.pathway-link.pending'), function (p) { p.setAttribute('hidden', ''); var g = p.closest('.pathway-group'); if (g && ![].some.call(g.querySelectorAll('.pathway-link'), function (a) { return !a.hasAttribute('hidden'); })) g.setAttribute('hidden', ''); });
     if (window.__bwHide) window.__bwHide(hide);
     [].forEach.call(document.querySelectorAll('.pathway'), function (art) { if (![].some.call(art.querySelectorAll('.pathway-link'), function (a) { return !a.hasAttribute('hidden') && !a.closest('[hidden]'); })) art.setAttribute('hidden', ''); });
-    var tests = document.getElementById('tests'); if (tests && !mine.length && !document.getElementById('bwNoSub')) {
-      var n = document.createElement('div'); n.id = 'bwNoSub'; n.style.cssText = 'background:#fff;border-radius:22px;padding:22px;text-align:center;margin:0 0 20px;box-shadow:0 10px 26px #0000001f;color:#1d2a39';
-      n.innerHTML = '<h3 style="margin:0 0 6px;color:#1b3a5c">لا توجد اشتراكات في حسابك بعد</h3><p style="margin:0 0 12px;color:#5d6b7c">اختر القسم الذي تريده وأرسل طلب الاشتراك، ونفعّله لك بعد الدفع عبر واتساب.</p><a href="/account.html?tab=exams" style="display:inline-block;background:#c9a45c;color:#1d2a39;border-radius:12px;padding:10px 20px;font-weight:700;text-decoration:none">اختباراتي واشتراكاتي</a>';
-      var w2 = tests.querySelector('.wrap'); if (w2) w2.insertBefore(n, w2.firstChild);
-    }
   }
   function boot() { getMe().then(function (me) { window.__bwMeData = me; menu(me); isolate(me); alertSoon(me); }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

@@ -24,6 +24,8 @@ const COURSES = {
 // skills: مهارات اللفظي في «التأسيس حسب المهارة» تُبنى تلقائيًا من هذه البنوك حسب نوع كل سؤال
 // (أي ملف لفظي محوسب جديد يُضاف اسمه هنا فتنسحب أسئلته لمهاراتها مباشرة، مع تعديلات المعلمين)
 const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
+const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'skills': ['computer_quant', 'computer_verbal'] };
+const packageAllows = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}, groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; return (PACKAGE_COURSE_GROUPS[key] || []).some(g => groups.includes(g)); } catch (e) { return false; } };
 // النسخة المجانية: تُحذف من الصفحة نفسها أسئلة الأجزاء المقفولة (لا تصل للمتصفح أصلًا).
 // نفس الدالة موجودة في functions/api/[[path]].js
 const DB_TAG = '<script id="db" type="application/json">';
@@ -213,6 +215,7 @@ export async function onRequest({ request, env, next }) {
       const key = /^muhaky warky[12]$/.test(slug) ? 'waraqi' : slug;
       let ok = false;
       try { ok = !!(await env.DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND course=? AND status='active' AND end_at>?").bind(st.id, key, iso).first()); } catch (e) { ok = false; }
+      if (!ok) { try { const rows = await env.DB.prepare("SELECT package_access FROM subscriptions WHERE student_id=? AND status='active' AND end_at>? AND package_id IS NOT NULL").bind(st.id, iso).all(); ok = (rows.results || []).some(r => packageAllows(r.package_access, key)); } catch (e) { /* Legacy subscriptions remain governed by the direct check above. */ } }
       if (!ok && !anySub && freeOn2) {
         if (slug === 'muhaky warky2') return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
         const tf = slug === 'muhaky warky1' ? null : async (html, etag) => { try { const o = await freePage(html, slug, fN2, etag); return o.tests ? o.html.replace('</head>', '<script>window.__BWFT=' + o.tests + '</script></head>') : o.html; } catch (e) { return '<!doctype html><meta charset="utf-8"><p style="font-family:sans-serif;text-align:center;margin:40px">تعذّر تحميل الصفحة. <a href="/">الرئيسية</a></p>'; } };

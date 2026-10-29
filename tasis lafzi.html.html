@@ -279,7 +279,7 @@ function finish(){
 function results(r){
   const n=st.qs.length,wrong=n-r.right-r.blank;
   const items=st.qs.map((q,k)=>({q,a:st.ans[k],k})).filter(x=>!r.onlyWrong||x.a!==x.q.a);
-  app.innerHTML=`
+  app.innerHTML=window.bwRenderResultSummary({total:n,correct:r.right,wrong:wrong,skipped:r.blank,review:'#rvw',practice:'#wrongs'})+`
   ${academyIdentity(false)}
   <section class="res">
     <h2>${st.name}</h2>

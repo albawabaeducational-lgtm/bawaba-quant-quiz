@@ -77,12 +77,25 @@
     .note { color: #5a6b80; font-size: 13.5px; text-align: center; margin-top: 10px; }
     .resume { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--bw-gold-soft); border-radius: 16px; padding: 12px 16px; margin-bottom: 12px; color: #6b4a00; font-weight: 600; }
     @media (max-width: 860px) { .two { grid-template-columns: 1fr; } .kpis { grid-template-columns: 1fr 1fr; } .kpi:nth-child(3) { border-inline-start: 0; } .kpi:nth-child(n+3) { border-top: 1px solid var(--bw-line); } }
+    .study-plan-card { margin-bottom: 22px; }
+    .schedule-scroll { overflow: auto; max-height: 680px; border: 1px solid var(--bw-line); border-radius: 14px; }
+    .study-table { width: 100%; min-width: 700px; border-collapse: collapse; font-size: 13.5px; }
+    .study-table th, .study-table td { padding: 10px; border-bottom: 1px solid var(--bw-line); text-align: right; vertical-align: top; }
+    .study-table thead { position: sticky; top: 0; z-index: 1; background: #eaf2f9; color: var(--bw-navy); }
+    .study-table tbody tr.done { background: #eef8f1; }
+    .study-table td b { display: block; color: var(--bw-navy); white-space: nowrap; }
+    .study-table td small { display: block; margin-top: 5px; color: #5a6b80; line-height: 1.75; }
+    .study-check { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .study-foot { margin: 10px 0 0; }
+    .study-date-row { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:12px; }
+    .study-date-row input { max-width:220px; min-height:42px; padding:8px 12px; border:1px solid var(--bw-line); border-radius:10px; background:#fff; color:var(--bw-ink); font:inherit; }
+    .study-date-row [role="status"] { color:#17633f; font-size:14px; }
+    .study-plan-page { max-width:1080px; margin:0 auto; }
   </style>
 </head>
 <body class="bwt-hub">
   <div id="bw-shell"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">تقدمي</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
   <main class="pw" id="app"><p class="empty">جارٍ تحليل تدريبك…</p></main>
-  <p class="note" id="pz" hidden><button class="btn btn-soft" type="button">⏸ تحتاج استراحة من المذاكرة؟ أوقف اشتراكك مؤقتًا</button></p>
 
 <script>
 (function () {
@@ -150,6 +163,7 @@
   function lv(p) { return p >= .8 ? 'g' : p >= .5 ? 'o' : 'r'; }
   // ===== الهدف والعد التنازلي والخطة الأسبوعية (تتعدل تلقائيًا حسب الأداء) =====
   var GOAL = get('bw-goal-v1', {}) || {}, SKV = get('bw-skill-v1', {}) || {};
+  var BANK_COUNTS = null, PLAN_STATUS = 'idle', PLAN_KEY = 'bw-study-plan-v1';
   function setGoal(o) { for (var k in o) GOAL[k] = o[k]; try { localStorage.setItem('bw-goal-v1', JSON.stringify(GOAL)); } catch (e) { } draw(); }
   window.bwSetGoal = setGoal;
   function todayCount() {
@@ -192,17 +206,70 @@
     }
     return out;
   }
-  function goalCard() {
-    var left = daysLeft(), tc = todayCount(), daily = +GOAL.daily || 30, pc = Math.min(100, Math.round(tc / daily * 100));
-    var h = '<div class="card" style="margin-bottom:22px"><div class="goal">';
-    h += '<div class="cd">' + (left === null ? '<b>؟</b><span>حدّد موعد اختبارك</span>' : left > 0 ? '<b>' + AR(left) + '</b><span>' + (left === 1 ? 'يوم على اختبارك' : 'يومًا على اختبارك') + '</span>' : left === 0 ? '<b>اليوم</b><span>بالتوفيق 🤍</span>' : '<b>✓</b><span>انتهى الموعد</span>') + '</div>';
-    h += '<div><h3>🎯 هدف اليوم: ' + AR(daily) + ' سؤالًا</h3><div class="gbar"><i style="width:' + Math.max(3, pc) + '%"></i></div><p class="m" style="margin:0">' + (tc >= daily ? 'أنجزت هدف اليوم 🎉 (' + AR(tc) + ' سؤالًا). أي زيادة بركة.' : 'أنجزت ' + AR(tc) + ' · باقي ' + AR(daily - tc) + ' سؤالًا لتحقق هدفك.') + '</p>';
-    h += '<div class="gin"><label>موعد اختباري: <input type="date" id="gExam" value="' + esc(GOAL.exam || '') + '"></label><label>الهدف اليومي: <select id="gDaily">' + [20, 30, 50, 80].map(function (n) { return '<option value="' + n + '"' + (n === daily ? ' selected' : '') + '>' + AR(n) + ' سؤالًا</option>'; }).join('') + '</select></label></div></div></div></div>';
-    var plan = weekPlan();
-    h += '<div class="two"><div class="card"><h3>🗓 خطتك لهذا الأسبوع</h3><p class="m">تتعدل تلقائيًا كل يوم حسب أخطائك وأضعف أقسامك ومهاراتك' + (left !== null && left <= 14 ? '، ومع اقتراب الاختبار تزيد المحاكاة' : '') + '.</p><ul class="plan">' + plan.map(function (d) { return '<li class="' + (d.today ? 'today' : '') + '"><b>' + esc(d.lab) + '</b><span>' + d.txt + '</span></li>'; }).join('') + '</ul></div>';
-    var rv = reviewSched();
-    h += '<div class="card"><h3>🔁 جدول المراجعة المتباعدة</h3><p class="m">كل سؤال أخطأت فيه يرجع لك بعد يوم، ثم ٣ أيام، ثم أسبوع. لو حليته صح ٣ مرات يخرج من المجلد.</p><div class="rv"><div><b>' + AR(rv.now) + '</b><span>جاهزة اليوم</span></div><div><b>' + AR(rv.d3) + '</b><span>خلال ٣ أيام</span></div><div><b>' + AR(rv.d7) + '</b><span>خلال أسبوع</span></div></div>' + (rv.now ? '<div class="acts">' + (K.due ? '<a class="btn btn-navy" href="' + SUBJ.kamy.page + '#errors">راجع الكمي (' + AR(K.due) + ')</a>' : '') + (V.due ? '<a class="btn btn-navy" href="' + SUBJ.lafzi.page + '#errors">راجع اللفظي (' + AR(V.due) + ')</a>' : '') + (A.due ? '<a class="btn btn-navy" href="' + SUBJ.kamy2.page + '#errors">راجع الكمي الإضافي (' + AR(A.due) + ')</a>' : '') + '</div>' : '<p class="m" style="margin:0">لا توجد مراجعات مستحقة اليوم 👍</p>') + '</div></div>';
+  function loadExamCounts() {
+    if (!GOAL.exam) { PLAN_STATUS = 'idle'; draw(); return; }
+    PLAN_STATUS = 'loading'; draw();
+    fetch('/api/exam/counts', { credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error('تعذّر تحميل أعداد الأسئلة'); return r.json(); })
+      .then(function (d) { if (!d.by) throw new Error('الاستجابة غير مكتملة'); BANK_COUNTS = d.by; PLAN_STATUS = 'ready'; draw(); })
+      .catch(function () { PLAN_STATUS = 'error'; draw(); });
+  }
+  function studyPlan() {
+    if (!GOAL.exam || !BANK_COUNTS) return null;
+    var exam = new Date(GOAL.exam + 'T00:00:00'); if (!Number.isFinite(exam.getTime())) return { error: 'موعد الاختبار غير صالح.' };
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var examOrdinal = Date.UTC(exam.getFullYear(), exam.getMonth(), exam.getDate()), todayOrdinal = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    var days = Math.round((examOrdinal - todayOrdinal) / DAY);
+    if (days <= 0) return { error: days === 0 ? 'موعد اختبارك اليوم؛ لا توجد أيام دراسة قبله.' : 'هذا الموعد مضى. اختر تاريخًا قادمًا.' };
+    if (days > 365) return { error: 'الخطة تعرض حتى ٣٦٥ يومًا قبل الاختبار. حدّث الموعد عندما يصبح ضمن هذه الفترة.' };
+    var source = [], flat = { q: [], v: [] }, totals = { q: 0, v: 0 }, signatureData = { exam: GOAL.exam, banks: {} };
+    Object.keys(BANK_COUNTS || {}).forEach(function (slug) { var b = BANK_COUNTS[slug]; source.push({ key: b.subject === 'v' ? 'v' : 'q', slug: slug, bank: b }); });
+    source.forEach(function (g, si) {
+      var bank = g.bank, slug = g.slug; if (!bank) return;
+      signatureData.banks[slug] = bank.sections;
+      bank.sections.forEach(function (s) { var item = { id: String(s.id), name: s.name, questions: +s.questions || 0, bank: bank.title, sourceOrder: si }; flat[g.key].push(item); totals[g.key] += item.questions; });
+    });
+    var signature = JSON.stringify(signatureData), saved = get(PLAN_KEY, null);
+    if (saved && saved.signature === signature && Array.isArray(saved.days) && saved.days.length === days) { if (!saved.done || typeof saved.done !== 'object') saved.done = {}; return saved; }
+    var done = saved && saved.done && typeof saved.done === 'object' ? saved.done : {}, planDays = [];
+    function dateKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    for (var i = 0; i < days; i++) {
+      var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i, 12);
+      planDays.push({ date: dateKey(d), q: [], v: [], qn: 0, vn: 0 });
+    }
+    ['q', 'v'].forEach(function (key) {
+      var queue = flat[key].slice().sort(function (a, b) { return b.questions - a.questions || a.sourceOrder - b.sourceOrder || (+a.id) - (+b.id); });
+      queue.forEach(function (s) {
+        var best = 0;
+        for (var j = 1; j < planDays.length; j++) if (planDays[j][key + 'n'] < planDays[best][key + 'n'] || (planDays[j][key + 'n'] === planDays[best][key + 'n'] && planDays[j][key].length < planDays[best][key].length)) best = j;
+        planDays[best][key].push(s); planDays[best][key + 'n'] += s.questions;
+      });
+    });
+    planDays.forEach(function (d) { ['q', 'v'].forEach(function (key) { d[key].sort(function (a, b) { return a.sourceOrder - b.sourceOrder || (+a.id) - (+b.id); }); }); });
+    var p = { signature: signature, exam: GOAL.exam, generatedAt: new Date().toISOString(), days: planDays, done: done };
+    try { localStorage.setItem(PLAN_KEY, JSON.stringify(p)); } catch (e) { }
+    return p;
+  }
+  function studyPlanCard() {
+    var h = '<div class="card study-plan-card"><h3>🗓 خطة الاستعداد حتى موعد الاختبار</h3>';
+    if (!GOAL.exam) return h + '<p class="m">حدّد موعد اختبارك بالأعلى لتوليد جدول يومي بالأقسام وأعداد الأسئلة المتاحة لحسابك.</p></div>';
+    if (PLAN_STATUS === 'loading' || PLAN_STATUS === 'idle') return h + '<p class="m">جارٍ حساب الأسئلة المتاحة لكل قسم…</p></div>';
+    if (PLAN_STATUS === 'error') return h + '<p class="m">تعذّر جلب أعداد الأسئلة الحالية. تحقق من الاتصال ثم أعد المحاولة.</p><button class="btn btn-soft" id="planRetry" type="button">إعادة المحاولة</button></div>';
+    var p = studyPlan(); if (!p) return h + '<p class="m">لا يمكن إنشاء الخطة الآن.</p></div>';
+    if (p.error) return h + '<p class="m">' + esc(p.error) + '</p></div>';
+    var allQ = p.days.reduce(function (s, d) { return s + d.qn; }, 0), allV = p.days.reduce(function (s, d) { return s + d.vn; }, 0);
+    h += '<p class="m">الخطة مبنية على المحتوى الذي يستطيع حسابك فتحه الآن، وتشمل كل قسم متاح مرة واحدة: <b>' + AR(allQ) + '</b> سؤالًا كميًا و<b>' + AR(allV) + '</b> سؤالًا لفظيًا خلال <b>' + AR(p.days.length) + '</b> يومًا. عدد الأسئلة في اليوم يختلف قليلًا لأن أحجام الأقسام متفاوتة.</p>';
+    h += '<div class="schedule-scroll"><table class="study-table"><thead><tr><th>اليوم</th><th>الكمي (بما فيه الإضافي)</th><th>اللفظي</th><th>الإنجاز</th></tr></thead><tbody>';
+    p.days.forEach(function (d) {
+      var day = new Date(d.date + 'T00:00:00'), label = day.toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'short' }), checked = !!p.done[d.date];
+      function cell(key, count) { return count ? '<b>' + AR(count) + ' سؤالًا · ' + AR(d[key].length) + ' قسم</b><small>' + d[key].map(function (s) { return esc(s.bank + ' — ' + s.name); }).join('<br>') + '</small>' : '<span class="m">مراجعة أو راحة</span>'; }
+      h += '<tr class="' + (checked ? 'done' : '') + '"><th>' + esc(label) + '</th><td>' + cell('q', d.qn) + '</td><td>' + cell('v', d.vn) + '</td><td><label class="study-check"><input type="checkbox" data-plan-date="' + esc(d.date) + '"' + (checked ? ' checked' : '') + '> تم</label></td></tr>';
+    });
+    h += '</tbody></table></div><p class="m study-foot">يمكنك تعليم كل يوم كمكتمل. تحفظ العلامات على هذا الجهاز، وتُزامَن لحساب الطالب المسجّل عند توفر الاتصال.</p></div>';
     return h;
+  }
+  function goalCard() {
+    return '<section class="card study-goal"><h2>خطة الاستعداد للاختبار</h2><p class="m">أدخل موعد اختبارك ثم اضغط حفظ لتوليد جدول الاستعداد.</p><div class="study-date-row"><label for="gExam">موعد الاختبار</label><input type="date" id="gExam" value="' + esc(GOAL.exam || '') + '"><button type="button" class="btn btn-navy" id="saveExamDate">حفظ الموعد</button><span id="studySaveMsg" role="status">' + (GOAL.exam ? 'موعد الاختبار محفوظ على هذا الجهاز.' : '') + '</span></div></section>';
   }
   function skillCard() {
     var L = skills().sort(function (a, b) { return a.p - b.p; }), h = '<div class="card"><h3>🧩 إتقانك حسب المهارة</h3>';
@@ -239,44 +306,26 @@
     return h + '</div>';
   }
   function draw() {
-    var n = K.n + V.n + A.n, g = K.g + V.g + A.g, step = nextStep(), h = '<h1>تقدمي</h1><p class="sub">ملخص تدريبك، والخطوة التالية المقترحة لك.</p>';
-    if (place) h += '<div class="resume"><span>مستواك في اختبار تحديد المستوى: ' + esc(place.lvl) + ' (' + AR(place.p) + '٪ · لفظي ' + AR(place.v) + '٪ · كمي ' + AR(place.k) + '٪)</span><a class="btn btn-soft" href="/placement.html">' + (now - new Date(place.d) > 14 * DAY ? 'حان وقت إعادته' : 'أعد الاختبار') + '</a></div>';
-    h += '<section class="next"><div><small>خطوتك التالية</small><h2>' + esc(step.t) + '</h2><p>' + esc(step.d) + '</p></div>' + (step.go ? '<a class="btn btn-gold" href="' + step.go + '">' + esc(step.b) + '</a>' : '<button class="btn btn-gold" id="stepBtn">' + esc(step.b) + '</button>') + '</section>';
-    var SK2 = streak();
-    h += '<div class="streak"><div><b>' + (SK2.n === 1 ? '🔥 يوم تدريب واحد' : SK2.n === 2 ? '🔥 يوما تدريب متتاليان' : SK2.n ? '🔥 ' + AR(SK2.n) + (SK2.n <= 10 ? ' أيام تدريب متتالية' : ' يومًا تدريبيًا متتاليًا') : 'ابدأ اليوم سلسلة أيام تدريبك') + '</b><span>' + (SK2.n && !SK2.today ? 'تدرّب اليوم ولو ١١ سؤالًا لتستمر السلسلة.' : SK2.today ? 'أحسنت، تدربت اليوم.' : 'قليل كل يوم أفضل من كثير مرة واحدة.') + '</span></div><div class="wk">' + SK2.week.map(function (d) { return '<i class="' + (d.on ? 'on' : '') + (d.today ? ' t' : '') + '" title="' + esc(d.l) + '"><em>' + esc(d.l) + '</em></i>'; }).join('') + '</div></div>';
-    h += goalCard();
-    h += '<div class="kpis"><div class="kpi"><b>' + AR(n) + '</b><span>سؤالًا حللته</span></div><div class="kpi"><b>' + (n ? AR(Math.round(g / n * 100)) + '٪' : '—') + '</b><span>دقة إجاباتك</span></div><div class="kpi"><b>' + AR(K.wk + V.wk + A.wk) + '</b><span>سؤالًا هذا الأسبوع</span></div><div class="kpi"><b>' + AR(K.errs.length + V.errs.length + A.errs.length) + '</b><span>سؤالًا في مجلد الأخطاء</span></div></div>';
-    h += '<div class="two">' + subjCard('kamy', K) + subjCard('lafzi', V) + '</div>';
-    h += '<div class="two">' + subjCard('kamy2', A) + '</div>';
-    h += '<div class="two">' + skillCard() + rankCard() + '</div>';
-    h += '<div class="two"><div class="card"><h3>نتائج المحاكاة</h3>';
-    var last = sims.slice(-10);
-    if (last.length) {
-      h += '<p class="m">آخر ' + AR(last.length) + ' محاولات' + (last.length > 1 ? ' · ' + (last[last.length - 1].p >= last[last.length - 2].p ? 'تحسّنت أو ثبتت في آخر محاولة' : 'تراجعت قليلًا في آخر محاولة') : '') + '</p><div class="sims">' + last.map(function (x) { return '<div title="' + esc(x.n) + '"><span>' + AR(x.p) + '٪</span><i style="height:' + Math.max(3, x.p) + '%"></i></div>'; }).join('') + '</div>';
-    } else h += '<p class="m">لم تدخل أي اختبار محاكي بعد.</p><a class="btn btn-navy" href="/muhaky%20mohawsab.html">ادخل المحاكي المحوسب</a>';
-    h += '</div><div class="card"><h3>تأسيس اللفظي</h3>';
-    if (tasisDone) { var vals = Object.keys(tasis).map(function (k) { return +tasis[k]; }), avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length); h += '<p class="m">أنجزت ' + AR(tasisDone) + ' اختبارًا بمتوسط أفضل نتيجة ' + AR(avg) + '٪.</p><a class="btn btn-soft" href="/tasis%20lafzi.html.html">أكمل اختبارات التأسيس</a>'; }
-    else h += '<p class="m">لم تبدأ اختبارات التأسيس بعد.</p><a class="btn btn-soft" href="/tasis%20lafzi.html.html">ابدأ التأسيس</a>';
-    h += '</div></div><p class="note">' + (window.__bwSid ? 'تقدمك محفوظ في حسابك على المنصة، ويظهر لك على أي جهاز تدخل منه بنفس الكود أو بحساب منصة الدورات.' : 'تقدمك في الفترة التجريبية محفوظ على هذا الجهاز فقط. بعد الاشتراك والدخول بالكود يُحفظ في حسابك ويظهر على أي جهاز.') + '</p>';
+    var h = '<main class="study-plan-page"><h1>خطة الاستعداد</h1>' + goalCard();
+    if (GOAL.exam) h += studyPlanCard();
+    h += '</main>';
     app.innerHTML = h;
-    var sb = document.getElementById('stepBtn'); if (sb) sb.onclick = step.fn;
-    var ge = document.getElementById('gExam'); if (ge) ge.onchange = function () { setGoal({ exam: ge.value }); };
-    var gd = document.getElementById('gDaily'); if (gd) gd.onchange = function () { setGoal({ daily: +gd.value }); };
-    var ro = document.getElementById('rkOff'); if (ro) ro.onclick = function () { setRank(true); };
-    var rn = document.getElementById('rkOn'); if (rn) rn.onclick = function () { setRank(false); };
-    app.querySelectorAll('[data-weak]').forEach(function (b) { b.onclick = function () { practice(b.dataset.weak, b.dataset.ids.split(',').map(Number)); }; });
+    var ge = document.getElementById('gExam'), save = document.getElementById('saveExamDate'), msg = document.getElementById('studySaveMsg');
+    if (save) save.onclick = function () {
+      if (!ge || !ge.value) { if (msg) msg.textContent = 'اختر موعد الاختبار أولًا.'; return; }
+      var chosen = new Date(ge.value + 'T00:00:00'); if (!Number.isFinite(chosen.getTime())) { if (msg) msg.textContent = 'التاريخ غير صالح.'; return; }
+      var t = new Date(); t.setHours(0,0,0,0); if (chosen < t) { if (msg) msg.textContent = 'اختر تاريخًا اليوم أو في المستقبل.'; return; }
+      setGoal({ exam: ge.value }); PLAN_STATUS = 'loading'; BANK_COUNTS = null; draw(); loadExamCounts();
+    };
+    var retry = document.getElementById('planRetry'); if (retry) retry.onclick = loadExamCounts;
+    app.querySelectorAll('[data-plan-date]').forEach(function (c) { c.onchange = function () { var p = get(PLAN_KEY, null); if (!p || !p.done) return; p.done[c.getAttribute('data-plan-date')] = c.checked; try { localStorage.setItem(PLAN_KEY, JSON.stringify(p)); } catch (e) { } draw(); }; });
   }
   draw();
-  if ((function () { try { return localStorage.getItem('bw-rank-off') === '1'; } catch (e) { return false; } })()) { RANK = { off: true, list: [] }; draw(); } else loadRank();
+  if (GOAL.exam) { PLAN_STATUS = 'loading'; loadExamCounts(); }
   // أسماء الأقسام من ملفات الأقسام نفسها (تُحمّل في الخلفية)
   function loadNames(sj) {
     fetch('/api/exam/secs?c=' + encodeURIComponent(SUBJ[sj].slug)).then(function (r) { return r.json(); }).then(function (d) { if (d.secs) { names[sj] = {}; d.secs.forEach(function (x) { names[sj][x.id] = x.name; }); draw(); } }).catch(function () { });
   }
-  // زر الاستراحة للمشترك (شريط الاشتراك لا يظهر للمسجّلين إلا قبل الانتهاء بـ٣ أيام)
-  addEventListener('load', function () { var z = document.getElementById('pz'); if (window.bwPause && z) { z.hidden = false; z.querySelector('button').onclick = window.bwPause; } });
-  if (K.secs.length) loadNames('kamy');
-  if (V.secs.length) loadNames('lafzi');
-  if (A.secs.length) loadNames('kamy2');
 })();
 </script>
 <script src="/bw-shell.js"></script>

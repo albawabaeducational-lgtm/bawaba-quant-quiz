@@ -57,8 +57,8 @@
     @media (max-width: 560px) { .card { padding: 16px; } .brand b { display: none; } }
   </style>
 </head>
-<body>
-  <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><a class="hb" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">🎓<span> ركن الدورات</span></a></div></header>
+<body class="account-page">
+  <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><a class="hb" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">🎓<span> ركن الدورات</span></a><button class="bw-account-theme" type="button" data-bw-global-theme aria-label="تغيير المظهر">☾</button></div></header>
   <main id="acc"><div class="card"><p class="m">جارٍ التحميل…</p></div></main>
 <script>
 (function () {
@@ -70,6 +70,8 @@
   var days = function (n) { return n === 1 ? 'يوم واحد' : n === 2 ? 'يومان' : AR(n) + (n <= 10 ? ' أيام' : ' يومًا'); };
   function post(u, b) { return fetch(u, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return [r.ok, d]; }); }); }
   function go(u) { location.href = u; }
+  var CU = { 'muhaky mohawsab': '/muhaky%20mohawsab.html', 'tasis lafzi': '/tasis%20lafzi.html.html', 'ikmal_aljumal': '/ikmal_aljumal.html', 'aksam kamy': '/aksam%20kamy.html', 'ak_kamyadd': '/ak_kamyadd.html', 'aksam lafzi': '/aksam%20lafzi.html', 'aktar kamy': '/aktar%20kamy.html', 'skills': '/skills', 'waraqi': '/waraqi.html' };
+  function CURL(k) { return CU[k] || (window.bwCourseUrl ? window.bwCourseUrl(k) : '/'); }
   function nextUrl() { var n = Q.get('next') || ''; if (Q.get('marketer') === '1') return '/account.html?tab=ref'; return n.charAt(0) === '/' && n.charAt(1) !== '/' ? n : '/account.html?tab=exams'; }
   function load(force) { (window.bwMe ? window.bwMe(force) : fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.json(); })).then(function (me) { ME = me; (me.logged && !(!me.account && (tab === 'signup' || tab === 'login'))) ? logged() : guest(); }); }
 
@@ -109,16 +111,16 @@
   function exams() {
     if (!ME.account) return '<div class="card"><h2>اختباراتك</h2><p class="m" style="margin-bottom:12px">دخلت بكود من المنصة، وكل الاختبارات المتاحة في كودك تظهر لك في الصفحة الرئيسية. لمتابعة اشتراكاتك وتجديدها أنشئ حسابًا.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/">الصفحة الرئيسية</a><a class="btn gold" href="/account.html?tab=signup">✨ إنشاء حساب</a><a class="btn ghost" href="/account.html?tab=login">تسجيل الدخول بحساب</a></div></div>';
     var subs = ME.subs || [], pend = {}; (ME.pending || []).forEach(function (p) { pend[p.course] = p; });
-    var need = Q.get('need'), have = {}; subs.forEach(function (s) { if (s.state === 'active' || s.state === 'soon') have[s.course] = 1; });
+    var need = Q.get('need'), have = {}; subs.forEach(function (s) { if (s.state === 'active' || s.state === 'soon') { have[s.course] = 1; (s.covers || []).forEach(function (k) { have[k] = 1; }); } });
     var h = '';
     if (need && !have[need]) { var nt = (ME.courses.filter(function (c) { return c.key === need; })[0] || {}).title || need; h += '<div class="note">«' + esc(nt) + '» غير مشمول في اشتراكك الحالي. اطلب الاشتراك فيه من الأسفل.</div>'; }
     var soon = subs.filter(function (s) { return s.state === 'soon'; })[0]; if (soon) h += '<div class="note">⏳ ينتهي اشتراكك في «' + esc(soon.title) + '» بعد ' + days(soon.days) + '. جدّده الآن حتى لا ينقطع تدريبك.</div>';
     h += '<div class="card"><h2>اشتراكاتي</h2>' + (subs.length ? '<div class="subs">' + subs.map(function (s) {
       var live = s.state === 'active' || s.state === 'soon', lbl = s.state === 'expired' ? 'منتهي' : s.state === 'cancelled' ? 'ملغى' : 'باقي ' + days(s.days);
-      return '<div class="sub s-' + s.state + '"><div><h3>' + esc(s.title) + '</h3><div class="d">من ' + dt(s.start) + ' إلى ' + dt(s.end) + '</div></div><span class="left">' + lbl + '</span><div class="acts">' + (live ? '<a class="btn sm" href="' + (window.bwCourseUrl ? window.bwCourseUrl(s.course) : '/') + '">ادخل الاختبار</a>' : '') + (pend[s.course] ? '<span class="pend">✓ طلب التجديد قيد المراجعة</span>' : '<button type="button" class="btn ghost sm" data-open="' + esc(s.course) + '">طلب تجديد</button>') + '</div>' + rnBox(s.course, true) + '</div>';
+      return '<div class="sub s-' + s.state + '"><div><h3>' + esc(s.title) + '</h3><div class="d">من ' + dt(s.start) + ' إلى ' + dt(s.end) + '</div></div><span class="left">' + lbl + '</span><div class="acts">' + (live ? (s.covers && s.covers.length ? s.covers.map(function (k) { var c = (ME.courses || []).filter(function (x) { return x.key === k; })[0]; return '<a class="btn sm" href="' + CURL(k) + '">' + esc(c ? c.title : k) + '</a>'; }).join('') : '<a class="btn sm" href="' + CURL(s.course) + '">ادخل الاختبار</a>') : '') + (pend[s.course] ? '<span class="pend">✓ طلب التجديد قيد المراجعة</span>' : '<button type="button" class="btn ghost sm" data-open="' + esc(s.course) + '">طلب تجديد</button>') + '</div>' + rnBox(s.course, true) + '</div>';
     }).join('') + '</div>' : '<p class="m">لا توجد اشتراكات في حسابك بعد. اختر من الأسفل ما تريد الاشتراك فيه.</p>') + '</div>';
     if (!subs.some(function (s) { return s.state === 'active' || s.state === 'soon'; })) h += '<div class="card" style="border:2px solid #c9a45c;text-align:center"><h2>🎁 النسخة المجانية متاحة لك</h2><p class="m" style="margin-bottom:12px">إلى أن يُفعَّل اشتراكك، تقدر تتدرّب مجانًا على الأجزاء المفتوحة من كل الاختبارات، تمامًا كما كنت قبل إنشاء الحساب.</p><a class="btn gold" href="/#tests">ابدأ التدريب المجاني</a></div>';
-    var rest = (ME.courses || []).filter(function (c) { return !subs.some(function (s) { return s.course === c.key; }); });
+    var rest = (ME.courses || []).filter(function (c) { return !have[c.key] && !subs.some(function (s) { return s.course === c.key; }); });
     if (rest.length) h += '<div class="card"><h2>اشترك في قسم جديد</h2><p class="m" style="margin-bottom:12px">أرسل الطلب، ونتواصل معك عبر واتساب ببيانات الدفع، ثم نفعّل الاشتراك.</p><div class="subs">' + rest.map(function (c) {
       return '<div class="sub' + (need === c.key ? ' s-soon' : '') + '"><div><h3>' + esc(c.title) + '</h3></div>' + (pend[c.key] ? '<span class="pend">✓ طلبك قيد المراجعة</span>' : '<button type="button" class="btn gold sm" data-open="' + esc(c.key) + '">طلب اشتراك</button>') + rnBox(c.key, false) + '</div>';
     }).join('') + '</div></div>';
@@ -154,7 +156,7 @@
   function bind(P) {
     P.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { var box = b.closest('.sub').querySelector('.rn'); box.classList.toggle('hidden'); }; });
     P.querySelectorAll('[data-send]').forEach(function (b) { b.onclick = function () {
-      var box = b.closest('.rn'), key = box.dataset.rn, d = +box.querySelector('select').value, title = (ME.courses.filter(function (c) { return c.key === key; })[0] || {}).title || key;
+      var box = b.closest('.rn'), key = box.dataset.rn, d = +box.querySelector('select').value, title = (ME.courses.filter(function (c) { return c.key === key; })[0] || (ME.subs || []).filter(function (x) { return x.course === key; })[0] || {}).title || key;
       var w = window.open('about:blank', '_blank'); b.disabled = true;
       post('/api/account/renew', { course: key, days: d }).then(function (x) {
         if (!x[0]) { if (w) w.close(); alert(x[1].error || 'تعذّر إرسال الطلب'); b.disabled = false; return; }
@@ -172,5 +174,5 @@
 })();
 </script>
 <script src="/bw-account.js" defer></script>
-</body>
+<script src="/bw-theme-toggle.js"></script></body>
 </html>
