@@ -190,7 +190,58 @@ body.fit header{padding:6px 16px;min-height:50px;gap:10px}body.fit header h1{fon
  .ctl{margin-top:4px}.opt{height:34px!important;width:42px!important;font-size:15px!important}.ctl>button{padding:6px 10px!important}
 }
 @media(max-height:500px) and (orientation:landscape){body.fit #qHost{flex-direction:row;gap:6px;align-items:stretch}body.fit .shared-graph{flex:1 1 0;max-height:none;min-height:0;max-width:none;width:auto;align-self:stretch}body.fit .question-host{flex:1 1 0;width:auto;min-width:0}}
-.qz-tools{position:absolute;top:12px;left:12px;display:flex;gap:8px;z-index:5}.qz-b{width:44px;height:44px;border-radius:50%;border:0;background:#12345a;color:#fff;font:700 22px/1 Tahoma,Arial,sans-serif;cursor:pointer;box-shadow:0 4px 12px #0003}</style><link rel="stylesheet" href="/bw-theme.css">
+.qz-tools{position:absolute;top:12px;left:12px;display:flex;gap:8px;z-index:5}.qz-b{width:44px;height:44px;border-radius:50%;border:0;background:#12345a;color:#fff;font:700 22px/1 Tahoma,Arial,sans-serif;cursor:pointer;box-shadow:0 4px 12px #0003}
+/* إصلاح العرض على التابلت ذي المساحة الرأسية القصيرة، مع إبقاء أدوات السؤال ظاهرة */
+@media (max-width:899px) and (max-height:560px){
+ #bw-shell{height:46px!important;min-height:46px!important;padding-block:0!important;gap:4px!important}
+ #bw-shell .bws-brand img{width:30px!important;height:30px!important}
+ #bw-shell .bws-tools>*{padding:4px 7px!important;min-height:30px!important}
+ body.fit header{padding:3px 8px!important;min-height:38px!important;gap:4px!important}
+ body.fit .brand img{height:26px!important}
+ body.fit .pill{padding:1px 7px!important}
+ .tbar{height:2px!important}
+ body.fit .wrap{margin:2px auto!important}
+ body.fit #vExam{grid-template-rows:auto minmax(0,1fr)!important;gap:4px!important}
+ #vExam .side{padding:3px!important;grid-template-columns:minmax(0,1fr) auto!important;gap:3px!important}
+ .pal{gap:2px!important}
+ .pb{height:20px!important;min-height:0!important;padding:0!important;font-size:10px!important;line-height:1.1!important}
+ #pStat{font-size:10px!important}
+ #bFin{padding:3px 8px!important;font-size:10px!important}
+ #vExam main{padding:4px!important}
+ .qhead{margin-bottom:2px!important;gap:4px!important}
+ .qhead b{font-size:12px!important}
+ .qhead button{padding:3px 6px!important;font-size:10px!important}
+ .opts{gap:4px!important;margin:2px 0 3px!important}
+ .opt{width:36px!important;height:32px!important;font-size:15px!important}
+ .nav{gap:4px!important}
+ .nav button{padding:4px 8px!important;font-size:10px!important}
+}
+
+/* حاوية تكبير ثابتة داخل مساحة العرض المرئية على الكمبيوتر والتابلت والهاتف */
+#pgModal.zoom-mode{
+ position:fixed!important;inset:0!important;width:100vw!important;
+ height:100vh!important;height:100dvh!important;overflow:hidden!important;
+ padding:0!important;display:flex!important;align-items:stretch!important;justify-content:center!important
+}
+#pgModal.zoom-mode .zoom-shell{
+ position:relative!important;box-sizing:border-box!important;width:100vw!important;max-width:100vw!important;
+ height:100vh!important;height:100dvh!important;max-height:100dvh!important;overflow:hidden!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;
+ padding:calc(env(safe-area-inset-top,0px) + 58px) max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 12px) max(12px,env(safe-area-inset-left,0px))!important
+}
+#pgModal.zoom-mode .zoom-shell>.dan{
+ top:calc(env(safe-area-inset-top,0px) + 8px)!important;right:calc(env(safe-area-inset-right,0px) + 12px)!important
+}
+#pgModal.zoom-mode .qz-tools{
+ top:calc(env(safe-area-inset-top,0px) + 8px)!important;left:calc(env(safe-area-inset-left,0px) + 12px)!important
+}
+#pgModal.zoom-mode:not(.has-review-assets) .zoom-review-question,
+#pgModal.zoom-mode:not(.has-review-assets) .zoom-host{
+ box-sizing:border-box!important;width:min(calc(100vw - 24px),1000px)!important;
+ height:auto!important;max-height:100%!important;min-height:0!important;flex:1 1 auto!important;
+ overflow:auto!important;overscroll-behavior:contain!important
+}
+</style><link rel="stylesheet" href="/bw-theme.css">
 <link rel="stylesheet" href="/api/site-colors.css"></head><body class="bwt-key"><div id="bw-shell" class="static"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">المحاكي الورقي: النموذج الأول</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
 <header><div class="brand"><img id="hLogo" alt=""><h1 id="hName">اختبار محاكي للقدرات الورقي – ١٢٠ سؤالًا</h1></div><span class="sp" style="flex:1"></span><span class="pill" id="secName"></span><span class="pill">⏱ المتبقي: <span id="timer">--:--</span></span><div class="tbar"><i id="tb"></i></div></header>
 <div class="wrap">
@@ -285,7 +336,7 @@ addEventListener('resize',()=>{layout($('qHost'));layout($('rvHost'));layout($('
  const q=$('qQuestionHost');if(q){q.style.cursor='zoom-in';q.addEventListener('click',e=>{if(e.target.closest('button'))return;if(S&&S.q)openQuestionZoom(S.q)})}})();
 /* تكبير السؤال وحده (قصّه من الصفحة) — وليس صورة الصفحة الكاملة */
 function openQuestionZoom(q){const m=$('pgModal');m.innerHTML='<div class="zoom-shell"><button class="dan" id="zoomClose" type="button">إغلاق</button><div class="qz-tools"><button type="button" class="qz-b" id="qzIn" aria-label="تكبير">＋</button><button type="button" class="qz-b" id="qzOut" aria-label="تصغير">－</button></div><div class="zoom-review-question" id="zoomQuestionHost" aria-label="صورة السؤال" style="overflow:auto;direction:rtl;justify-content:flex-start"></div></div>';m.className='zoom-mode';m.classList.remove('hidden');crop($('zoomQuestionHost'),q);requestAnimationFrame(()=>layout($('zoomQuestionHost')));
- let z=1.6;const apply=()=>{const sg=m.querySelector('#zoomQuestionHost .seg');if(sg){sg.style.zoom=z;sg.style.margin=z>1?'0':'0 auto'}};requestAnimationFrame(()=>requestAnimationFrame(apply));
+ let z=1;const apply=()=>{const sg=m.querySelector('#zoomQuestionHost .seg');if(sg){sg.style.zoom=z;sg.style.margin=z>1?'0':'0 auto'}};requestAnimationFrame(()=>requestAnimationFrame(apply));
  $('qzIn').onclick=e=>{e.stopPropagation();z=Math.min(4,+(z+0.4).toFixed(1));apply()};$('qzOut').onclick=e=>{e.stopPropagation();z=Math.max(1,+(z-0.4).toFixed(1));apply()};const x=()=>m.classList.add('hidden');$('zoomClose').onclick=x;const sh=m.querySelector('.zoom-shell');sh.onclick=e=>{if(e.target===sh)x()};m.onclick=e=>{if(e.target===m)x()}}
 let PT='p';
 function applyPassage(){const q=S.q,pid=PQ[q],area=$('qArea'),tabs=$('ptabs'),pane=$('pPane');
