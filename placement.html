@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head>
+<head><meta name="color-scheme" content="only light">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c2440">
@@ -96,7 +96,9 @@
     #app:has(.qhead) .qhead, #app:has(.qhead) .track { flex: none; }
     #app:has(.qhead) .track { margin: 6px 0 8px !important; }
     #app:has(.qhead) > .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px !important; margin: 0 !important; overflow: hidden; }
-    #app:has(.qhead) > .card .psg { flex: 1 1 0; min-height: 48px; max-height: none !important; overflow: auto; margin-bottom: 8px !important; }
+    #app:has(.qhead) > .card .psg { flex: 1 1 0; min-height: min(23vh, 200px); max-height: none !important; overflow: auto; margin-bottom: 8px !important; }
+    #app:has(.qhead) > .card:has(.psg) .opt { padding-block: 5px !important; font-size: 16px !important; line-height: 1.45 !important; }
+    #app:has(.qhead) > .card:has(.psg) .opts { gap: 5px !important; flex: 0 1 auto !important; min-height: min(150px, 22vh); overflow-y: auto; overscroll-behavior: contain; }
     #app:has(.qhead) > .card .stem { flex: none; margin-bottom: 8px !important; }
     #app:has(.qhead) > .card .stem img { max-height: calc(100dvh - 430px); width: auto; max-width: 100%; object-fit: contain; }
     #app:has(.qhead) > .card .opts { flex: none; gap: 6px !important; }

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="ar" dir="rtl"><head><meta name="color-scheme" content="only light"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>اختبار محاكي للقدرات الورقي – تفاعلي</title>
 <style>
 :root{--navy:#12243a;--blue:#2456a6;--gold:#d7a84b;--bg:#eef1f6;--ink:#172334;--ok:#1e8a4c;--bad:#c0392b;--line:#dce2ea}
@@ -278,6 +278,11 @@ function layout(host){if(host.id==='qHost'){layout($('qSharedHost'));layout($('q
  const kk=naturalReview?Math.max(.3,Math.min(pw/W,3.4)):Math.max(.3,Math.min(fit?pw/W:Math.min(pw,760)/W,ph/H,3.4));
  segs.forEach((d,i)=>{const[p,x0,y0,x1,y1]=D[i];d.style.width=(x1-x0)*kk+'px';d.style.height=(y1-y0)*kk+'px';const im=d.firstChild;im.style.width=PW*kk+'px';im.style.left='0';im.style.marginLeft=(-x0*kk)+'px';im.style.top=(-y0*kk)+'px'})}
 addEventListener('resize',()=>{layout($('qHost'));layout($('rvHost'));layout($('errHost'));document.querySelectorAll('#revList .miniHost,#revList .review-context-asset,.zoom-review-question,.zoom-review-context').forEach(layout)});addEventListener('orientationchange',()=>setTimeout(()=>layout($('qHost')),250));
+/* إعادة حساب حجم السؤال كلما تغيّر حجم إطاره (ملء الشاشة على التابلت، الانتقال التلقائي من التعليمات، تدوير الجهاز)؛ ولمس السؤال يعرض الصفحة مكبّرة */
+(function(){let last='',pend=0;const run=()=>{pend=0;const h=$('qQuestionHost');if(!h||$('vExam').classList.contains('hidden'))return;const k=h.clientWidth+'x'+h.clientHeight;if(k===last)return;last=k;layout($('qHost'))};
+ if(window.ResizeObserver){const ro=new ResizeObserver(()=>{if(!pend){pend=1;requestAnimationFrame(run)}});['qHost','qQuestionHost','qArea'].forEach(id=>{const e=$(id);if(e)ro.observe(e)})}
+ document.addEventListener('fullscreenchange',()=>{last='';setTimeout(run,150);setTimeout(()=>{last='';run()},600)});
+ const q=$('qQuestionHost');if(q){q.style.cursor='zoom-in';q.addEventListener('click',e=>{if(e.target.closest('button'))return;const b=$('bPage');if(b&&!/إخفاء|السؤال/.test(b.textContent))b.click()})}})();
 let PT='p';
 function applyPassage(){const q=S.q,pid=PQ[q],area=$('qArea'),tabs=$('ptabs'),pane=$('pPane');
  if(!pid){S.lastPid=null;area.className='qarea';tabs.classList.add('hidden');pane.classList.add('hidden');layout($('qHost'));return}

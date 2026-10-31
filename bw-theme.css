@@ -304,3 +304,24 @@ body.testing .psg *, body.testing .qbody .qt { min-width:0; max-width:100%; over
 body.testing .qbody .qt { max-height:min(36vh,420px); overflow:auto; overscroll-behavior:contain; }
 .qbody img,.qimg img,.psg img { max-width:100%; height:auto; }
 @media(max-width:700px){ .bw-result-summary{padding:12px}.bwrs-donut{width:78px;height:78px}.bwrs-donut::before{inset:9px}.bw-question-zoom{padding:12px} }
+
+/* الجوال والتابلت الصغير: خريطة الأسئلة صف أفقي واحد قابل للسحب (بدل صفوف كثيرة تأكل مساحة السؤال والقطعة في الاختبارات الطويلة) */
+@media (max-width: 800px) {
+  html body.testing .exam .side .qn { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; overflow-y: hidden !important; max-height: none !important; gap: 5px !important; padding-bottom: 4px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  html body.testing .exam .side .qn button { flex: none !important; width: 34px !important; min-width: 34px !important; }
+}
+
+/* استيعاب المقروء على شاشة ضيقة: خيارات وأزرار أكثر إحكامًا لتأخذ القطعة مساحة مقروءة */
+body.bw-rdt .opts { gap: 5px !important; }
+body.bw-rdt .opts .opt { padding-top: 6px !important; padding-bottom: 6px !important; min-height: 0 !important; font-size: 16px !important; line-height: 1.5 !important; }
+body.bw-rdt .nav { margin-top: 6px !important; }
+body.bw-rdt .nav .btn { padding-top: 7px !important; padding-bottom: 7px !important; }
+body.testing .qbody .qt > .psg { min-height: 0; }
+/* سؤال القطعة: لا سقف ثابت لإطار (القطعة + السؤال)؛ ارتفاعه يحدده ما يتبقى من الشاشة، والقطعة تتمرر داخل إطارها */
+body.testing .qbody .qt:has(> .psg) { max-height: none !important; }
+/* الشاشة الضيقة مع القطعة: إخفاء المكرر (رقم السؤال والتقدم ظاهران في الشريط العلوي) */
+body.bw-rdt .qcard > .meta, body.bw-rdt .qcard > .bar, body.bw-rdt .qbody .qt > .qty { display: none !important; }
+body.bw-rdt .qcard { padding-top: 8px !important; padding-bottom: 8px !important; }
+
+/* لا يعيد المتصفح تلوين الصفحات بوضعه الداكن الإجباري (Brave/Chrome على أندرويد)؛ الموقع يدير ألوانه وله وضعه الداكن الخاص */
+:root { color-scheme: only light; }

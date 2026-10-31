@@ -328,3 +328,24 @@ window.__bwSideH = function (b) {
   new MutationObserver(later).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
   later();
 })();
+
+// خريطة الأسئلة الأفقية: السؤال الحالي يبقى ظاهرًا داخل الصف عند التنقل
+(function () {
+  var pend = 0;
+  function show() { pend = 0; [].forEach.call(document.querySelectorAll('.side .qn'), function (q) { if (q.scrollWidth <= q.clientWidth + 2) return; var c = q.querySelector('button.c'); if (!c) return; var qr = q.getBoundingClientRect(), cr = c.getBoundingClientRect(); if (cr.left < qr.left + 4 || cr.right > qr.right - 4) q.scrollLeft += (cr.left + cr.width / 2) - (qr.left + qr.width / 2); }); }
+  new MutationObserver(function () { if (pend) return; pend = 1; requestAnimationFrame(show); }).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] });
+})();
+
+// استيعاب المقروء: القطعة لها حد أدنى مقروء دائمًا. إن ضاقت الشاشة نضغط الخيارات أولًا، ثم تُمرَّر الخيارات داخل إطارها
+// بدل أن تنكمش القطعة. calc تعيد المساحة المتاحة لجسم السؤال بحسب ارتفاع الخيارات الحالي.
+window.__bwReadFit = function (b, o, calc) {
+  o.style.maxHeight = ''; o.style.overflowY = ''; document.body.classList.remove('bw-rdt');
+  var h = calc(), ps = b.querySelector('.psg'); if (!ps) return h;
+  var min = Math.max(150, Math.min(300, Math.round(innerHeight * 0.3)));
+  var need = function () { var st = b.querySelector('.stem'), ty = b.querySelector('.qty'); return Math.min(ps.scrollHeight, min) + (st ? st.offsetHeight : 0) + (ty && ty.offsetParent ? ty.offsetHeight : 0) + 22; };
+  if (h >= need()) return h;
+  document.body.classList.add('bw-rdt'); h = calc(); var nd = need(); if (h >= nd) return h;
+  var oh = o.offsetHeight, keep = Math.min(oh, Math.max(120, Math.round(innerHeight * 0.2)));
+  o.style.maxHeight = Math.max(keep, oh - (nd - h)) + 'px'; o.style.overflowY = 'auto'; o.style.overscrollBehavior = 'contain';
+  return calc();
+};
