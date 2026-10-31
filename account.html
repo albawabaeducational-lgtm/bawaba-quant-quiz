@@ -56,9 +56,9 @@
     .hidden { display: none !important; }
     @media (max-width: 560px) { .card { padding: 16px; } .brand b { display: none; } }
   </style>
-</head>
+<link rel="stylesheet" href="/api/site-colors.css"></head>
 <body class="account-page">
-  <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><a class="hb" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">🎓<span> ركن الدورات</span></a><button class="bw-account-theme" type="button" data-bw-global-theme aria-label="تغيير المظهر">☾</button></div></header>
+  <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><a class="hb" href="https://albawaba-edu.com/e/" target="_blank" rel="noopener">🎓<span> ركن الدورات</span></a></div></header>
   <main id="acc"><div class="card"><p class="m">جارٍ التحميل…</p></div></main>
 <script>
 (function () {
@@ -106,8 +106,10 @@
     if (tab === 'exams') P.innerHTML = exams(); else if (tab === 'me') P.innerHTML = mine(); else P.innerHTML = ref();
     bind(P);
   }
-  function waLink(course, d) { var t = 'السلام عليكم ورحمة الله وبركاته\nأرغب في ' + (d.renew ? 'تجديد' : 'الاشتراك في') + ' «' + course + '» لمدة ' + days(d.days) + '.\nالاسم: ' + ME.name + (ME.phone ? '\nالجوال: ' + ME.phone : '') + (ME.email ? '\nالبريد: ' + ME.email : '') + '\nأرجو إرسال بيانات الدفع.'; return 'https://wa.me/' + String(ME.contact || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(t); }
-  function rnBox(key, renew) { return '<div class="rn hidden" data-rn="' + esc(key) + '" data-renew="' + (renew ? 1 : 0) + '"><span>المدة:</span><select><option value="30">شهر</option><option value="60">شهرين</option><option value="90">٣ أشهر</option><option value="180">٦ أشهر</option></select><button type="button" class="btn wa sm" data-send>إرسال الطلب ومتابعة الدفع عبر واتساب</button></div>'; }
+  function waLink(course, d) { var t = 'السلام عليكم ورحمة الله وبركاته\nأرغب في ' + (d.renew ? 'تجديد' : 'الاشتراك في') + ' «' + course + '» لمدة ' + durTxt(d.days) + '.\nالاسم: ' + ME.name + (ME.phone ? '\nالجوال: ' + ME.phone : '') + (ME.email ? '\nالبريد: ' + ME.email : '') + '\nأرجو إرسال بيانات الدفع.'; return 'https://wa.me/' + String(ME.contact || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(t); }
+  function durTxt(d) { return d % 365 === 0 ? (d === 365 ? 'سنة' : AR(d / 365) + ' سنوات') : d % 30 === 0 ? (d === 30 ? 'شهر' : d === 60 ? 'شهران' : AR(d / 30) + ' أشهر') : days(d); }
+  function rnOpts(key) { var pl = (ME.plans || {})[key]; if (pl && pl.length) return pl.map(function (x) { return '<option value="' + x.days + '">' + durTxt(x.days) + (x.price ? ' — ' + AR(x.price) + ' ريال' : '') + '</option>'; }).join(''); return '<option value="30">شهر</option><option value="60">شهرين</option><option value="90">٣ أشهر</option><option value="180">٦ أشهر</option>'; }
+  function rnBox(key, renew) { return '<div class="rn hidden" data-rn="' + esc(key) + '" data-renew="' + (renew ? 1 : 0) + '"><span>المدة:</span><select>' + rnOpts(key) + '</select><button type="button" class="btn wa sm" data-send>إرسال الطلب ومتابعة الدفع عبر واتساب</button></div>'; }
   function exams() {
     if (!ME.account) return '<div class="card"><h2>اختباراتك</h2><p class="m" style="margin-bottom:12px">دخلت بكود من المنصة، وكل الاختبارات المتاحة في كودك تظهر لك في الصفحة الرئيسية. لمتابعة اشتراكاتك وتجديدها أنشئ حسابًا.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/">الصفحة الرئيسية</a><a class="btn gold" href="/account.html?tab=signup">✨ إنشاء حساب</a><a class="btn ghost" href="/account.html?tab=login">تسجيل الدخول بحساب</a></div></div>';
     var subs = ME.subs || [], pend = {}; (ME.pending || []).forEach(function (p) { pend[p.course] = p; });
@@ -144,7 +146,7 @@
       var box = document.getElementById('refBox'); if (!box) return;
       if (d.error) { box.innerHTML = '<div class="card"><p class="m">' + esc(d.error) + '</p></div>'; return; }
       var subd = d.registered.filter(function (r) { return r.subscribed; }), msg = 'منصة البوابة التعليمية لاختبارات القدرات 👇\n' + d.link;
-      var h = '<div class="card"><h2>🔗 رابطك الخاص</h2><p class="m" style="margin-bottom:10px">شاركه مع أصدقائك. لا يحتاجون كتابة أي كود؛ يكفي أن يفتحوا الرابط وينشئوا حسابهم. تُحتسب عمولتك (' + AR(d.rate) + '٪) عندما يدفع الطالب ويشترك في أول قسم.</p>'
+      var h = '<div class="card"><h2>🔗 رابطك الخاص</h2><p class="m" style="margin-bottom:10px">شاركه مع أصدقائك. لا يحتاجون كتابة أي كود: يفتحون الرابط ويتصفحون المنصة بحرية، ومتى أنشؤوا حسابهم خلال ' + AR(d.days || 30) + ' يومًا من أول زيارة يُحتسبون لك تلقائيًا. تُحتسب عمولتك (' + AR(d.rate) + '٪) عندما يدفع الطالب ويشترك في أول قسم.</p>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="rl" value="' + esc(d.link) + '" dir="ltr" readonly style="flex:1;min-width:200px"><button type="button" class="btn" id="cp">نسخ الرابط</button><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(msg) + '">مشاركة عبر واتساب</a></div><p class="msg" id="cpm"></p></div>'
         + '<div class="grid2" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">' + [['سجّلوا من رابطك', AR(d.registered.length)], ['اشتركوا فعلًا', AR(subd.length)], ['عمولات مستحقة', SAR(d.totals.due)], ['معلّقة (فترة الانتظار)', SAR(d.totals.pending)], ['صُرفت لك', SAR(d.totals.paid)]].map(function (k) { return '<div class="card" style="margin:0;text-align:center;padding:14px"><div class="m">' + k[0] + '</div><b style="font:700 22px Readex Pro,sans-serif;color:var(--navy)">' + k[1] + '</b></div>'; }).join('') + '</div>'
         + '<div class="card"><h2>من سجّلوا من خلالك</h2>' + (d.registered.length ? '<div class="subs">' + d.registered.map(function (r) { return '<div class="sub' + (r.subscribed ? ' s-active' : '') + '"><div><h3 style="font-size:15.5px">' + esc(r.name) + '</h3><div class="d">سجّل ' + dt(r.date) + (r.courses.length ? ' · ' + esc(r.courses.join('، ')) : '') + '</div></div><span class="left">' + (r.subscribed ? 'مشترك' : 'لم يشترك بعد') + '</span></div>'; }).join('') + '</div>' : '<p class="m">لم يسجّل أحد من رابطك بعد. شاركه الآن!</p>') + '</div>'

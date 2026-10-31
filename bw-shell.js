@@ -17,12 +17,15 @@
     var im = e.target.closest && e.target.closest('.qbody img, .psg img, .qimg img, img.qimg, .rv img');
     if (!im || im.closest('#zm, [data-z], .graph-zoom-overlay') || document.getElementById('bw-question-zoom')) return;
     if (!(im.closest('.qbody,.psg,.qimg,.rv,.exam,#simQ,#simRv'))) return;
-    e.preventDefault();
+    // عارض واحد فقط: إن كان للصفحة عارضها الخاص (أقسام الكمي والمحاكي وغيرها) يفتح هو وحده، ولا نفتح عارضًا ثانيًا فوقه
+    var own = function () { return [].some.call(document.querySelectorAll('#zm, .graph-zoom-overlay, #pgModal.zoom-mode'), function (x) { return x.offsetParent || getComputedStyle(x).position === 'fixed' && getComputedStyle(x).display !== 'none'; }); };
+    if (own()) return;
+    setTimeout(function () { if (own() || document.getElementById('bw-question-zoom')) return;
     var ov = document.createElement('div'); ov.id = 'bw-question-zoom'; ov.className = 'bw-question-zoom'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','تكبير صورة السؤال');
     ov.innerHTML = '<button type="button" class="bwqz-close" aria-label="إغلاق">×</button><img alt="صورة السؤال المكبرة">'; ov.querySelector('img').src = im.currentSrc || im.src; ov.querySelector('img').alt = im.alt || 'صورة السؤال';
     function close(){ document.removeEventListener('keydown', key); ov.remove(); }
     function key(ev){ if(ev.key==='Escape'){close();} }
-    ov.addEventListener('click', function(ev){ if(ev.target===ov || ev.target.closest('.bwqz-close')) close(); }); document.addEventListener('keydown',key); document.body.appendChild(ov); ov.querySelector('.bwqz-close').focus();
+    ov.addEventListener('click', function(ev){ if(ev.target===ov || ev.target.closest('.bwqz-close')) close(); }); document.addEventListener('keydown',key); document.body.appendChild(ov); ov.querySelector('.bwqz-close').focus(); }, 0);
   });
   var qzObs = new MutationObserver(function () { document.querySelectorAll('.qbody img,.psg img,.qimg img,img.qimg,.rv img').forEach(function (im) { if (im.closest('#zm,[data-z],.graph-zoom-overlay')) return; im.tabIndex = 0; im.setAttribute('role','button'); im.setAttribute('aria-label', (im.alt || 'صورة السؤال') + ' — اضغط للتكبير'); }); });
   qzObs.observe(document.documentElement, { childList: true, subtree: true });
@@ -33,16 +36,8 @@
   // رابط ثابت للعودة إلى منصة الدورات
   var back = sh.querySelector('.bws-back');
   if (back && !sh.querySelector('.bws-lms')) { var lms = document.createElement('a'); lms.className = 'bws-lms'; lms.href = 'https://albawaba-edu.com/e/'; lms.target = '_blank'; lms.rel = 'noopener'; lms.title = 'منصة الدورات'; lms.innerHTML = '🎓<span> منصة الدورات</span>'; sh.insertBefore(lms, back); }
-  // المظهر: فاتح افتراضيًا، وداكن فقط حين يختاره الطالب (يُحفظ في هذا المتصفح ويسري على كل صفحات التدريب)
-  (function () {
-    var KEY = 'bw-user-theme', H = document.documentElement, mode = 'light';
-    try { mode = localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light'; } catch (e) { }
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'bws-theme';
-    function apply() { H.classList.toggle('bw-user-dark', mode === 'dark'); b.textContent = mode === 'dark' ? '☀' : '☾'; b.title = mode === 'dark' ? 'التبديل إلى المظهر الفاتح' : 'التبديل إلى المظهر الداكن'; b.setAttribute('aria-label', b.title); b.setAttribute('aria-pressed', mode === 'dark' ? 'true' : 'false'); }
-    b.onclick = function () { mode = mode === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, mode); } catch (e) { } apply(); };
-    if (tools) tools.appendChild(b); else sh.insertBefore(b, back || null);
-    apply();
-  })();
+  // لا يوجد تبديل فاتح/داكن: ألوان المنصة موحدة يحددها المدير (/api/site-colors.css)
+  try { localStorage.removeItem('bw-user-theme'); } catch (e) { } document.documentElement.classList.remove('bw-user-dark');
   // أدوات سهولة القراءة: تكبير الخط، خط أوضح، تباين أعلى، إيقاف الحركة (تُحفظ لهذا الجهاز)
   (function () {
     var KEY = 'bw-a11y', H = document.documentElement, O = {};

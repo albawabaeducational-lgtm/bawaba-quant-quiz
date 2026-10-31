@@ -121,7 +121,7 @@
     }
     #app:has(.qhead) > .card { overflow-y: auto !important; overscroll-behavior: contain; }
   </style>
-</head>
+<link rel="stylesheet" href="/api/site-colors.css"></head>
 <body class="bwt-hub">
   <div id="bw-shell"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">اختبار تحديد المستوى</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
   <main class="pw" id="app"><p class="sub">جارٍ تجهيز الاختبار…</p></main>
@@ -280,5 +280,5 @@
 // تكبير صورة السؤال في المراجعة بالضغط عليها
 document.addEventListener('click', function (e) { var im = e.target.closest && e.target.closest('.rv .stem img'); if (!im) return; var d = document.createElement('div'); d.style.cssText = 'position:fixed;inset:0;z-index:2147483400;background:#0c2440ee;display:grid;place-items:center;padding:16px;cursor:zoom-out'; d.innerHTML = '<img src="' + im.src + '" alt="" style="max-width:100%;max-height:92vh;border-radius:12px;background:#fff">'; d.onclick = function () { d.remove(); }; document.body.appendChild(d); });
 </script>
-</body>
+<script src="/bw-theme-toggle.js" defer></script></body>
 </html>

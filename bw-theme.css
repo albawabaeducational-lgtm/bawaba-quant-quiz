@@ -262,18 +262,7 @@ html body .qcard:has(.qbody img) > .meta::after { content: "🔍 اضغط على
 .rc.hl { box-shadow: 0 0 0 3px var(--bw-gold) !important; transition: box-shadow .3s; }
 
 
-/* ---------- الوضع الداكن: عكس ألوان موحّد يحافظ على تباين كل نص مع خلفيته في كل محركات الاختبارات،
-   مع إعادة الصور والرسوم لألوانها الأصلية (صور أسئلة الكمي والقطع والرسوم البيانية) ---------- */
-html.bw-user-dark { filter: invert(.9) hue-rotate(180deg); background: #fff; }
-html.bw-user-dark img, html.bw-user-dark video, html.bw-user-dark canvas, html.bw-user-dark picture, html.bw-user-dark svg image,
-html.bw-user-dark .bw-question-zoom, html.bw-user-dark [data-bw-keep] { filter: invert(1) hue-rotate(180deg); }
-html.bw-user-dark .bw-question-zoom img { filter: none; }
-#bw-shell .bws-theme { flex: none; min-width: 38px; min-height: 36px; padding: 5px 10px; border: 0; border-radius: 10px; background: #ffffff14; color: #fff; font: 700 17px/1 Tahoma, Arial, sans-serif; cursor: pointer; }
-#bw-shell .bws-theme:hover { background: #ffffff28; }
 
-.bw-admin-theme { position: fixed; z-index: 1000; top: 12px; left: 12px; min-width: 38px; height: 38px; border: 1px solid #ffffff55; border-radius: 11px; background: #12345a; color: #fff; cursor: pointer; font: 700 17px Tahoma,Arial,sans-serif; box-shadow: 0 4px 14px #0002; }
-.bw-account-theme { flex: none; min-width: 40px; height: 40px; border: 1px solid #ffffff55; border-radius: 11px; background: #ffffff14; color: #fff; cursor: pointer; font: 700 17px Tahoma,Arial,sans-serif; }
-html.th-light .bw-account-theme { background: #fff; color: var(--navy); border-color: #0000002a; }
 
 
 /* نتائج موحدة، ورسالة واضحة للأزرار المفوضة إلى واجهة الاختبار الأصلية */

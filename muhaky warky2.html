@@ -190,8 +190,8 @@ body.fit header{padding:6px 16px;min-height:50px;gap:10px}body.fit header h1{fon
  .ctl{margin-top:4px}.opt{height:34px!important;width:42px!important;font-size:15px!important}.ctl>button{padding:6px 10px!important}
 }
 @media(max-height:500px) and (orientation:landscape){body.fit #qHost{flex-direction:row;gap:6px;align-items:stretch}body.fit .shared-graph{flex:1 1 0;max-height:none;min-height:0;max-width:none;width:auto;align-self:stretch}body.fit .question-host{flex:1 1 0;width:auto;min-width:0}}
-</style><link rel="stylesheet" href="/bw-theme.css">
-</head><body class="bwt-key"><div id="bw-shell" class="static"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">المحاكي الورقي: النموذج الثاني</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
+.qz-tools{position:absolute;top:12px;left:12px;display:flex;gap:8px;z-index:5}.qz-b{width:44px;height:44px;border-radius:50%;border:0;background:#12345a;color:#fff;font:700 22px/1 Tahoma,Arial,sans-serif;cursor:pointer;box-shadow:0 4px 12px #0003}</style><link rel="stylesheet" href="/bw-theme.css">
+<link rel="stylesheet" href="/api/site-colors.css"></head><body class="bwt-key"><div id="bw-shell" class="static"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">المحاكي الورقي: النموذج الثاني</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
 <header><div class="brand"><img id="hLogo" alt=""><h1 id="hName">اختبار محاكي للقدرات الورقي – ١٢٠ سؤالًا</h1></div><span class="sp" style="flex:1"></span><span class="pill" id="secName"></span><span class="pill">⏱ المتبقي: <span id="timer">--:--</span></span><div class="tbar"><i id="tb"></i></div></header>
 <div class="wrap">
 
@@ -282,7 +282,11 @@ addEventListener('resize',()=>{layout($('qHost'));layout($('rvHost'));layout($('
 (function(){let last='',pend=0;const run=()=>{pend=0;const h=$('qQuestionHost');if(!h||$('vExam').classList.contains('hidden'))return;const k=h.clientWidth+'x'+h.clientHeight;if(k===last)return;last=k;layout($('qHost'))};
  if(window.ResizeObserver){const ro=new ResizeObserver(()=>{if(!pend){pend=1;requestAnimationFrame(run)}});['qHost','qQuestionHost','qArea'].forEach(id=>{const e=$(id);if(e)ro.observe(e)})}
  document.addEventListener('fullscreenchange',()=>{last='';setTimeout(run,150);setTimeout(()=>{last='';run()},600)});
- const q=$('qQuestionHost');if(q){q.style.cursor='zoom-in';q.addEventListener('click',e=>{if(e.target.closest('button'))return;const b=$('bPage');if(b&&!/إخفاء|السؤال/.test(b.textContent))b.click()})}})();
+ const q=$('qQuestionHost');if(q){q.style.cursor='zoom-in';q.addEventListener('click',e=>{if(e.target.closest('button'))return;if(S&&S.q)openQuestionZoom(S.q)})}})();
+/* تكبير السؤال وحده (قصّه من الصفحة) — وليس صورة الصفحة الكاملة */
+function openQuestionZoom(q){const m=$('pgModal');m.innerHTML='<div class="zoom-shell"><button class="dan" id="zoomClose" type="button">إغلاق</button><div class="qz-tools"><button type="button" class="qz-b" id="qzIn" aria-label="تكبير">＋</button><button type="button" class="qz-b" id="qzOut" aria-label="تصغير">－</button></div><div class="zoom-review-question" id="zoomQuestionHost" aria-label="صورة السؤال" style="overflow:auto;direction:rtl;justify-content:flex-start"></div></div>';m.className='zoom-mode';m.classList.remove('hidden');crop($('zoomQuestionHost'),q);requestAnimationFrame(()=>layout($('zoomQuestionHost')));
+ let z=1.6;const apply=()=>{const sg=m.querySelector('#zoomQuestionHost .seg');if(sg){sg.style.zoom=z;sg.style.margin=z>1?'0':'0 auto'}};requestAnimationFrame(()=>requestAnimationFrame(apply));
+ $('qzIn').onclick=e=>{e.stopPropagation();z=Math.min(4,+(z+0.4).toFixed(1));apply()};$('qzOut').onclick=e=>{e.stopPropagation();z=Math.max(1,+(z-0.4).toFixed(1));apply()};const x=()=>m.classList.add('hidden');$('zoomClose').onclick=x;const sh=m.querySelector('.zoom-shell');sh.onclick=e=>{if(e.target===sh)x()};m.onclick=e=>{if(e.target===m)x()}}
 let PT='p';
 function applyPassage(){const q=S.q,pid=PQ[q],area=$('qArea'),tabs=$('ptabs'),pane=$('pPane');
  if(!pid){S.lastPid=null;area.className='qarea';tabs.classList.add('hidden');pane.classList.add('hidden');layout($('qHost'));return}
@@ -395,4 +399,4 @@ $('ct1').innerHTML=ctHTML();
 $('ft').innerHTML='<b>'+BRAND.name+'</b><br><span style="color:#e07b00;font-weight:bold">'+BRAND.tagline+'</span><div class="contacts">'+ctHTML()+'</div><small>'+BRAND.note+'</small>';
 </script>
 <script src="/bw-shell.js"></script>
-</body></html>
+<script src="/bw-theme-toggle.js" defer></script></body></html>

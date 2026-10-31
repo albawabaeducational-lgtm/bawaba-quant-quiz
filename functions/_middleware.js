@@ -106,16 +106,26 @@ export async function onRequest({ request, env, next }) {
   const SHORT = { '/kamy': '/aksam%20kamy.html', '/lafzi': '/aksam%20lafzi.html', '/mock': '/muhaky%20mohawsab.html', '/mohawsab': '/muhaky%20mohawsab.html', '/tasis': '/tasis%20lafzi.html.html', '/paper': '/waraqi.html', '/signup': '/account.html?tab=signup', '/my': '/account.html?tab=exams', '/aktar': '/aktar%20kamy.html', '/level': '/placement.html' };
   const sp = SHORT[p.replace(/\/+$/, '').toLowerCase()];
   if (sp) return new Response(null, { status: 302, headers: { location: sp + url.search + url.hash } });
-  // رابط الإحالة: /r/CODE يحفظ المُحيل ٣٠ يومًا (أول رابط يُفتح هو المعتمد) ثم يفتح صفحة إنشاء الحساب
+  // رابط الإحالة: /r/CODE يفتح الصفحة الرئيسية ليتصفح الزائر بحرية، ويُسجَّل في قاعدة البيانات «زيارة إحالة» برمز عشوائي
+  // لا يمكن تخمينه، صالحة لمدة تحددها الإدارة (ref_cookie_days، الافتراضي ٣٠ يومًا). أول رابط صالح هو المعتمد،
+  // وعند إنشاء الحساب يتحقق الخادم من الرمز ويربط الحساب بصاحبه مرة واحدة ويعلّم الرمز مستخدمًا.
   const rm = p.match(/^\/r\/([a-z0-9]{4,12})\/?$/i);
   if (rm && env.DB) {
-    let to = '/account.html?tab=signup&ref=1', ck2 = '';
+    const h = new Headers({ location: '/' });
     try {
-      const a = await env.DB.prepare('SELECT student_id FROM accounts WHERE ref_code=?').bind(rm[1].toLowerCase()).first();
-      if (a && !cookie(request, 'bw_ref')) ck2 = `bw_ref=${a.student_id}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`;
-      if (!a) to = '/';
-    } catch (e) { to = '/'; }
-    const h = new Headers({ location: to }); if (ck2) h.append('set-cookie', ck2);
+      const DB = env.DB, nowIso = new Date().toISOString();
+      await DB.prepare('CREATE TABLE IF NOT EXISTS ref_visits (token TEXT PRIMARY KEY, referrer_id INTEGER NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, used_by INTEGER, used_at TEXT)').run();
+      const a = await DB.prepare("SELECT a.student_id FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_code=? AND s.status='active'").bind(rm[1].toLowerCase()).first();
+      if (a) {
+        const old = cookie(request, 'bw_rt'), live = old ? await DB.prepare('SELECT 1 x FROM ref_visits WHERE token=? AND expires_at>? AND used_by IS NULL').bind(old, nowIso).first() : null;
+        if (!live) {
+          const dv = await DB.prepare("SELECT value FROM settings WHERE key='ref_cookie_days'").first().catch(() => null), days = Math.max(1, Math.min(365, parseInt(dv && dv.value) || 30));
+          const tk = [...crypto.getRandomValues(new Uint8Array(18))].map(x => x.toString(16).padStart(2, '0')).join('');
+          await DB.prepare('INSERT INTO ref_visits (token,referrer_id,created_at,expires_at) VALUES (?,?,?,?)').bind(tk, a.student_id, nowIso, new Date(Date.now() + days * 864e5).toISOString()).run();
+          h.append('set-cookie', `bw_rt=${tk}; Path=/; Max-Age=${days * 86400}; HttpOnly; Secure; SameSite=Lax`);
+        }
+      }
+    } catch (e) { }
     return new Response(null, { status: 302, headers: h });
   }
   const isPage = request.method === 'GET' && (p === '/' || !/\.[a-z0-9]+$/i.test(p) || /\.html$/i.test(p));

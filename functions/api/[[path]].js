@@ -234,6 +234,7 @@ const ensureAcctSchema = async DB => {
     DB.prepare('CREATE INDEX IF NOT EXISTS subs_course ON subscriptions(course, status)'),
     DB.prepare("CREATE TABLE IF NOT EXISTS renewal_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT NOT NULL, days INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, handled_by TEXT, handled_at TEXT, note TEXT)"),
     DB.prepare('CREATE INDEX IF NOT EXISTS renew_status ON renewal_requests(status, created_at)'),
+    DB.prepare('CREATE TABLE IF NOT EXISTS ref_visits (token TEXT PRIMARY KEY, referrer_id INTEGER NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, used_by INTEGER, used_at TEXT)'),
     DB.prepare('CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, course TEXT, amount REAL NOT NULL DEFAULT 0, note TEXT, created_by TEXT, created_at TEXT NOT NULL, sale_key TEXT)'),
     DB.prepare('CREATE INDEX IF NOT EXISTS payments_student ON payments(student_id)'),
     DB.prepare("CREATE TABLE IF NOT EXISTS commissions (id INTEGER PRIMARY KEY AUTOINCREMENT, referrer_id INTEGER NOT NULL, referred_id INTEGER NOT NULL, payment_id INTEGER, course TEXT, base_amount REAL NOT NULL DEFAULT 0, rate REAL NOT NULL DEFAULT 0, amount REAL NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, available_at TEXT, paid_at TEXT, paid_by TEXT, note TEXT, sale_key TEXT)"),
@@ -253,6 +254,41 @@ const ensureAcctSchema = async DB => {
 const refCodeNew = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (const x of crypto.getRandomValues(new Uint8Array(7))) s += a[x % a.length]; return s; };
 const commState = (c, nowIso) => c.status === 'pending' && c.available_at && c.available_at <= nowIso ? 'due' : c.status;
 const emailOk = e => /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i.test(e);
+// ===== ألوان المنصة الموحدة: يحددها المدير من لوحة التحكم، وتُطبَّق على كل الصفحات عبر /api/site-colors.css =====
+const HEX = v => /^#[0-9a-f]{6}$/i.test(String(v || '')) ? String(v).toLowerCase() : '';
+const lumOf = h => { const c = [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const crOf = (a, b) => { const x = lumOf(a), y = lumOf(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+const mixHex = (a, b, k) => '#' + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - k) + parseInt(b.substr(i, 2), 16) * k).toString(16).padStart(2, '0')).join('');
+// نص مقروء على خلفية: اللون المطلوب إن كان تباينه كافيًا، وإلا أسود أو أبيض حسب الأوضح
+const readable = (bg, want, min = 4.5) => want && crOf(bg, want) >= min ? want : (crOf(bg, '#111827') >= crOf(bg, '#ffffff') ? '#111827' : '#ffffff');
+const siteColorsOf = v => { let o = {}; try { o = JSON.parse(v || '{}') || {}; } catch (e) { } const r = {}; for (const k of ['bg', 'text', 'card', 'primary', 'border']) { const h = HEX(o[k]); if (h) r[k] = h; } return r; };
+const siteColorsCss = c => {
+  if (!Object.keys(c).length) return '/* لا توجد ألوان مخصصة: التصميم الافتراضي */';
+  const bg = c.bg || '#f4f7fb', card = c.card || (lumOf(bg) < .2 ? mixHex(bg, '#ffffff', .08) : '#ffffff'), pr = c.primary || '#12345a';
+  const tx = readable(bg, c.text), ct = readable(card, c.text), mu = readable(card, mixHex(ct, card, .3), 4.5), bd = c.border || mixHex(ct, card, .82);
+  const bt = readable(pr, '#ffffff'), ln = crOf(pr, card) >= 3 ? pr : ct, soft = mixHex(pr, card, .86), sct = readable(soft, ct);
+  const dark = lumOf(card) < .25;
+  let prBg = pr; for (let i = 0; i < 20 && crOf(prBg, '#ffffff') < 4.5; i++) prBg = mixHex(prBg, '#000000', .12); // نسخة من اللون الأساسي تصلح خلفيةً لنص أبيض (بطاقات وشرائط تستخدم المتغير كخلفية)
+  const C = ':is(.card,.qcard,.panel,.box,.mbox,.dlg,.sub,.lvl,.res,.study-plan-card,.study-goal,.bw-result-summary,.exam .side,.mstrip,.bwf-m > div,#modal .mbox,.modal > div:not(.mbox),.rn)';
+  return `/* ألوان المنصة — مولّدة من إعدادات الإدارة */
+html body:not(.bw-home) { --bwsc-on:1; --bwsc-card:${card}; --bwsc-dark:${dark ? 1 : 0}; --bw-paper:${bg}; --bg:${bg}; --paper:${bg}; --paper-2:${bg}; --surface:${card}; --card:${card}; --line:${bd}; --bw-line:${bd}; --ink:${ct}; --muted:${mu}; --mut:${mu}; --stem:${ct}; --navy:${prBg}; --bw-navy:${prBg}; --brand:${prBg}; --blue:${prBg}; --accent:${prBg}; --accent-soft:${soft}; --soft:${soft}; }
+html, html body:not(.bw-home) { background:${bg} !important; color:${tx} !important; }
+html body:not(.bw-home) > main > :is(h1,h2,h3,p), html body:not(.bw-home) .wrap > :is(h1,h2,h3), html body:not(.bw-home) .pw > :is(h1,h2,h3,p.sub) { color:${tx} !important; }
+html body:not(.bw-home) ${C} { background-color:${card} !important; color:${ct} !important; border-color:${bd} !important; }
+html body:not(.bw-home) ${C} :is(h1,h2,h3,h4,h5,p,li,label,th,td,b,strong,.stem,.qt,.sec,.qans,.ty):not(:is(.hero,.simtile,[class*=hero]) *) { color:${ct}; }
+html body:not(.bw-home) ${C} :is(.m,.sub,small,.d,.note,.hint):not(:is(.hero,.simtile,[class*=hero]) *) { color:${mu} !important; }
+html body:not(.bw-home) :is(.opt,.chip:not(.on),input,select,textarea,table td) { background-color:${card} !important; color:${ct} !important; border-color:${bd} !important; }
+html body:not(.bw-home) :is(.opt.on,.chip.on) { border-color:${pr} !important; }
+html body:not(.bw-home) table th { background:${soft} !important; color:${sct} !important; }
+html body:not(.bw-home) :is(.btn-navy,.btn.primary,button.primary,#nx,#sNx,#next,[data-a=next],#bNext,.btn:not(.ghost):not(.soft):not(.red):not(.gold):not(.wa):not(.btn-soft):not(.btn-gold):not(.btn-line):not(.dan):not(.g):not(.r)) { background:${pr} !important; color:${bt} !important; border-color:${pr} !important; }
+html body:not(.bw-home) :is(.btn.ghost,.btn.soft,.btn-soft) { background:${soft} !important; color:${sct} !important; border-color:${bd} !important; }
+html body:not(.bw-home) :is(main,.card,.wrap) p a:not(.btn), html body:not(.bw-home) .alt a { color:${ln} !important; }
+html body:not(.bw-home) :is(hr,.bar,.track) { border-color:${bd} !important; }
+${dark ? `html body:not(.bw-home) :is(.qbody img,.stem img,.seg,.qimg img,#qQuestionHost,.qhost) { background:#ffffff; border-radius:8px; }` : ''}
+html body.admin-page .main, html body.admin-page main { background:${bg} !important; }`;
+};
+// خطط الاشتراك المحفوظة؛ والإعداد القديم (سعر شهري واحد sub_prices) يتحول تلقائيًا لخطة ٣٠ يومًا فلا تضيع الأسعار السابقة
+const subPlansOf = (plansRaw, pricesRaw) => { let o = null; try { o = JSON.parse(plansRaw || 'null'); } catch (e) { } if (o && typeof o === 'object') return o; let pr = {}; try { pr = JSON.parse(pricesRaw || '{}') || {}; } catch (e) { } const r = {}; for (const k in pr) if (+pr[k] > 0) r[k] = [{ days: 30, price: +pr[k] }]; return r; };
 const subRow = (r, nowIso) => { const end = new Date(r.end_at).getTime(), left = Math.ceil((end - Date.parse(nowIso)) / 864e5); return { id: r.id, course: r.course, package_id: r.package_id || null, title: r.package_name || SUB_TITLE[r.course] || r.course, start: r.start_at, end: r.end_at, days: Math.max(0, left), state: r.status !== 'active' ? 'cancelled' : r.end_at <= nowIso ? 'expired' : left <= 3 ? 'soon' : 'active' }; };
 const SKILL_BANKS = { 'aksam kamy': 'kamy', 'aktar kamy': 'kamy', 'aksam lafzi': 'lafzi' };
 const SUBJECTS = { kamy: 'الكمي', lafzi: 'اللفظي' };
@@ -266,13 +302,20 @@ const ensureSkillsSchema = async DB => {
   await DB.batch([
     DB.prepare('CREATE TABLE IF NOT EXISTS skills (id INTEGER PRIMARY KEY AUTOINCREMENT, subject TEXT NOT NULL, name TEXT NOT NULL, sort INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)'),
     DB.prepare('CREATE TABLE IF NOT EXISTS question_skills (course TEXT NOT NULL, qkey TEXT NOT NULL, skill_id INTEGER NOT NULL, by_name TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (course, qkey))'),
-    DB.prepare('CREATE INDEX IF NOT EXISTS question_skills_skill ON question_skills(skill_id)')
+    DB.prepare('CREATE INDEX IF NOT EXISTS question_skills_skill ON question_skills(skill_id)'),
+    // تصنيف متعدد: السؤال الواحد يمكن أن يتبع أكثر من مهارة (صف لكل مهارة، بلا تكرار للسؤال نفسه)
+    DB.prepare('CREATE TABLE IF NOT EXISTS question_skill_links (course TEXT NOT NULL, qkey TEXT NOT NULL, skill_id INTEGER NOT NULL, by_name TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (course, qkey, skill_id))'),
+    DB.prepare('CREATE INDEX IF NOT EXISTS qsl_skill ON question_skill_links(skill_id)')
   ]);
   const iso = new Date().toISOString();
+  // ترحيل آمن مرة واحدة: نسخ التصنيفات الحالية (مهارة واحدة لكل سؤال) إلى الجدول الجديد؛ الجدول القديم يبقى كما هو نسخةً احتياطية
+  if (!(await DB.prepare("SELECT 1 x FROM settings WHERE key='qskills_multi_v1'").first())) {
+    await DB.batch([DB.prepare('INSERT OR IGNORE INTO question_skill_links (course,qkey,skill_id,by_name,updated_at) SELECT course,qkey,skill_id,by_name,updated_at FROM question_skills'), DB.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES ('qskills_multi_v1','1')")]);
+  }
   // مزامنة قائمة المهارات مع القائمة المعتمدة (مرة واحدة لكل إصدار من القائمة):
   // تُضاف المهارات الناقصة، وتُحذف المهارات القديمة غير المعتمدة إن لم يُصنف تحتها أي سؤال، ويُعاد الترتيب
   if (!(await DB.prepare("SELECT 1 x FROM settings WHERE key='skills_v3'").first())) {
-    const cur = (await DB.prepare('SELECT s.id,s.subject,s.name,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skills q ON q.skill_id=s.id GROUP BY s.id').all()).results || [], st = [];
+    const cur = (await DB.prepare('SELECT s.id,s.subject,s.name,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skill_links q ON q.skill_id=s.id GROUP BY s.id').all()).results || [], st = [];
     for (const [sub, list] of Object.entries(SEED_SKILLS)) {
       const mine = cur.filter(r => r.subject === sub), byName = Object.fromEntries(mine.map(r => [r.name, r]));
       mine.forEach(r => { if (!list.includes(r.name) && !r.n) st.push(DB.prepare('DELETE FROM skills WHERE id=?').bind(r.id)); });
@@ -475,6 +518,7 @@ export async function onRequest({ request, env, params }) {
     return J({ ok: 1 });
   }
   // الصفحة الرئيسية تعرض «تفاصيل الدورات» من نفس رسالة واتساب التي تُرسل للمهتمين (تُعدَّل من لوحة التحكم ← الإعدادات)
+  if (p === 'site-colors.css') return new Response(siteColorsCss(siteColorsOf(await setting('site_colors'))), { headers: { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'public, max-age=60' } });
   if (p === 'public') { const gTitle = { computer_quant: 'الكمي المحوسب', computer_verbal: 'اللفظي المحوسب', computer_combined: 'المحاكي المحوسب المشترك', paper: 'الاختبارات الورقية' }; const packages = packagesOf(await setting('packages')).filter(x => x.price > 0 && (x.groups.length || x.courses.length)).map(x => ({ ...x, inclusions: [...x.groups.map(g => gTitle[g] || g), ...x.courses.map(c => SUB_TITLE[c] || c)] })); return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), packages, courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0', google: env.MOODLE_TOKEN ? ((await setting('google_client_id')) || GOOGLE_CLIENT_ID) : '', hidden: hiddenOf(await setting('hidden_courses')), home: homeOf(await setting('home_config')) }); }
 
   if (p === 'login' && m === 'POST') {
@@ -614,11 +658,14 @@ export async function onRequest({ request, env, params }) {
     let c = '', r = null;
     for (let i = 0; i < 5 && !r; i++) { c = 'A' + newCode().slice(1); try { r = await DB.prepare("INSERT INTO students (name,code,created_at,kind,max_devices) VALUES (?,?,?,'account',3)").bind(name, c, iso).run(); } catch (e) { r = null; } }
     if (!r) return J({ error: 'تعذّر إنشاء الحساب، حاول مرة أخرى' }, 500);
-    const sid = r.meta.last_row_id; let refBy = +ck(request, 'bw_ref') || null;
-    // المُحيل يُسجَّل مرة واحدة عند إنشاء الحساب ولا يتغير بعدها، ويجب أن يكون حسابًا موجودًا
-    if (refBy && !(await DB.prepare('SELECT 1 x FROM accounts WHERE student_id=?').bind(refBy).first())) refBy = null;
+    const sid = r.meta.last_row_id, rtok = String(ck(request, 'bw_rt') || '').replace(/[^a-f0-9]/g, '').slice(0, 64);
+    // المُحيل يُحدَّد من الخادم: رمز زيارة إحالة صالح وغير مستخدم في قاعدة البيانات. يُسجَّل مرة واحدة عند إنشاء الحساب ولا يتغير بعدها.
+    let refBy = null;
+    if (rtok) { const v = await DB.prepare('SELECT referrer_id FROM ref_visits WHERE token=? AND expires_at>? AND used_by IS NULL').bind(rtok, iso).first(); if (v) refBy = v.referrer_id; }
+    if (refBy && !(await DB.prepare("SELECT 1 x FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.student_id=? AND s.status='active'").bind(refBy).first())) refBy = null;
     try { await DB.prepare('INSERT INTO accounts (student_id,email,phone,pass_hash,created_at,ref_by,marketer) VALUES (?,?,?,?,?,?,?)').bind(sid, em, ph, await passwordHash(pw), iso, refBy, b.marketer ? 1 : 0).run(); }
     catch (e) { await DB.prepare('DELETE FROM students WHERE id=?').bind(sid).run(); return J({ error: 'هذا الجوال أو البريد مسجّل من قبل' }, 409); }
+    if (rtok && refBy) await DB.prepare('UPDATE ref_visits SET used_by=?, used_at=? WHERE token=? AND used_by IS NULL').bind(sid, iso, rtok).run();
     return admit(await DB.prepare('SELECT * FROM students WHERE id=?').bind(sid).first(), c);
   }
   if (p === 'account/login' && m === 'POST') {
@@ -638,7 +685,7 @@ export async function onRequest({ request, env, params }) {
     const a = await DB.prepare('SELECT email,phone,show_counter,ref_code FROM accounts WHERE student_id=?').bind(s.id).first();
     const subs = ((await DB.prepare('SELECT * FROM subscriptions WHERE student_id=? ORDER BY end_at DESC').bind(s.id).all()).results || []).map(r => { const x = subRow(r, iso); if (r.package_id) x.covers = SUB_KEYS.filter(k => k !== 'placement' && packageIncludes(r.package_access, k)); return x; });
     const pend = ((await DB.prepare("SELECT course,days,created_at FROM renewal_requests WHERE student_id=? AND status='pending'").bind(s.id).all()).results || []);
-    return J({ logged: true, account: !!a, name: s.name, email: a ? a.email : '', phone: a ? a.phone : '', code: a ? '' : s.code, showCounter: a ? !!a.show_counter : true, subs, pending: pend, contact: await setting('contact'), courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })) });
+    return J({ logged: true, account: !!a, name: s.name, email: a ? a.email : '', phone: a ? a.phone : '', code: a ? '' : s.code, showCounter: a ? !!a.show_counter : true, subs, pending: pend, plans: subPlansOf(await setting('sub_plans'), await setting('sub_prices')), contact: await setting('contact'), courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })) });
   }
   if (p === 'account/update' && m === 'POST') {
     const s = await byCode(norm(ck(request, 'bw_code'))); if (!s) return J({ error: 'سجّل دخولك أولًا' }, 401);
@@ -667,7 +714,7 @@ export async function onRequest({ request, env, params }) {
     const tot = { pending: 0, due: 0, paid: 0 }; com.forEach(c => { if (tot[c.state] !== undefined) tot[c.state] += c.amount; });
     const by = {}; subs.forEach(x => { (by[x.student_id] = by[x.student_id] || new Set()).add(SUB_TITLE[x.course] || x.course); });
     const rate = a.ref_rate != null ? a.ref_rate : (+(await setting('ref_rate')) || 20);
-    return J({ code: a.ref_code, link: new URL('/r/' + a.ref_code, request.url).toString(), rate, registered: reg.map(r => ({ name: r.name, date: r.created_at, subscribed: !!by[r.id], courses: by[r.id] ? [...by[r.id]] : [] })), totals: tot, commissions: com.map(c => ({ name: c.name, title: c.title, amount: c.amount, base: c.base_amount, rate: c.rate, state: c.state, date: c.created_at, paid_at: c.paid_at })) });
+    return J({ code: a.ref_code, link: new URL('/r/' + a.ref_code, request.url).toString(), days: Math.max(1, Math.min(365, parseInt(await setting('ref_cookie_days')) || 30)), rate, registered: reg.map(r => ({ name: r.name, date: r.created_at, subscribed: !!by[r.id], courses: by[r.id] ? [...by[r.id]] : [] })), totals: tot, commissions: com.map(c => ({ name: c.name, title: c.title, amount: c.amount, base: c.base_amount, rate: c.rate, state: c.state, date: c.created_at, paid_at: c.paid_at })) });
   }
   // طلب تجديد: يصل للأدمن في «الاشتراكات ← طلبات التجديد» ويوافق عليه أو يرفضه (الدفع يتم عبر واتساب)
   if (p === 'account/renew' && m === 'POST') {
@@ -838,7 +885,7 @@ export async function onRequest({ request, env, params }) {
   if (p === 'skills' && m === 'GET') {
     await ensureSkillsSchema(DB);
     const sub = new URL(request.url).searchParams.get('subject') || '';
-    const rows = await DB.prepare('SELECT s.id,s.subject,s.name,s.sort,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skills q ON q.skill_id=s.id ' + (SUBJECTS[sub] ? 'WHERE s.subject=? ' : '') + 'GROUP BY s.id ORDER BY s.subject,s.sort,s.id').bind(...(SUBJECTS[sub] ? [sub] : [])).all();
+    const rows = await DB.prepare('SELECT s.id,s.subject,s.name,s.sort,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skill_links q ON q.skill_id=s.id ' + (SUBJECTS[sub] ? 'WHERE s.subject=? ' : '') + 'GROUP BY s.id ORDER BY s.subject,s.sort,s.id').bind(...(SUBJECTS[sub] ? [sub] : [])).all();
     return J({ subjects: SUBJECTS, skills: rows.results || [] });
   }
   // كل أسئلة مهارة معينة من كل البنوك
@@ -847,7 +894,7 @@ export async function onRequest({ request, env, params }) {
     const id = int(new URL(request.url).searchParams.get('id'));
     const sk = await DB.prepare('SELECT id,subject,name FROM skills WHERE id=?').bind(id).first();
     if (!sk) return J({ error: 'المهارة غير موجودة' }, 404);
-    const tags = (await DB.prepare('SELECT course,qkey FROM question_skills WHERE skill_id=?').bind(id).all()).results || [];
+    const tags = (await DB.prepare('SELECT course,qkey FROM question_skill_links WHERE skill_id=?').bind(id).all()).results || [];
     const by = {}; tags.forEach(t => (by[t.course] = by[t.course] || new Set()).add(t.qkey));
     const out = [];
     for (const slug of Object.keys(by)) { const items = await bankItems(env, request, DB, slug); for (const it of items) if (by[slug].has(it.key)) out.push({ course: slug, bank: COURSE[slug].title, ...it }); }
@@ -937,11 +984,11 @@ export async function onRequest({ request, env, params }) {
     const b = W ? await body() : {};
     if (p === 'admin/ref/overview') {
       const rateRaw = await setting('ref_rate'), defRate = rateRaw === '' || rateRaw == null || !Number.isFinite(+rateRaw) ? 20 : Math.max(0, Math.min(100, +rateRaw));
-      const rows = await all("SELECT s.id,s.name,a.phone,a.email,a.ref_code,a.ref_rate,a.marketer,(SELECT COUNT(*) FROM accounts r WHERE r.ref_by=a.student_id) reg,(SELECT COUNT(DISTINCT x.student_id) FROM subscriptions x JOIN accounts r ON r.student_id=x.student_id WHERE r.ref_by=a.student_id AND x.status!='cancelled') subs FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_code IS NOT NULL OR a.marketer=1 OR EXISTS (SELECT 1 FROM accounts r WHERE r.ref_by=a.student_id) ORDER BY reg DESC, s.id DESC LIMIT 300");
+      const rows = await all("SELECT s.id,s.name,a.phone,a.email,a.ref_code,a.ref_rate,a.marketer,(SELECT COUNT(*) FROM accounts r WHERE r.ref_by=a.student_id) reg,(SELECT COUNT(*) FROM ref_visits v WHERE v.referrer_id=a.student_id) clicks,(SELECT COUNT(DISTINCT x.student_id) FROM subscriptions x JOIN accounts r ON r.student_id=x.student_id WHERE r.ref_by=a.student_id AND x.status!='cancelled') subs FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_code IS NOT NULL OR a.marketer=1 OR EXISTS (SELECT 1 FROM accounts r WHERE r.ref_by=a.student_id) ORDER BY reg DESC, s.id DESC LIMIT 300");
       const com = await all("SELECT c.*,s.name referred FROM commissions c JOIN students s ON s.id=c.referred_id ORDER BY c.created_at DESC LIMIT 1000");
       const totals = await all("SELECT referrer_id,SUM(CASE WHEN status='pending' AND available_at<=? THEN amount ELSE 0 END) due,SUM(CASE WHEN status='pending' AND (available_at>? OR available_at IS NULL) THEN amount ELSE 0 END) pending,SUM(CASE WHEN status='paid' THEN amount ELSE 0 END) paid,SUM(CASE WHEN status='cancelled' THEN amount ELSE 0 END) cancelled FROM commissions GROUP BY referrer_id", iso, iso);
       const tot = {}; totals.forEach(t => { tot[t.referrer_id] = { due: +t.due || 0, pending: +t.pending || 0, paid: +t.paid || 0, cancelled: +t.cancelled || 0 }; });
-      return J({ defRate, rule: (await setting('ref_rule')) || 'first', wait: (v => v === '' || v == null || isNaN(+v) ? 7 : +v)(await setting('ref_wait_days')), rows: rows.map(r => ({ ...r, rate: r.ref_rate != null ? r.ref_rate : defRate, totals: tot[r.id] || { pending: 0, due: 0, paid: 0, cancelled: 0 } })), commissions: com.map(c => ({ ...c, state: commState(c, iso), title: SUB_TITLE[c.course] || c.course || '' })) });
+      return J({ defRate, days: Math.max(1, Math.min(365, parseInt(await setting('ref_cookie_days')) || 30)), rule: (await setting('ref_rule')) || 'first', wait: (v => v === '' || v == null || isNaN(+v) ? 7 : +v)(await setting('ref_wait_days')), rows: rows.map(r => ({ ...r, rate: r.ref_rate != null ? r.ref_rate : defRate, totals: tot[r.id] || { pending: 0, due: 0, paid: 0, cancelled: 0 } })), commissions: com.map(c => ({ ...c, state: commState(c, iso), title: SUB_TITLE[c.course] || c.course || '' })) });
     }
     if (p === 'admin/ref/referred') {
       const id = int(new URL(request.url).searchParams.get('id'));
@@ -960,6 +1007,7 @@ export async function onRequest({ request, env, params }) {
       if (b.rate !== undefined) st2.push(putSetting('ref_rate', String(Math.max(0, Math.min(100, +b.rate || 0)))));
       if (b.wait !== undefined) st2.push(putSetting('ref_wait_days', String(Math.max(0, Math.min(90, Math.round(+b.wait || 0))))));
       if (b.rule === 'first' || b.rule === 'all') st2.push(putSetting('ref_rule', b.rule));
+      if (b.days !== undefined) st2.push(putSetting('ref_cookie_days', String(Math.max(1, Math.min(365, Math.round(+b.days || 30))))));
       if (st2.length) await DB.batch(st2.concat(audit(A, 'ref_settings', 'settings', null, JSON.stringify(b).slice(0, 200))));
       return J({ ok: 1 });
     }
@@ -989,7 +1037,7 @@ export async function onRequest({ request, env, params }) {
     const W = m === 'POST'; if (W && !can('students.edit')) return deny();
     const qp = new URL(request.url).searchParams, b = W ? await body() : {};
     const endFrom = (base, days, end) => { if (end && /^\d{4}-\d{2}-\d{2}/.test(String(end))) return new Date(String(end).slice(0, 10) + 'T23:59:59.000Z').toISOString(); const d = Math.max(1, Math.min(3660, Math.round(+days || 30))); return new Date(Math.max(Date.parse(base || iso), now) + d * 864e5).toISOString(); };
-    const student = async id => DB.prepare("SELECT s.id,s.name,s.status,s.created_at,s.last_seen,a.email,a.phone FROM students s LEFT JOIN accounts a ON a.student_id=s.id WHERE s.id=?").bind(id).first();
+    const student = async id => DB.prepare("SELECT s.id,s.name,s.status,s.created_at,s.last_seen,a.email,a.phone,a.marketer,a.ref_code,a.ref_by,(SELECT name FROM students x WHERE x.id=a.ref_by) ref_by_name,(SELECT COUNT(*) FROM accounts r WHERE r.ref_by=s.id) refs FROM students s LEFT JOIN accounts a ON a.student_id=s.id WHERE s.id=?").bind(id).first();
     const grant = async (sid, course, days, end, note, pkg = null) => {
       const cur = await DB.prepare("SELECT * FROM subscriptions WHERE student_id=? AND course=? AND status='active' ORDER BY end_at DESC").bind(sid, course).first();
       if (cur) { const e2 = endFrom(cur.end_at, days, end); await DB.prepare('UPDATE subscriptions SET end_at=?,updated_at=?,note=COALESCE(?,note) WHERE id=?').bind(e2, iso, note || null, cur.id).run(); return { id: cur.id, end: e2, extended: true }; }
@@ -999,7 +1047,7 @@ export async function onRequest({ request, env, params }) {
     };
     const packageCommission = async (sid, amt, course, paymentId, saleKey, override) => {
       const old = await one('SELECT id,amount FROM commissions WHERE sale_key=?', saleKey); if (old) return { id: old.id, amount: old.amount, duplicate: true };
-      const acc = await one('SELECT ref_by FROM accounts WHERE student_id=?', sid); if (!acc || !acc.ref_by || acc.ref_by === sid || amt <= 0) return null;
+      const acc = await one('SELECT ref_by FROM accounts WHERE student_id=?', sid); if (!acc || !acc.ref_by || acc.ref_by === sid || amt <= 0) return null; if (!(await one("SELECT 1 x FROM students WHERE id=? AND status!='deleted'", acc.ref_by))) return null;
       const prev = await one("SELECT COUNT(*) n FROM commissions WHERE referred_id=? AND status!='cancelled'", sid), rule = (await setting('ref_rule')) || 'first';
       if (rule !== 'all' && prev.n) return null;
       const ra = await one('SELECT ref_rate FROM accounts WHERE student_id=?', acc.ref_by), globalRaw = await setting('ref_rate'), global = globalRaw === '' || globalRaw == null || !Number.isFinite(+globalRaw) ? 20 : Math.max(0, Math.min(100, +globalRaw));
@@ -1016,7 +1064,7 @@ export async function onRequest({ request, env, params }) {
       // عمولة المسوّق: تُحتسب فقط بالدفع الفعلي، وعلى أول اشتراك مدفوع فقط (قابل للتغيير من الإعدادات: ref_rule = all)
       let commission = null;
       const acc = await one('SELECT ref_by FROM accounts WHERE student_id=?', sid);
-      if (acc && acc.ref_by && acc.ref_by !== sid && amt > 0) {
+      if (acc && acc.ref_by && acc.ref_by !== sid && amt > 0 && await one("SELECT 1 x FROM students WHERE id=? AND status!='deleted'", acc.ref_by)) {
         const rule = (await setting('ref_rule')) || 'first', prev = await one("SELECT COUNT(*) n FROM commissions WHERE referred_id=? AND status!='cancelled'", sid);
         if (rule === 'all' || !prev.n) {
           const ra = await one('SELECT ref_rate FROM accounts WHERE student_id=?', acc.ref_by), rr = await setting('ref_rate'), globalRate = rr === '' || rr == null || !Number.isFinite(+rr) ? 20 : Math.max(0, Math.min(100, +rr)), rate = Math.round((ra && ra.ref_rate != null ? +ra.ref_rate : globalRate) * 100) / 100, wv = await setting('ref_wait_days'), wait = wv === '' || wv == null || isNaN(+wv) ? 7 : Math.max(0, +wv);
@@ -1027,22 +1075,30 @@ export async function onRequest({ request, env, params }) {
       }
       return { id: r.meta.last_row_id, commission };
     };
-    if (p === 'admin/subs/prices' && W) {
-      const o = {}; for (const k of SUB_KEYS) { const v = +((b.prices || {})[k]); if (v > 0) o[k] = Math.round(v * 100) / 100; }
-      await DB.batch([putSetting('sub_prices', JSON.stringify(o)), audit(A, 'prices', 'settings', null, JSON.stringify(o).slice(0, 200))]);
-      return J({ ok: 1, prices: o });
+    // خطط الاشتراك: لكل قسم عدة خطط (مدة بالأيام + سعر) يحددها المدير بحرية
+    if (p === 'admin/subs/plans' && W) {
+      const o = {};
+      for (const k of SUB_KEYS) {
+        const arr = Array.isArray((b.plans || {})[k]) ? b.plans[k] : [];
+        const seen = new Set(), out = [];
+        for (const x of arr.slice(0, 12)) { const dd = Math.round(+x.days), pr = +x.price; if (!(dd >= 1 && dd <= 3650) || !(pr >= 0 && pr <= 99999) || seen.has(dd)) continue; seen.add(dd); out.push({ days: dd, price: Math.round(pr * 100) / 100 }); }
+        if (out.length) o[k] = out.sort((a, c) => a.days - c.days);
+      }
+      await DB.batch([putSetting('sub_plans', JSON.stringify(o)), audit(A, 'plans', 'settings', null, JSON.stringify(o).slice(0, 200))]);
+      return J({ ok: 1, plans: o });
     }
     if (p === 'admin/subs/overview') {
       const pend = await all("SELECT r.*,s.name,a.phone,a.email FROM renewal_requests r JOIN students s ON s.id=r.student_id LEFT JOIN accounts a ON a.student_id=r.student_id WHERE r.status='pending' ORDER BY r.created_at");
       const counts = await all("SELECT course,COUNT(*) n,SUM(CASE WHEN end_at<=? THEN 1 ELSE 0 END) soon FROM subscriptions WHERE status='active' AND end_at>? GROUP BY course", new Date(now + 3 * 864e5).toISOString(), iso);
       const accounts = (await one('SELECT COUNT(*) n FROM accounts')).n;
-      let prices = {}; try { prices = JSON.parse((await setting('sub_prices')) || '{}') || {}; } catch (e) { prices = {}; }
+      const plans = subPlansOf(await setting('sub_plans'), await setting('sub_prices'));
       const PKG_SET = await setting('packages');
-      return J({ courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })), pending: pend.map(r => { const pk = /^package:(.+)$/.exec(r.course), pd = pk ? packagesOf(PKG_SET).find(x => x.id === pk[1]) : null; return { ...r, title: SUB_TITLE[r.course] || (pd ? 'باقة: ' + pd.name : r.course) }; }), counts, accounts, prices, packages: packagesOf(PKG_SET) });
+      return J({ courses: SUB_KEYS.map(k => ({ key: k, title: SUB_TITLE[k] })), pending: pend.map(r => { const pk = /^package:(.+)$/.exec(r.course), pd = pk ? packagesOf(PKG_SET).find(x => x.id === pk[1]) : null; return { ...r, title: SUB_TITLE[r.course] || (pd ? 'باقة: ' + pd.name : r.course) }; }), counts, accounts, plans, packages: packagesOf(PKG_SET) });
     }
     if (p === 'admin/subs/search') {
-      const q = String(qp.get('q') || '').trim(), like = '%' + q + '%';
-      const rows = await all("SELECT s.id,s.name,s.status,s.created_at,a.email,a.phone,(SELECT COUNT(*) FROM subscriptions x WHERE x.student_id=s.id AND x.status='active' AND x.end_at>?) subs FROM accounts a JOIN students s ON s.id=a.student_id WHERE (?='' OR s.name LIKE ? OR a.phone LIKE ? OR a.email LIKE ?) ORDER BY s.id DESC LIMIT 60", iso, q, like, like, like);
+      const q = String(qp.get('q') || '').trim(), like = '%' + q + '%', ty = String(qp.get('type') || ''), stt = String(qp.get('status') || '');
+      // التصفية: النوع (طالب/مسوّق) والحالة؛ المحذوفة (حذفًا منطقيًا) لا تظهر إلا إن طُلبت
+      const rows = await all("SELECT s.id,s.name,s.status,s.created_at,a.email,a.phone,a.marketer,a.ref_code,(SELECT COUNT(*) FROM accounts r WHERE r.ref_by=a.student_id) refs,(SELECT COUNT(*) FROM subscriptions x WHERE x.student_id=s.id AND x.status='active' AND x.end_at>?) subs FROM accounts a JOIN students s ON s.id=a.student_id WHERE (?='' OR s.name LIKE ? OR a.phone LIKE ? OR a.email LIKE ?) AND (?='' OR (?='marketer' AND (a.marketer=1 OR EXISTS(SELECT 1 FROM accounts r WHERE r.ref_by=a.student_id))) OR (?='student' AND a.marketer=0 AND NOT EXISTS(SELECT 1 FROM accounts r WHERE r.ref_by=a.student_id))) AND (CASE WHEN ?='' THEN s.status!='deleted' ELSE s.status=? END) ORDER BY s.id DESC LIMIT 200", iso, q, like, like, like, ty, ty, ty, stt, stt);
       return J({ rows });
     }
     if (p === 'admin/subs/student') {
@@ -1138,14 +1194,49 @@ export async function onRequest({ request, env, params }) {
       return J({ ok: 1, ...(await pay(sid, b.amount, b.course, b.note)) });
     }
     if (p === 'admin/subs/account' && W) {
-      // تعديل بيانات حساب الطالب أو إعادة تعيين كلمة المرور من الأدمن
+      // تعديل حساب الطالب/المسوّق من الإدارة: البيانات، كلمة المرور، الحالة، صفة المسوّق
       const sid = int(b.student_id), a0 = await one('SELECT * FROM accounts WHERE student_id=?', sid); if (!a0) return J({ error: 'ليس حساب طالب' }, 404);
-      const st2 = [];
-      if (b.newPassword) { if (String(b.newPassword).length < 6) return J({ error: 'كلمة المرور ٦ أحرف على الأقل' }, 400); st2.push(DB.prepare('UPDATE accounts SET pass_hash=? WHERE student_id=?').bind(await passwordHash(String(b.newPassword)), sid)); }
-      if (b.status === 'blocked' || b.status === 'active') st2.push(DB.prepare('UPDATE students SET status=? WHERE id=?').bind(b.status, sid));
+      const s0 = await one('SELECT * FROM students WHERE id=?', sid); if (!s0 || s0.status === 'deleted') return J({ error: 'الحساب محذوف' }, 400);
+      const st2 = [], what = [];
+      if (b.newPassword) { if (String(b.newPassword).length < 6) return J({ error: 'كلمة المرور ٦ أحرف على الأقل' }, 400); st2.push(DB.prepare('UPDATE accounts SET pass_hash=? WHERE student_id=?').bind(await passwordHash(String(b.newPassword)), sid)); what.push('إعادة تعيين كلمة المرور'); }
+      if (b.status === 'blocked' || b.status === 'active') { st2.push(DB.prepare('UPDATE students SET status=? WHERE id=?').bind(b.status, sid)); what.push('الحالة: ' + b.status); }
+      if (b.name !== undefined) { const nm = String(b.name || '').trim().replace(/\s+/g, ' ').slice(0, 80); if (nm.length < 3) return J({ error: 'الاسم قصير جدًا' }, 400); st2.push(DB.prepare('UPDATE students SET name=? WHERE id=?').bind(nm, sid)); what.push('الاسم'); }
+      if (b.phone !== undefined) { const ph = phone(b.phone); if (ph.length < 9 || ph.length > 15) return J({ error: 'رقم الجوال غير صحيح' }, 400); if (await one('SELECT 1 x FROM accounts WHERE phone=? AND student_id!=?', ph, sid)) return J({ error: 'هذا الجوال مستخدم في حساب آخر' }, 409); st2.push(DB.prepare('UPDATE accounts SET phone=? WHERE student_id=?').bind(ph, sid)); what.push('الجوال'); }
+      if (b.email !== undefined) { const em = String(b.email || '').trim().toLowerCase().slice(0, 200); if (!emailOk(em)) return J({ error: 'البريد غير صحيح' }, 400); if (await one('SELECT 1 x FROM accounts WHERE email=? AND student_id!=?', em, sid)) return J({ error: 'هذا البريد مستخدم في حساب آخر' }, 409); st2.push(DB.prepare('UPDATE accounts SET email=? WHERE student_id=?').bind(em, sid)); what.push('البريد'); }
+      if (b.marketer === 0 || b.marketer === 1) { st2.push(DB.prepare('UPDATE accounts SET marketer=? WHERE student_id=?').bind(b.marketer, sid)); what.push(b.marketer ? 'تعيين مسوّقًا' : 'إلغاء صفة المسوّق'); }
       if (!st2.length) return J({ ok: 1 });
-      st2.push(audit(A, 'account_edit', 'student', sid, b.newPassword ? 'إعادة تعيين كلمة المرور' : 'الحالة: ' + b.status)); await DB.batch(st2);
+      st2.push(audit(A, 'account_edit', 'student', sid, what.join('، '))); await DB.batch(st2);
       return J({ ok: 1 });
+    }
+    // حذف حساب: نهائي إن لم يرتبط بسجلات مالية أو إحالات، وإلا «حذف منطقي» يحفظ السجلات المالية والإحالات التاريخية كما هي
+    if (p === 'admin/subs/delete' && W) {
+      const sid = int(b.student_id), s0 = await one('SELECT * FROM students WHERE id=?', sid), a0 = await one('SELECT * FROM accounts WHERE student_id=?', sid);
+      if (!s0 || !a0) return J({ error: 'الحساب غير موجود' }, 404);
+      if (String(b.confirm || '').trim() !== String(s0.name).trim()) return J({ error: 'للتأكيد اكتب اسم الحساب كما هو' }, 400);
+      const cnt = async (sql, ...v) => { try { return (await one(sql, ...v)).n || 0; } catch (e) { return 0; } };
+      const fin = await cnt('SELECT COUNT(*) n FROM payments WHERE student_id=?', sid) + await cnt('SELECT COUNT(*) n FROM commissions WHERE referrer_id=? OR referred_id=?', sid, sid) + await cnt('SELECT COUNT(*) n FROM package_sales WHERE student_id=?', sid);
+      const refs = await cnt('SELECT COUNT(*) n FROM accounts WHERE ref_by=?', sid);
+      if (!fin && !refs) {
+        const del = ['accounts', 'subscriptions', 'renewal_requests', 'devices', 'events', 'usage', 'student_progress', 'group_members', 'moodle_links'];
+        const st3 = [];
+        for (const t of del) st3.push(DB.prepare('DELETE FROM ' + t + ' WHERE student_id=?').bind(sid));
+        st3.push(DB.prepare('DELETE FROM ref_visits WHERE referrer_id=? OR used_by=?').bind(sid, sid));
+        st3.push(DB.prepare('UPDATE question_reports SET student_id=NULL WHERE student_id=?').bind(sid));
+        st3.push(DB.prepare('DELETE FROM students WHERE id=?').bind(sid));
+        st3.push(audit(A, 'account_delete', 'student', sid, 'حذف نهائي: ' + s0.name));
+        for (const x of st3) { try { await x.run(); } catch (e) { /* جدول غير موجود في هذه القاعدة */ } }
+        return J({ ok: 1, mode: 'hard' });
+      }
+      // حذف منطقي: يُمنع الدخول، يُحرَّر الجوال والبريد، يُلغى رابط الإحالة والاشتراكات السارية، وتبقى المدفوعات والعمولات والإحالات
+      await DB.batch([
+        DB.prepare("UPDATE students SET status='deleted' WHERE id=?").bind(sid),
+        DB.prepare("UPDATE accounts SET email=?, phone=?, pass_hash=?, ref_code=NULL WHERE student_id=?").bind('deleted-' + sid + '@deleted.local', 'deleted-' + sid, 'x', sid),
+        DB.prepare("UPDATE subscriptions SET status='cancelled', updated_at=? WHERE student_id=? AND status='active'").bind(iso, sid),
+        DB.prepare("UPDATE renewal_requests SET status='rejected', handled_by=?, handled_at=? WHERE student_id=? AND status='pending'").bind(A.name, iso, sid),
+        DB.prepare('DELETE FROM devices WHERE student_id=?').bind(sid),
+        audit(A, 'account_delete', 'student', sid, 'حذف منطقي (يحتفظ بسجلات مالية/إحالات): ' + s0.name)
+      ]);
+      return J({ ok: 1, mode: 'soft', kept: { financial: fin, referrals: refs } });
     }
     return J({ error: 'not found' }, 404);
   }
@@ -1590,7 +1681,7 @@ export async function onRequest({ request, env, params }) {
       if (!isSuper) return deny('من صلاحيات الإدارة العامة');
       const b = await body(), slug = String(b.course || ''); if (!SKILL_BANKS[slug]) return J({ error: 'البنك غير معروف' }, 400);
       const items = await bankItems(env, request, DB, slug), sub = SKILL_BANKS[slug];
-      const tags = Object.fromEntries((await all('SELECT qkey,skill_id FROM question_skills WHERE course=?', slug)).map(r => [r.qkey, r.skill_id]));
+      const tags = Object.fromEntries((await all('SELECT qkey,MIN(skill_id) skill_id FROM question_skill_links WHERE course=? GROUP BY qkey', slug)).map(r => [r.qkey, r.skill_id]));
       const lafzi = slug === 'aksam lafzi', st = [], from = int(b.from) || 0, part = items.slice(from, from + 400);
       for (const it of part) {
         const opts = lafzi ? it.o : ['أ', 'ب', 'ج', 'د'];
@@ -1610,15 +1701,15 @@ export async function onRequest({ request, env, params }) {
     const banksFor = async () => { const out = []; for (const slug of Object.keys(SKILL_BANKS)) { const R2 = await courseRights(slug); if (R2) out.push({ slug, title: COURSE[slug].title, subject: SKILL_BANKS[slug], canTag: !!R2.edit }); } return out; };
     if (p === 'admin/skills' && m === 'GET') {
       const banks = await banksFor(); if (!banks.length && !isSuper) return deny('لا توجد بنوك أسئلة مسندة لك');
-      const skills = await all('SELECT s.id,s.subject,s.name,s.sort,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skills q ON q.skill_id=s.id GROUP BY s.id ORDER BY s.subject,s.sort,s.id');
-      const per = await all('SELECT course,COUNT(*) n FROM question_skills GROUP BY course');
+      const skills = await all('SELECT s.id,s.subject,s.name,s.sort,COUNT(q.qkey) n FROM skills s LEFT JOIN question_skill_links q ON q.skill_id=s.id GROUP BY s.id ORDER BY s.subject,s.sort,s.id');
+      const per = await all('SELECT course,COUNT(DISTINCT qkey) n FROM question_skill_links GROUP BY course');
       return J({ subjects: SUBJECTS, skills, banks, tagged: Object.fromEntries(per.map(r => [r.course, r.n])), manage: isSuper });
     }
     if (p === 'admin/skills/bank' && m === 'GET') {
       const slug = new URL(request.url).searchParams.get('course'), R2 = SKILL_BANKS[slug] && await courseRights(slug);
       if (!R2) return deny('هذا البنك غير مسند لك');
       const items = await bankItems(env, request, DB, slug);
-      const tags = Object.fromEntries((await all('SELECT qkey,skill_id FROM question_skills WHERE course=?', slug)).map(r => [r.qkey, r.skill_id]));
+      const tags = {}; for (const r of await all('SELECT qkey,skill_id FROM question_skill_links WHERE course=? ORDER BY updated_at', slug)) (tags[r.qkey] = tags[r.qkey] || []).push(r.skill_id);
       return J({ course: slug, subject: SKILL_BANKS[slug], canTag: !!R2.edit, items, tags });
     }
     if (p === 'admin/skills/tag' && m === 'POST') {
@@ -1628,7 +1719,15 @@ export async function onRequest({ request, env, params }) {
       if (!keys.length) return J({ error: 'لا توجد أسئلة' }, 400);
       const sid = b.skill_id == null || b.skill_id === '' ? null : int(b.skill_id);
       if (sid !== null) { const sk = await one('SELECT subject FROM skills WHERE id=?', sid); if (!sk || sk.subject !== SKILL_BANKS[slug]) return J({ error: 'المهارة لا تخص هذه المادة' }, 400); }
-      await DB.batch(keys.map(k => sid === null ? DB.prepare('DELETE FROM question_skills WHERE course=? AND qkey=?').bind(slug, k) : DB.prepare('INSERT INTO question_skills (course,qkey,skill_id,by_name,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(course,qkey) DO UPDATE SET skill_id=excluded.skill_id,by_name=excluded.by_name,updated_at=excluded.updated_at').bind(slug, k, sid, A.name, iso)));
+      // mode: add = إضافة مهارة للسؤال (مع إبقاء مهاراته الأخرى) · remove = إزالة مهارة واحدة · set = استبدال كل مهاراته بهذه · skill_id فارغ = إزالة كل تصنيفاته
+      const mode = b.mode === 'add' || b.mode === 'remove' ? b.mode : 'set', stq = [];
+      for (const k of keys) {
+        if (sid === null) { stq.push(DB.prepare('DELETE FROM question_skill_links WHERE course=? AND qkey=?').bind(slug, k)); continue; }
+        if (mode === 'remove') { stq.push(DB.prepare('DELETE FROM question_skill_links WHERE course=? AND qkey=? AND skill_id=?').bind(slug, k, sid)); continue; }
+        if (mode === 'set') stq.push(DB.prepare('DELETE FROM question_skill_links WHERE course=? AND qkey=? AND skill_id!=?').bind(slug, k, sid));
+        stq.push(DB.prepare('INSERT INTO question_skill_links (course,qkey,skill_id,by_name,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(course,qkey,skill_id) DO UPDATE SET by_name=excluded.by_name,updated_at=excluded.updated_at').bind(slug, k, sid, A.name, iso));
+      }
+      await DB.batch(stq);
       return J({ ok: 1 });
     }
     if (p === 'admin/skills/save' && m === 'POST') {
@@ -1646,7 +1745,7 @@ export async function onRequest({ request, env, params }) {
       if (!isSuper) return deny('إدارة قائمة المهارات من صلاحيات الإدارة العامة');
       const b = await body(), id = int(b.id), sk = await one('SELECT name FROM skills WHERE id=?', id);
       if (!sk) return J({ error: 'غير موجودة' }, 404);
-      await DB.batch([DB.prepare('DELETE FROM question_skills WHERE skill_id=?').bind(id), DB.prepare('DELETE FROM skills WHERE id=?').bind(id), audit(A, 'skill_delete', 'skill', id, sk.name)]);
+      await DB.batch([DB.prepare('DELETE FROM question_skills WHERE skill_id=?').bind(id), DB.prepare('DELETE FROM question_skill_links WHERE skill_id=?').bind(id), DB.prepare('DELETE FROM skills WHERE id=?').bind(id), audit(A, 'skill_delete', 'skill', id, sk.name)]);
       return J({ ok: 1 });
     }
     if (p === 'admin/skills/move' && m === 'POST') {
@@ -1787,7 +1886,7 @@ export async function onRequest({ request, env, params }) {
     const settings = {};
     if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; settings.study_plan_options = COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => ({ slug: c.slug, title: c.title })); try { settings.study_plan_banks = JSON.parse(S.study_plan_banks || 'null'); } catch (e) { settings.study_plan_banks = null; } if (!Array.isArray(settings.study_plan_banks) || !settings.study_plan_banks.length) settings.study_plan_banks = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi']; }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
-    if (can('settings.home')) { settings.home_config = homeOf(S.home_config); if (!can('settings.access')) { settings.vis = VIS; settings.hidden_courses = hiddenOf(S.hidden_courses); } }
+    if (can('settings.home')) { settings.site_colors = siteColorsOf(S.site_colors); settings.home_config = homeOf(S.home_config); if (!can('settings.access')) { settings.vis = VIS; settings.hidden_courses = hiddenOf(S.hidden_courses); } }
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
     if (can('settings.contact') || can('leads.manage')) settings.lead_message = S.lead_message || DEFAULT_LEAD_MSG;
     if (can('settings.plans')) { out.plans = plansOf(S.plans); out.packages = packagesOf(S.packages); out.package_courses = SUB_KEYS.filter(k => k !== 'skills' && k !== 'placement').map(k => ({ key: k, title: SUB_TITLE[k] || k })); }
@@ -1882,6 +1981,14 @@ export async function onRequest({ request, env, params }) {
     else if (b.key === 'free_count') { if (!can('settings.access')) return deny(); v = String(Math.max(1, Math.min(50, int(b.value) || 10))); }
     else if (b.key === 'study_plan_banks') { if (!can('settings.access')) return deny(); const allowed = new Set(COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => c.slug)); const a = Array.isArray(b.value) ? [...new Set(b.value.filter(x => typeof x === 'string' && allowed.has(x)))].slice(0, allowed.size) : []; if (!a.length) return J({ error: 'اختر بنكًا واحدًا على الأقل للخطة' }, 400); v = JSON.stringify(a); }
     else if (b.key === 'hidden_courses') { if (!can('settings.access') && !can('settings.home')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
+    else if (b.key === 'site_colors') {
+      if (!can('settings.home')) return deny(); const sc = siteColorsOf(JSON.stringify(b.value || {})); v = JSON.stringify(sc);
+      // الصفحة الرئيسية لها محرّك مظهر خاص (فاتح/داكن + لون أساسي + خلفية): نربطه بنفس الألوان ليبقى المظهر موحدًا من مكان واحد
+      const hc = homeOf(await setting('home_config')); hc.theme = hc.theme || {};
+      if (sc.bg) { const dk = lumOf(sc.bg) < .2; hc.theme.mode = dk ? 'dark' : 'light'; hc.theme.bg = dk ? '' : sc.bg; hc.theme.main = dk ? sc.bg : (sc.primary || hc.theme.main || ''); } else if (sc.primary) hc.theme.main = sc.primary;
+      if (!Object.keys(sc).length) { hc.theme.mode = ''; hc.theme.bg = ''; hc.theme.main = ''; }
+      await DB.prepare("INSERT INTO settings (key,value) VALUES ('home_config',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(homeClean(hc))).run();
+    }
     else if (b.key === 'home_config') { if (!can('settings.home')) return deny(); const c = homeClean(b.value), old = homeOf(await setting('home_config')), pool = x => x.toppers.map(y => y.name.trim().toLocaleLowerCase()).sort().join('\n'); c.topperCycleAt = pool(old) === pool(c) ? (old.topperCycleAt || old.updated || iso) : iso; c.updated = iso; v = JSON.stringify(c); if (v.length > 900000) return J({ error: 'حجم الصور كبير؛ قلّل عدد الصور أو استخدم صورًا أصغر' }, 400); }
     else if (b.key === 'lead_message') { if (!can('settings.contact')) return deny(); v = String(b.value || '').slice(0, 3000); }
     else return J({ error: 'not found' }, 404);
