@@ -59,7 +59,7 @@
   })();
 
   var slug = ''; try { slug = decodeURIComponent(location.pathname).replace(/^\//, '').replace(/(\.html)+$/, ''); } catch (e) { }
-  var COURSES = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi', 'muhaky mohawsab', 'muhaky warky1', 'muhaky warky2', 'tasis lafzi', 'ikmal_aljumal'];
+  var COURSES = ['aksam kamy', 'ak_kamyadd', 'maharat kamy', 'aksam lafzi', 'muhaky mohawsab', 'muhaky warky1', 'muhaky warky2', 'tasis lafzi', 'ikmal_aljumal'];
   if (COURSES.indexOf(slug) < 0) return;
   // فتح «الأسئلة الخاطئة» مباشرة من صفحة «تقدمي»
   if (location.hash === '#errors') addEventListener('load', function () { setTimeout(function () { var b = document.getElementById('errBtn'); if (b) b.click(); }, 150); });
@@ -101,7 +101,7 @@
         var card = document.createElement('div'); card.className = 'card bw-plan noprint';
         card.innerHTML = '<h3>خطة علاجك بعد هذا الاختبار</h3><ul class="bw-plan-list">' + items.join('') + '</ul>'
           + (weak.length ? '<div class="bw-plan-weak">' + weak.map(function (w) { return '<div class="bw-plan-row"><span>' + esc(SN[w.id] || 'القسم ' + w.id) + '</span><b>' + AR(w.c) + ' / ' + AR(w.t) + '</b><button class="btn soft sm" type="button" data-bwre="' + w.id + '">أعد التدريب على هذا القسم</button></div>'; }).join('') + '</div>' : '')
-          + '<div class="row" style="margin-top:10px"><a class="btn ghost sm" href="/progress.html">شوف تقدمك وخطوتك التالية</a></div>';
+          + '<div class="row" style="margin-top:10px"><a class="btn ghost sm" href="/progress.html">افتح خطتي</a></div>';
         resEl.insertBefore(card, resEl.children[1] || null);
         card.addEventListener('click', function (e) { var b = e.target.closest('[data-bwre]'); if (!b) return; try { var sc = g('setChosen'), st = g('start'); if (sc) sc([+b.dataset.bwre]); if (st) st(); } catch (err) { } });
       } catch (e) { }

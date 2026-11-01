@@ -120,7 +120,14 @@
       #app:has(.qhead) > .card .dots button { width: 24px !important; height: 24px !important; font-size: 11px !important; }
     }
     #app:has(.qhead) > .card { overflow-y: auto !important; overscroll-behavior: contain; }
-  </style>
+      /* القطعة: تكبير وتصغير خطها (مثل المحاكي)، وسؤالها وخياراتها بحجم معتدل حتى تظهر القطعة */
+    .psg { font-size: calc(15.5px * var(--pf, 1)) !important; }
+    .psbar { position: sticky; top: -14px; z-index: 2; display: flex; justify-content: flex-end; gap: 6px; margin: -6px 0 4px; }
+    .psbar button { background: #e9efff; color: #14307f; border: 1px solid #c9d6f5; border-radius: 999px; min-width: 38px; height: 30px; padding: 0 10px; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
+    .psbar button:active { background: #d3e0ff; }
+    #app .card:has(.psg) .stem { font-size: 17px !important; line-height: 1.75 !important; margin-bottom: 8px !important; }
+    #app .card:has(.psg) .opt { font-size: 15px !important; font-weight: 600 !important; }
+</style>
 <link rel="stylesheet" href="/api/site-colors.css"></head>
 <body class="bwt-hub">
   <div id="bw-shell"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">اختبار تحديد المستوى</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
@@ -182,16 +189,16 @@
     function stemHtml(q, noPsg) {
       var a = q.a;
       if (q.s === 'k') return '<div class="stem">' + kimg(a) + '</div>';
-      return (!noPsg && a[3] >= 0 && V.ps && V.ps[a[3]] ? '<div class="psg">' + BR(V.ps[a[3]]) + '</div>' : '') + '<div class="stem">' + BR(a[4]) + '</div>';
+      return (!noPsg && a[3] >= 0 && V.ps && V.ps[a[3]] ? '<div class="psg"><div class="psbar"><button type="button" data-pf="-" aria-label="تصغير خط القطعة" title="تصغير الخط">أ−</button><button type="button" data-pf="+" aria-label="تكبير خط القطعة" title="تكبير الخط">أ+</button></div>' + BR(V.ps[a[3]]) + '</div>' : '') + '<div class="stem">' + BR(a[4]) + '</div>';
     }
     function fmt(s) { return AR(Math.floor(s / 60)) + ':' + AR(String(s % 60).padStart(2, '0')); }
 
     function intro() {
       var last = (get(PK, []) || []).slice(-1)[0];
-      app.innerHTML = '<h1>اختبار تحديد المستوى</h1><p class="sub">٢٠ سؤالًا من الكمي واللفظي تعرف بها مستواك الآن، ومن أين تبدأ، وأي المهارات تحتاج تركيزك.</p>'
+      app.innerHTML = '<h1>اختبار تحديد المستوى</h1><p class="sub">٢٠ سؤالًا من الكمي واللفظي تعرف بها مستواك الآن في كل مهارة.</p>'
         + (last ? '<div class="prev">آخر مرة: ' + esc(last.lvl) + ' بنسبة ' + AR(last.p) + '٪ (' + new Date(last.d).toLocaleDateString('ar-SA-u-nu-arab', { day: 'numeric', month: 'long' }) + '). أعد الاختبار لترى تقدمك.</div>' : '')
         + '<div class="card"><div class="facts" style="margin-top:0"><div><b>' + AR(Q.length) + '</b><span>سؤالًا</span></div><div><b>~' + AR(Q.length) + '</b><span>دقيقة تقريبًا</span></div><div><b>٥</b><span>مهارات لفظية + الكمي</span></div></div>'
-        + '<ul class="how"><li>الأسئلة مختارة عشوائيًا من بنوك المنصة، فكل محاولة مختلفة.</li><li>لا يوجد مؤقت إجباري، لكن حاول أن تجيب في دقيقة تقريبًا لكل سؤال كالاختبار الحقيقي.</li><li>أجب حتى لو لم تكن متأكدًا؛ الهدف معرفة مستواك الحقيقي.</li><li>في النهاية تحصل على مستواك وخطة تبدأ بها، وتُحفظ أخطاؤك في مجلد الأسئلة الخاطئة.</li></ul>'
+        + '<ul class="how"><li>الأسئلة مختارة عشوائيًا من بنوك المنصة، فكل محاولة مختلفة.</li><li>لا يوجد مؤقت إجباري، لكن حاول أن تجيب في دقيقة تقريبًا لكل سؤال كالاختبار الحقيقي.</li><li>أجب حتى لو لم تكن متأكدًا؛ الهدف معرفة مستواك الحقيقي.</li><li>في النهاية تحصل على تقرير بمستواك في كل مهارة، وتُحفظ أخطاؤك في مجلد الأسئلة الخاطئة.</li></ul>'
         + '<button class="btn btn-gold" id="go">ابدأ الاختبار</button></div>';
       document.getElementById('go').onclick = start;
     }
@@ -225,7 +232,7 @@
     });
     addEventListener('beforeunload', function (e) { if (live && Object.keys(ans).length) { e.preventDefault(); e.returnValue = ''; } });
 
-    function level(p) { return p >= 80 ? ['متقدم', 'مستواك قوي. ركّز الآن على السرعة والاختبارات الكاملة بالمؤقت.'] : p >= 60 ? ['جيد', 'أساسك جيد، وتحتاج تدريبًا مركزًا على المهارات الأضعف لترفع درجتك.'] : p >= 40 ? ['متوسط', 'عندك أساس، لكن تحتاج تدريبًا منتظمًا على كل المهارات قبل المحاكاة الكاملة.'] : ['مرحلة التأسيس', 'ابدأ بالتأسيس خطوة بخطوة؛ الأقسام القصيرة أولًا ثم الاختبارات الكاملة.']; }
+    function level(p) { return p >= 80 ? ['متقدم', 'مستواك قوي، وأغلب المهارات متقنة.'] : p >= 60 ? ['جيد', 'أساسك جيد، وبعض المهارات تحتاج إلى تقوية.'] : p >= 40 ? ['متوسط', 'عندك أساس، وعدد من المهارات يحتاج إلى تدريب.'] : ['مرحلة التأسيس', 'أغلب المهارات تحتاج إلى تأسيس.']; }
     function lv(p) { return p >= 80 ? 'g' : p >= 50 ? 'o' : 'r'; }
     function finish() {
       live = false; clearInterval(tick);
@@ -240,27 +247,17 @@
       var pc = function (x) { return x[1] ? Math.round(x[0] / x[1] * 100) : 0; }, P = pc([R.v[0] + R.k[0], R.v[1] + R.k[1]]), pv = pc(R.v), pk = pc(R.k), L2 = level(P);
       if (!practiceRun) { var hist = get(PK, []) || []; hist.push({ d: date, p: P, v: pv, k: pk, t: R.t, lvl: L2[0], u: used }); put(PK, hist.slice(-10)); }
 
-      // الخطة: خطوات مرتبة حسب نتيجتك
-      var weakT = Object.keys(R.t).map(function (k) { return { t: +k, p: pc(R.t[k]) }; }).filter(function (x) { return x.p < 60; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 3);
-      var wv = [], wk = []; wrong.forEach(function (i) { var q = Q[i]; var arr = q.s === 'k' ? wk : wv; if (arr.indexOf(q.a[1]) < 0) arr.push(q.a[1]); });
-      var steps = [];
-      if (pv < 50 || (R.t[0] && pc(R.t[0]) < 50)) steps.push(['ابدأ بتأسيس اللفظي (التناظر)', 'التناظر أكثر أسئلة اللفظي تكرارًا، وتأسيسه يرفع درجتك بسرعة. حلّ اختبارات التأسيس بالترتيب.', '<a class="btn btn-navy" href="/tasis%20lafzi.html.html">افتح تأسيس اللفظي</a>']);
-      if (weakT.length) steps.push(['ركّز على: ' + weakT.map(function (x) { return TYN[x.t]; }).join('، '), weakT.map(function (x) { return TIP[x.t]; }).join(' '), wv.length ? '<button class="btn btn-navy" data-pr="lafzi" data-ids="' + wv.slice(0, 5).join(',') + '">تدرّب على أقسام اللفظي التي أخطأت فيها</button>' : '']);
-      else if (pv >= 60) steps.push(['لفظيك جيد، حافظ عليه', 'حلّ قسمًا لفظيًا واحدًا يوميًا على الأقل حتى لا تفقد المستوى.', '<a class="btn btn-soft" href="/aksam%20lafzi.html">افتح أقسام اللفظي</a>']);
-      var kfirst = K.secs.slice(0, 3).map(function (s) { return s.id; });
-      if (pk < 60) steps.push(['الكمي: ابدأ من أول الأقسام بالترتيب', 'نتيجتك في الكمي ' + AR(pk) + '٪. أقسام الكمي مرتبة، فابدأ من الأوائل وراجع كل سؤال تخطئ فيه قبل أن تنتقل.', '<button class="btn btn-navy" data-pr="kamy" data-ids="' + kfirst.join(',') + '">ابدأ أول ٣ أقسام كمي</button>']);
-      else steps.push(['الكمي: تدرّب على ما أخطأت فيه ثم تقدّم', 'نتيجتك في الكمي ' + AR(pk) + '٪. ثبّت المهارة بحل الأقسام التي جاءت منها أخطاؤك.', wk.length ? '<button class="btn btn-navy" data-pr="kamy" data-ids="' + wk.slice(0, 5).join(',') + '">تدرّب على أقسام الكمي التي أخطأت فيها</button>' : '<a class="btn btn-soft" href="/aksam%20kamy.html">افتح أقسام الكمي</a>']);
-      if (P >= 70) steps.push(['اختبر نفسك في المحاكي المحوسب', 'مستواك يسمح بالتدريب على الاختبار الكامل بالمؤقت. اجعله مرة في الأسبوع على الأقل.', '<a class="btn btn-gold" href="/muhaky%20mohawsab.html">ادخل المحاكي المحوسب</a>']);
-      if (wrong.length) steps.push(['راجع أخطاء هذا الاختبار', 'حُفظ ' + CNT(wrong.length, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالًا') + ' في مجلد الأسئلة الخاطئة لتراجعها لاحقًا، وتجد حلولها في الأسفل الآن.', '<a class="btn btn-soft" href="#review">اعرض الحلول</a>']);
-      steps.push(['تابع تقدمك', 'صفحة «تقدمي» تقترح عليك خطوتك التالية بعد كل تدريب. أعد هذا الاختبار بعد أسبوعين لترى الفرق.', '<a class="btn btn-soft" href="/progress.html">افتح تقدمي</a>']);
-
       var skipped = Q.filter(function (_, i) { return ans[i] === undefined; }).length, totalCorrect = R.v[0] + R.k[0], totalWrong = Q.length - totalCorrect - skipped;
       lastWrong = wrong.map(function (i) { return Q[i]; });
       var h = window.bwRenderResultSummary({total:Q.length,correct:totalCorrect,wrong:totalWrong,skipped:skipped,review:'#review',practice:'#practiceWrong'}) + '<section class="lvl"><small>' + (practiceRun ? 'تدريب على أخطائك · لا يُحتسب في مستواك' : 'مستواك الآن') + '</small><h2>' + L2[0] + '</h2><p>' + L2[1] + '</p><div class="score"><div><b>' + AR(P) + '٪</b><span>النتيجة العامة</span></div><div><b>' + AR(pv) + '٪</b><span>اللفظي</span></div><div><b>' + AR(pk) + '٪</b><span>الكمي</span></div></div></section>';
-      h += '<div class="card"><h3>مهاراتك في هذا الاختبار</h3>' + Object.keys(R.t).sort().map(function (k) { var x = R.t[k], p = pc(x); return '<div class="sk lv-' + lv(p) + '"><span>' + TYN[k] + '</span><span class="bar"><i style="width:' + Math.max(4, p) + '%"></i></span><b>' + AR(x[0]) + '/' + AR(x[1]) + '</b></div>'; }).join('')
-        + '<div class="sk lv-' + lv(pk) + '"><span>الكمي</span><span class="bar"><i style="width:' + Math.max(4, pk) + '%"></i></span><b>' + AR(R.k[0]) + '/' + AR(R.k[1]) + '</b></div>'
-        + '<p class="note" style="text-align:start;margin:10px 0 0">الوقت: ' + fmt(used) + ' دقيقة · عدد الأسئلة قليل، فاعتبر النتيجة مؤشرًا للبداية وليست درجة نهائية.</p></div>';
-      h += '<div class="card"><h3>خطتك من الآن</h3><ol class="plan">' + steps.map(function (s) { return '<li><div><b>' + esc(s[0]) + '</b><p>' + esc(s[1]) + '</p>' + s[2] + '</div></li>'; }).join('') + '</ol></div>';
+      var stName = function (p) { return p >= 80 ? 'متقن' : p >= 50 ? 'يحتاج إلى تقوية' : 'يحتاج إلى تأسيس'; };
+      var SK = Object.keys(R.t).sort().map(function (k) { return { n: TYN[k], c: R.t[k][0], t: R.t[k][1], p: pc(R.t[k]) }; });
+      if (R.k[1]) SK.push({ n: 'الكمي', c: R.k[0], t: R.k[1], p: pk });
+      var good = SK.filter(function (x) { return x.p >= 80; }), need = SK.filter(function (x) { return x.p < 80; }).sort(function (a, b) { return a.p - b.p; });
+      h += '<div class="card"><h3>تقرير مستواك في المهارات</h3>' + SK.map(function (x) { return '<div class="sk lv-' + lv(x.p) + '"><span>' + esc(x.n) + ' <small style="color:#5a6b80">· ' + stName(x.p) + '</small></span><span class="bar"><i style="width:' + Math.max(4, x.p) + '%"></i></span><b>' + AR(x.p) + '٪</b></div>'; }).join('')
+        + (good.length ? '<p class="note" style="text-align:start;margin:12px 0 0"><b>متقن:</b> ' + good.map(function (x) { return esc(x.n) + ' (' + AR(x.p) + '٪)'; }).join('، ') + '</p>' : '')
+        + (need.length ? '<p class="note" style="text-align:start;margin:6px 0 0"><b>تحتاج إلى تدريب في:</b> ' + need.map(function (x) { return esc(x.n) + ' (' + AR(x.p) + '٪)'; }).join('، ') + '</p>' : '')
+        + '<p class="note" style="text-align:start;margin:10px 0 0">الوقت: ' + fmt(used) + ' دقيقة · عدد الأسئلة قليل، فاعتبر النتيجة مؤشرًا لمستواك وليست درجة نهائية.</p></div>';
       if (wrong.length) h += '<div class="card" id="review"><h3>حلول الأسئلة التي أخطأت فيها</h3>' + wrong.map(function (i, j) { var q = Q[i], a = q.a, pq = j ? Q[wrong[j - 1]].a : null, same = q.s === 'v' && pq && a[3] >= 0 && pq[3] === a[3] && pq[1] === a[1], opt = function (k) { return q.s === 'k' ? L[k] : L[k] + ') ' + esc(a[5][k]); }; return '<div class="rv">' + (q.s === 'v' ? '<span class="ty">' + TYN[a[2]] + '</span>' : '') + stemHtml(q, same) + '<div class="ans">' + (ans[i] === undefined ? '<span class="x">لم تجب</span>' : 'إجابتك: <span class="x">' + opt(ans[i]) + '</span>') + ' · الصحيحة: <span class="ok">' + opt(a[6]) + '</span></div></div>'; }).join('') + '</div>';
       h += '<p style="text-align:center"><button class="btn btn-soft" id="again">أعد اختبار تحديد المستوى</button>' + (wrong.length ? ' <button class="btn btn-navy" id="practiceWrong">أعد تدريب الخاطئ والمتروك (' + AR(wrong.length) + ')</button>' : '') + '</p>';
       app.innerHTML = h; scrollTo(0, 0);
@@ -279,6 +276,13 @@
 <script src="/bw-shell.js">
 // تكبير صورة السؤال في المراجعة بالضغط عليها
 document.addEventListener('click', function (e) { var im = e.target.closest && e.target.closest('.rv .stem img'); if (!im) return; var d = document.createElement('div'); d.style.cssText = 'position:fixed;inset:0;z-index:2147483400;background:#0c2440ee;display:grid;place-items:center;padding:16px;cursor:zoom-out'; d.innerHTML = '<img src="' + im.src + '" alt="" style="max-width:100%;max-height:92vh;border-radius:12px;background:#fff">'; d.onclick = function () { d.remove(); }; document.body.appendChild(d); });
+</script>
+<script>
+// تكبير وتصغير خط القطعة (نفس تفضيل المحاكي المحوسب)
+(function () { var pf = 1; try { pf = parseFloat(localStorage.getItem('bwm-pf')) || 1; } catch (x) { }
+  var apf = function () { document.documentElement.style.setProperty('--pf', pf); }; apf();
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-pf]'); if (!b) return; e.preventDefault(); e.stopPropagation(); pf = Math.min(2.2, Math.max(.8, +(pf + (b.dataset.pf === '+' ? .15 : -.15)).toFixed(2))); apf(); try { localStorage.setItem('bwm-pf', pf); } catch (x) { } }, true);
+})();
 </script>
 <script src="/bw-theme-toggle.js" defer></script></body>
 </html>

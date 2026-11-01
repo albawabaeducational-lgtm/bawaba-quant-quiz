@@ -3,7 +3,7 @@
 (function () {
   if (window.__bwAcct) return; window.__bwAcct = 1;
   var LMS = 'https://albawaba-edu.com/e/';
-  var URLS = { 'muhaky mohawsab': '/muhaky%20mohawsab.html', 'tasis lafzi': '/tasis%20lafzi.html.html', 'ikmal_aljumal': '/ikmal_aljumal.html', 'aksam kamy': '/aksam%20kamy.html', 'ak_kamyadd': '/ak_kamyadd.html', 'aksam lafzi': '/aksam%20lafzi.html', 'aktar kamy': '/aktar%20kamy.html', 'skills': '/skills', 'waraqi': '/waraqi.html' };
+  var URLS = { 'muhaky mohawsab': '/muhaky%20mohawsab.html', 'tasis lafzi': '/tasis%20lafzi.html.html', 'ikmal_aljumal': '/ikmal_aljumal.html', 'aksam kamy': '/aksam%20kamy.html', 'ak_kamyadd': '/ak_kamyadd.html', 'maharat kamy': '/maharat%20kamy.html', 'aksam lafzi': '/aksam%20lafzi.html', 'aktar kamy': '/aktar%20kamy.html', 'skills': '/skills', 'waraqi': '/waraqi.html' };
   window.bwCourseUrl = function (k) { return URLS[k] || '/'; };
   var AR = function (n) { return String(n).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };

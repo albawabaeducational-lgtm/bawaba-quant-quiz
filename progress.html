@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c2440">
   <meta name="bw-hub" content="1">
-  <title>تقدمي | البوابة التعليمية</title>
+  <title>خطتي | البوابة التعليمية</title>
   <link rel="icon" href="/icons/icon-192.png">
   <link rel="stylesheet" href="/bw-theme.css">
   <style>
@@ -94,7 +94,7 @@
   </style>
 <link rel="stylesheet" href="/api/site-colors.css"></head>
 <body class="bwt-hub">
-  <div id="bw-shell"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">تقدمي</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
+  <div id="bw-shell"><a class="bws-brand" href="/"><img src="/icons/logo.jpg" alt=""><b>البوابة التعليمية<small>منصة الاختبارات</small></b></a><span class="bws-title">خطتي</span><span class="bws-tools"></span><a class="bws-back" href="/#tests">كل الاختبارات</a></div>
   <main class="pw" id="app"><p class="empty">جارٍ تحليل تدريبك…</p></main>
 
 <script>
@@ -214,41 +214,43 @@
       .then(function (d) { if (!d.by) throw new Error('الاستجابة غير مكتملة'); BANK_COUNTS = d.by; PLAN_STATUS = 'ready'; draw(); })
       .catch(function () { PLAN_STATUS = 'error'; draw(); });
   }
+  // الخطة تُحفظ في حساب الطالب مختصرة: يوم البداية وموعد الاختبار والأيام المنجزة فقط،
+  // والجدول نفسه يُحسب منها بنفس الطريقة على أي جهاز (الأقسام بالترتيب: أول الأقسام في أول الأيام).
+  function dateKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function planState() { var p = get(PLAN_KEY, null); return p && typeof p === 'object' && !Array.isArray(p.days) ? p : null; }
+  function savePlan(p) { try { localStorage.setItem(PLAN_KEY, JSON.stringify(p)); } catch (e) { } }
   function studyPlan() {
     if (!GOAL.exam || !BANK_COUNTS) return null;
     var exam = new Date(GOAL.exam + 'T00:00:00'); if (!Number.isFinite(exam.getTime())) return { error: 'موعد الاختبار غير صالح.' };
     var today = new Date(); today.setHours(0, 0, 0, 0);
-    var examOrdinal = Date.UTC(exam.getFullYear(), exam.getMonth(), exam.getDate()), todayOrdinal = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-    var days = Math.round((examOrdinal - todayOrdinal) / DAY);
-    if (days <= 0) return { error: days === 0 ? 'موعد اختبارك اليوم؛ لا توجد أيام دراسة قبله.' : 'هذا الموعد مضى. اختر تاريخًا قادمًا.' };
-    if (days > 365) return { error: 'الخطة تعرض حتى ٣٦٥ يومًا قبل الاختبار. حدّث الموعد عندما يصبح ضمن هذه الفترة.' };
-    var source = [], flat = { q: [], v: [] }, totals = { q: 0, v: 0 }, signatureData = { exam: GOAL.exam, banks: {} };
-    Object.keys(BANK_COUNTS || {}).forEach(function (slug) { var b = BANK_COUNTS[slug]; source.push({ key: b.subject === 'v' ? 'v' : 'q', slug: slug, bank: b }); });
-    source.forEach(function (g, si) {
-      var bank = g.bank, slug = g.slug; if (!bank) return;
-      signatureData.banks[slug] = bank.sections;
-      bank.sections.forEach(function (s) { var item = { id: String(s.id), name: s.name, questions: +s.questions || 0, bank: bank.title, sourceOrder: si }; flat[g.key].push(item); totals[g.key] += item.questions; });
-    });
-    var signature = JSON.stringify(signatureData), saved = get(PLAN_KEY, null);
-    if (saved && saved.signature === signature && Array.isArray(saved.days) && saved.days.length === days) { if (!saved.done || typeof saved.done !== 'object') saved.done = {}; return saved; }
-    var done = saved && saved.done && typeof saved.done === 'object' ? saved.done : {}, planDays = [];
-    function dateKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-    for (var i = 0; i < days; i++) {
-      var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i, 12);
-      planDays.push({ date: dateKey(d), q: [], v: [], qn: 0, vn: 0 });
+    var P = planState(), old = get(PLAN_KEY, null);
+    if (!P || P.exam !== GOAL.exam || !P.start) {
+      // خطة جديدة تبدأ اليوم (مع الإبقاء على علامات الإنجاز السابقة إن وُجدت)
+      P = { exam: GOAL.exam, start: dateKey(today), done: (P && P.done) || (old && old.done && typeof old.done === 'object' ? old.done : {}) };
+      savePlan(P);
     }
+    var st = new Date(P.start + 'T00:00:00'); if (!Number.isFinite(st.getTime()) || st > today) st = today;
+    var U = function (d) { return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); };
+    var days = Math.round((U(exam) - U(st)) / DAY), left = Math.round((U(exam) - U(today)) / DAY);
+    if (left <= 0) return { error: left === 0 ? 'موعد اختبارك اليوم؛ لا توجد أيام دراسة قبله.' : 'هذا الموعد مضى. اختر تاريخًا قادمًا.' };
+    if (days > 365) return { error: 'الخطة تعرض حتى ٣٦٥ يومًا قبل الاختبار. حدّث الموعد عندما يصبح ضمن هذه الفترة.' };
+    var flat = { q: [], v: [] };
+    Object.keys(BANK_COUNTS || {}).forEach(function (slug, si) {
+      var bank = BANK_COUNTS[slug]; if (!bank || !Array.isArray(bank.sections)) return;
+      var key = bank.subject === 'v' ? 'v' : 'q';
+      bank.sections.slice().sort(function (a, b) { return (+a.id) - (+b.id); }).forEach(function (s) { flat[key].push({ id: String(s.id), name: s.name, questions: +s.questions || 0, bank: bank.title, sourceOrder: si }); });
+    });
+    var planDays = [];
+    for (var i = 0; i < days; i++) planDays.push({ date: dateKey(new Date(st.getFullYear(), st.getMonth(), st.getDate() + i, 12)), q: [], v: [], qn: 0, vn: 0 });
+    // توزيع متتابع: كل يوم يأخذ الأقسام التالية بالترتيب، وعدد الأسئلة متقارب بين الأيام
     ['q', 'v'].forEach(function (key) {
-      var queue = flat[key].slice().sort(function (a, b) { return b.questions - a.questions || a.sourceOrder - b.sourceOrder || (+a.id) - (+b.id); });
-      queue.forEach(function (s) {
-        var best = 0;
-        for (var j = 1; j < planDays.length; j++) if (planDays[j][key + 'n'] < planDays[best][key + 'n'] || (planDays[j][key + 'n'] === planDays[best][key + 'n'] && planDays[j][key].length < planDays[best][key].length)) best = j;
-        planDays[best][key].push(s); planDays[best][key + 'n'] += s.questions;
+      var L = flat[key], total = L.reduce(function (t, s) { return t + Math.max(1, s.questions); }, 0), cum = 0;
+      L.forEach(function (s) {
+        var w = Math.max(1, s.questions), d = Math.min(days - 1, Math.floor((cum + w / 2) * days / total));
+        cum += w; planDays[d][key].push(s); planDays[d][key + 'n'] += s.questions;
       });
     });
-    planDays.forEach(function (d) { ['q', 'v'].forEach(function (key) { d[key].sort(function (a, b) { return a.sourceOrder - b.sourceOrder || (+a.id) - (+b.id); }); }); });
-    var p = { signature: signature, exam: GOAL.exam, generatedAt: new Date().toISOString(), days: planDays, done: done };
-    try { localStorage.setItem(PLAN_KEY, JSON.stringify(p)); } catch (e) { }
-    return p;
+    return { exam: GOAL.exam, start: P.start, days: planDays, done: P.done || {} };
   }
   function studyPlanCard() {
     var h = '<div class="card study-plan-card"><h3>🗓 خطة الاستعداد حتى موعد الاختبار</h3>';
@@ -265,11 +267,11 @@
       function cell(key, count) { return count ? '<b>' + AR(count) + ' سؤالًا · ' + AR(d[key].length) + ' قسم</b><small>' + d[key].map(function (s) { return esc(s.bank + ' — ' + s.name); }).join('<br>') + '</small>' : '<span class="m">مراجعة أو راحة</span>'; }
       h += '<tr class="' + (checked ? 'done' : '') + '"><th>' + esc(label) + '</th><td>' + cell('q', d.qn) + '</td><td>' + cell('v', d.vn) + '</td><td><label class="study-check"><input type="checkbox" data-plan-date="' + esc(d.date) + '"' + (checked ? ' checked' : '') + '> تم</label></td></tr>';
     });
-    h += '</tbody></table></div><p class="m study-foot">يمكنك تعليم كل يوم كمكتمل. تحفظ العلامات على هذا الجهاز، وتُزامَن لحساب الطالب المسجّل عند توفر الاتصال.</p></div>';
+    h += '</tbody></table></div><p class="m study-foot">' + (window.__bwSid ? 'علّم كل يوم تنجزه. الخطة وعلاماتها محفوظة في حسابك، فتجدها كما هي على أي جهاز تدخل منه.' : 'علّم كل يوم تنجزه. سجّل الدخول لتُحفظ الخطة في حسابك وتجدها على أي جهاز.') + '</p></div>';
     return h;
   }
   function goalCard() {
-    return '<section class="card study-goal"><h2>خطة الاستعداد للاختبار</h2><p class="m">أدخل موعد اختبارك ثم اضغط حفظ لتوليد جدول الاستعداد.</p><div class="study-date-row"><label for="gExam">موعد الاختبار</label><input type="date" id="gExam" value="' + esc(GOAL.exam || '') + '"><button type="button" class="btn btn-navy" id="saveExamDate">حفظ الموعد</button><span id="studySaveMsg" role="status">' + (GOAL.exam ? 'موعد الاختبار محفوظ على هذا الجهاز.' : '') + '</span></div></section>';
+    return '<section class="card study-goal"><h2>خطة الاستعداد للاختبار</h2><p class="m">أدخل موعد اختبارك ثم اضغط حفظ لتوليد جدول الاستعداد.</p><div class="study-date-row"><label for="gExam">موعد الاختبار</label><input type="date" id="gExam" value="' + esc(GOAL.exam || '') + '"><button type="button" class="btn btn-navy" id="saveExamDate">حفظ الموعد</button><span id="studySaveMsg" role="status">' + (GOAL.exam ? (window.__bwSid ? 'موعد الاختبار محفوظ في حسابك.' : 'موعد الاختبار محفوظ على هذا الجهاز فقط؛ سجّل الدخول ليُحفظ في حسابك.') : '') + '</span></div></section>';
   }
   function skillCard() {
     var L = skills().sort(function (a, b) { return a.p - b.p; }), h = '<div class="card"><h3>🧩 إتقانك حسب المهارة</h3>';
@@ -315,10 +317,10 @@
       if (!ge || !ge.value) { if (msg) msg.textContent = 'اختر موعد الاختبار أولًا.'; return; }
       var chosen = new Date(ge.value + 'T00:00:00'); if (!Number.isFinite(chosen.getTime())) { if (msg) msg.textContent = 'التاريخ غير صالح.'; return; }
       var t = new Date(); t.setHours(0,0,0,0); if (chosen < t) { if (msg) msg.textContent = 'اختر تاريخًا اليوم أو في المستقبل.'; return; }
-      setGoal({ exam: ge.value }); PLAN_STATUS = 'loading'; BANK_COUNTS = null; draw(); loadExamCounts();
+      if (ge.value !== GOAL.exam) savePlan({ exam: ge.value, start: dateKey(t), done: {} }); setGoal({ exam: ge.value }); PLAN_STATUS = 'loading'; BANK_COUNTS = null; draw(); loadExamCounts();
     };
     var retry = document.getElementById('planRetry'); if (retry) retry.onclick = loadExamCounts;
-    app.querySelectorAll('[data-plan-date]').forEach(function (c) { c.onchange = function () { var p = get(PLAN_KEY, null); if (!p || !p.done) return; p.done[c.getAttribute('data-plan-date')] = c.checked; try { localStorage.setItem(PLAN_KEY, JSON.stringify(p)); } catch (e) { } draw(); }; });
+    app.querySelectorAll('[data-plan-date]').forEach(function (c) { c.onchange = function () { var p = planState(); if (!p) return; p.done = p.done || {}; p.done[c.getAttribute('data-plan-date')] = c.checked; savePlan(p); draw(); }; });
   }
   draw();
   if (GOAL.exam) { PLAN_STATUS = 'loading'; loadExamCounts(); }

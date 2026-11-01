@@ -70,7 +70,7 @@
   var days = function (n) { return n === 1 ? 'يوم واحد' : n === 2 ? 'يومان' : AR(n) + (n <= 10 ? ' أيام' : ' يومًا'); };
   function post(u, b) { return fetch(u, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return [r.ok, d]; }); }); }
   function go(u) { location.href = u; }
-  var CU = { 'muhaky mohawsab': '/muhaky%20mohawsab.html', 'tasis lafzi': '/tasis%20lafzi.html.html', 'ikmal_aljumal': '/ikmal_aljumal.html', 'aksam kamy': '/aksam%20kamy.html', 'ak_kamyadd': '/ak_kamyadd.html', 'aksam lafzi': '/aksam%20lafzi.html', 'aktar kamy': '/aktar%20kamy.html', 'skills': '/skills', 'waraqi': '/waraqi.html' };
+  var CU = { 'muhaky mohawsab': '/muhaky%20mohawsab.html', 'tasis lafzi': '/tasis%20lafzi.html.html', 'ikmal_aljumal': '/ikmal_aljumal.html', 'aksam kamy': '/aksam%20kamy.html', 'ak_kamyadd': '/ak_kamyadd.html', 'maharat kamy': '/maharat%20kamy.html', 'aksam lafzi': '/aksam%20lafzi.html', 'aktar kamy': '/aktar%20kamy.html', 'skills': '/skills', 'waraqi': '/waraqi.html' };
   function CURL(k) { return CU[k] || (window.bwCourseUrl ? window.bwCourseUrl(k) : '/'); }
   function nextUrl() { var n = Q.get('next') || ''; if (Q.get('marketer') === '1') return '/account.html?tab=ref'; return n.charAt(0) === '/' && n.charAt(1) !== '/' ? n : '/account.html?tab=exams'; }
   function load(force) { (window.bwMe ? window.bwMe(force) : fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.json(); })).then(function (me) { ME = me; (me.logged && !(!me.account && (tab === 'signup' || tab === 'login'))) ? logged() : guest(); }); }

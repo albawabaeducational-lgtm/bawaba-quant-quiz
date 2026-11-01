@@ -38,7 +38,7 @@ code{direction:ltr;display:inline-block;background:#f3f8fc;padding:2px 8px;borde
 <script src="/bw-bank.js"></script>
 <script>
 'use strict';
-var NM={'aksam kamy':'أقسام الكمي','ak_kamyadd':'أقسام الكمي الإضافية','aksam lafzi':'أقسام اللفظي','ikmal_aljumal':'إكمال الجمل','muhaky mohawsab':'المحاكي المحوسب','muhaky warky1':'الورقي – النموذج الأول','muhaky warky2':'الورقي – النموذج الثاني','tasis lafzi':'تأسيس اللفظي','waraqi':'المحاكيات الورقية','home':'الصفحة الرئيسية','index':'الصفحة الرئيسية'};
+var NM={'aksam kamy':'أقسام الكمي','ak_kamyadd':'أقسام الكمي الإضافية','maharat kamy':'تأسيس الكمي حسب المهارة','aksam lafzi':'أقسام اللفظي','ikmal_aljumal':'إكمال الجمل','muhaky mohawsab':'المحاكي المحوسب','muhaky warky1':'الورقي – النموذج الأول','muhaky warky2':'الورقي – النموذج الثاني','tasis lafzi':'تأسيس اللفظي','waraqi':'المحاكيات الورقية','home':'الصفحة الرئيسية','index':'الصفحة الرئيسية'};
 var TR=[[120,'ساعتان'],[720,'١٢ ساعة'],[1440,'يوم'],[2880,'يومان'],[10080,'أسبوع'],[14400,'١٠ أيام'],[43200,'شهر']];
 var VD=[[0,'دائم (بدون انتهاء)'],[7,'٧ أيام'],[30,'٣٠ يومًا'],[90,'٩٠ يومًا'],[180,'٦ شهور'],[365,'سنة']];
 var LS={new:['in','جديد'],contacted:['wn','تم التواصل'],added:['ok','أُضيف للمجموعة'],subscribed:['ok','مشترك'],not_interested:['mu','غير مهتم']};
@@ -87,7 +87,7 @@ var SECTIONS=[
  {id:'settings',icon:'⚙',title:'إعدادات المنصة',sub:'نمط الدخول والباقات والتواصل والحماية',show:function(){return canAny(['settings.access','settings.plans','settings.contact','settings.guard'])},draw:drawSettings},
  {id:'staff',icon:'♚',title:'فريق العمل والصلاحيات',sub:'حسابات المعلمين والمشرفين وصلاحيات كل حساب',show:function(){return D.actor.role==='super_admin'},draw:drawStaff,count:function(){return D.staff?D.staff.length:0}},
  {id:'courses',icon:'▣',title:'المقررات',sub:'الاختبارات بأنواعها، والمعلمون المسندون لكل مقرر وصلاحياتهم',show:function(){return D.actor.role==='super_admin'||D.actor.role==='teacher'||!!(D.courses&&D.courses.length)},draw:drawCourses},
- {id:'review',icon:'⚑',title:'مراجعة الإجابات',sub:'أسئلة يُشك في مفتاح إجابتها: اعتمد الإجابة الحالية أو صحّحها بضغطة، فتتعدل للطلاب فورًا',show:function(){return D.actor.role==='super_admin'||(D.courses||[]).some(function(c){return c.slug==='aksam kamy'||c.slug==='aktar kamy'})},draw:drawReview,count:function(){return st.rv?st.rv.items.filter(function(x){return x.status==='open'}).length:0}},
+ {id:'review',icon:'⚑',title:'مراجعة الإجابات',sub:'أسئلة يُشك في مفتاح إجابتها: اعتمد الإجابة الحالية أو صحّحها بضغطة، فتتعدل للطلاب فورًا',show:function(){return D.actor.role==='super_admin'||(D.courses||[]).length>0},draw:drawReview,count:function(){return (st.rv?st.rv.items.filter(function(x){return x.status==='open'}).length:0)+(st.qr?st.qr.length:0)}},
  {id:'bank',icon:'▦',title:'بنك الأسئلة',sub:'كل الأسئلة في مكان واحد: إضافة بالجملة من مودل والصور والإكسيل والنص، وتعديل وتصنيف وتصدير',show:function(){return can('bank.view')&&!!window.BWBANK},draw:function(){return window.BWBANK.draw()},after:function(){window.BWBANK.after()}},
  {id:'skills',icon:'◈',title:'تصنيف المهارات',sub:'صنّف كل سؤال تحت مهارته، ثم استدعِ أسئلة أي مهارة في الشرح والتدريب',show:function(){return D.actor.role==='super_admin'||(D.courses||[]).some(function(c){return SKB[c.slug]})},draw:drawSkills},
  {id:'versions',icon:'⟲',title:'النسخ والتراجع',sub:'كل تحديث يُرفع للموقع نسخة؛ علّم النسخ الجيدة وارجع لأي نسخة بضغطة',show:function(){return D.actor.role==='super_admin'},draw:drawVersions},
@@ -100,12 +100,33 @@ async function load(){try{D=await api('data');var cs=SECTIONS.filter(function(x)
 
 /* ---------- مراجعة الإجابات ---------- */
 function rvLoad(){return api('review').then(function(r){st.rv=r;if(view==='review')$('sec').innerHTML=drawReview();var n=document.querySelector('.nav a[href="#review"]');if(n&&!n.querySelector('.cnt')){var c=r.items.filter(function(x){return x.status==='open'}).length;if(c)n.insertAdjacentHTML('beforeend','<span class="cnt">'+c+'</span>')}})}
+/* بلاغات الطلاب على الأسئلة: صورة السؤال أو نصه + فتحه للتعديل مباشرة */
+var RPN={answer:'الإجابة الصحيحة خطأ',text:'خطأ في نص السؤال أو الاختيارات',image:'الصورة غير واضحة',other:'مشكلة أخرى'};
+function qrLoad(){return api('qreports').then(function(r){st.qr=r.items||[];if(view==='review')$('sec').innerHTML=drawReview()})}
+function drawReps(tabs){
+ if(!st.qr){qrLoad().catch(function(e){st.qr=[];if(e)toast(e.message,'err')});return tabs+'<div class="empty">جارٍ تحميل البلاغات…</div></div>'}
+ var L='أبجد',h=tabs+'<p class="m" style="margin:0 0 10px;line-height:1.9">أسئلة أبلغ عنها الطلاب. اضغط <b>«افتح السؤال وعدّله»</b> فيفتح المقرر في وضع التحرير على السؤال نفسه مباشرة، ثم اضغط <b>«تمت المراجعة»</b>.</p>';
+ if(!st.qr.length)return h+'<div class="empty">لا توجد بلاغات مفتوحة 👍</div></div>';
+ st.qr.forEach(function(x){
+  var pv=x.img?'<img src="'+esc(x.img)+'" alt="السؤال '+esc(x.key||'')+'" loading="lazy" data-act="rvZoom" data-id="'+esc(x.img)+'">'
+   :x.q?'<div style="line-height:1.9">'+(x.q.p?'<div class="m" style="max-height:150px;overflow:auto;border:1px solid #eef2f7;border-radius:10px;padding:8px;margin-bottom:6px">'+esc(x.q.p)+'</div>':'')+'<b>'+esc(x.q.s)+'</b><ol style="margin:6px 0 0;padding-inline-start:20px">'+(x.q.o||[]).map(function(o,i){return'<li'+(i===x.q.c?' style="color:#13805a;font-weight:700"':'')+'>'+esc(o)+(i===x.q.c?' ✓':'')+'</li>'}).join('')+'</ol></div>'
+   :'<div class="empty">'+(x.key?'افتح السؤال لرؤيته في وضع التحرير':'البلاغ بدون رقم سؤال')+'</div>';
+  h+='<div class="rvq"><div>'+pv+'</div><div><div class="row" style="justify-content:space-between"><b>'+esc(x.title)+'</b>'+(x.key?'<span class="b mu">سؤال '+esc(x.key)+'</span>':'')+'</div>'
+   +'<div class="why">⚑ '+esc(RPN[x.reason]||x.reason||'')+'</div>'+(x.note?'<p style="margin:6px 0">'+esc(x.note)+'</p>':'')
+   +'<div class="m">'+esc(x.student||'زائر')+' · '+ago(x.at)+'</div>'
+   +'<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">'+(x.key&&x.edit&&x.model!=='linked'?'<a class="btn sm" style="background:var(--navy);color:#fff" target="_blank" rel="noopener" href="'+esc(x.url+'?edit=1&q='+encodeURIComponent(x.key))+'">✏ افتح السؤال وعدّله ↗</a>':'')
+   +'<button class="o sm" data-act="rpClose" data-id="'+x.id+'">✓ تمت المراجعة</button></div></div></div>'});
+ return h+'</div>'}
 function drawReview(){
- if(!st.rv){rvLoad().catch(function(e){if(e)toast(e.message,'err')});return'<div class="card"><div class="empty">جارٍ تحميل الأسئلة…</div></div>'}
+ var f0=st.rvf||'open';
+ if(!st.qr)qrLoad().catch(function(){st.qr=[]});
+ if(!st.rv&&!st.rvErr){rvLoad().catch(function(e){st.rvErr=1;st.rv={courses:[],items:[]};if(view==='review')$('sec').innerHTML=drawReview()});if(f0!=='reps')return'<div class="card"><div class="empty">جارٍ تحميل الأسئلة…</div></div>'}
+ var repTab='<button class="'+(f0==='reps'?'on':'g')+'" data-act="rvF" data-id="reps">⚑ بلاغات الطلاب ('+(st.qr?st.qr.length:'…')+')</button>';
+ if(f0==='reps'||st.rvErr)return drawReps('<div class="card"><div class="rvtabs">'+repTab+'</div>');
  var R=st.rv,L='أبجد',f=st.rvf||'open',cf=st.rvc||'',CT={};R.courses.forEach(function(c){CT[c.slug]=c});
  var all=R.items.filter(function(x){return !cf||x.course===cf}),open=all.filter(function(x){return x.status==='open'}),done=all.filter(function(x){return x.status!=='open'});
  var list=f==='open'?open:done;
- var h='<div class="card"><div class="rvtabs"><button class="'+(f==='open'?'on':'g')+'" data-act="rvF" data-id="open">بحاجة لمراجعة ('+open.length+')</button><button class="'+(f==='done'?'on':'g')+'" data-act="rvF" data-id="done">تمت مراجعتها ('+done.length+')</button><span class="sp"></span><select id="rvc"><option value="">كل المقررات</option>'+R.courses.map(function(c){return'<option value="'+esc(c.slug)+'"'+(cf===c.slug?' selected':'')+'>'+esc(c.title)+'</option>'}).join('')+'</select></div>'
+ var h='<div class="card"><div class="rvtabs"><button class="'+(f==='open'?'on':'g')+'" data-act="rvF" data-id="open">بحاجة لمراجعة ('+open.length+')</button><button class="'+(f==='done'?'on':'g')+'" data-act="rvF" data-id="done">تمت مراجعتها ('+done.length+')</button>'+repTab+'<span class="sp"></span><select id="rvc"><option value="">كل المقررات</option>'+R.courses.map(function(c){return'<option value="'+esc(c.slug)+'"'+(cf===c.slug?' selected':'')+'>'+esc(c.title)+'</option>'}).join('')+'</select></div>'
  +'<p class="m" style="margin:0 0 10px;line-height:1.9">لكل سؤال: انظر الصورة وسبب الشك، ثم <b>اعتمد الإجابة الحالية</b> إن كانت صحيحة، أو <b>اختر الحرف الصحيح واحفظ</b>. التصحيح يظهر للطلاب فورًا ويمكن الرجوع عنه.</p>';
  if(!list.length)h+='<div class="empty">'+(f==='open'?'لا توجد أسئلة بحاجة لمراجعة 🎉':'لم تُراجَع أسئلة بعد.')+'</div>';
  list.forEach(function(x){var C=CT[x.course]||{},pk=st.rvPick&&st.rvPick[x.course+'|'+x.key],cur=x.c;
@@ -363,7 +384,7 @@ function drawCourses(){if(st.report)return drawReport();var man=D.actor.role==='
  if(!D.courses.length)return h+'<div class="card"><div class="empty">لا توجد مقررات مسندة لك بعد. اطلب من الإدارة إسناد مقرراتك.</div></div>';
  D.courses.forEach(function(c){var ids={},lk=c.model==='linked';(c.staff||[]).forEach(function(x){ids[x.staff_id]=1});
   h+='<div class="card"><h2>▣ '+esc(c.title)+' <span class="b in">'+esc(MODEL[c.model]||c.model)+'</span><span class="sp"></span><button class="g sm" data-act="report" data-c="'+esc(c.slug)+'">📊 تقارير المقرر</button><a class="btn sm" style="background:var(--navy);color:#fff" target="_blank" rel="noopener" href="'+esc(c.url)+(lk?'':'?edit=1')+'">👨‍🏫 دخول المقرر كمعلم</a></h2>'
-  +(c.reports?'<p style="margin:-6px 0 8px"><span class="b wn">⚑ '+c.reports+' بلاغ من الطلاب بانتظار المراجعة</span> <span class="m">افتح وضع التحرير ← «البلاغات»</span></p>':'')+'<p class="m" style="margin:-4px 0 10px">'+(lk?'يُبنى تلقائيًا من «أقسام الكمي» و«أقسام اللفظي»؛ أي قسم يُضاف هناك يظهر فيه مباشرة.':(c.edits?c.edits+' تعديل محفوظ · آخر تعديل '+ago(c.last):'لا توجد تعديلات بعد')+(c.rights&&!man?' · صلاحياتك: '+rightsChips(c.rights):''))+'</p>';
+  +(c.reports?'<p style="margin:-6px 0 8px"><span class="b wn">⚑ '+c.reports+' بلاغ من الطلاب بانتظار المراجعة</span> <a class="m" href="#review" onclick="st.rvf=\'reps\'">اعرضها مع صور الأسئلة ←</a></p>':'')+'<p class="m" style="margin:-4px 0 10px">'+(lk?'يُبنى تلقائيًا من «أقسام الكمي» و«أقسام اللفظي»؛ أي قسم يُضاف هناك يظهر فيه مباشرة.':(c.edits?c.edits+' تعديل محفوظ · آخر تعديل '+ago(c.last):'لا توجد تعديلات بعد')+(c.rights&&!man?' · صلاحياتك: '+rightsChips(c.rights):''))+'</p>';
   if(man){h+='<div class="sc"><table><tr><th>المعلم</th>'+(lk?'':'<th>تعديل الأسئلة والإجابات</th><th>إضافة أسئلة</th><th>حذف أسئلة</th>')+'<th></th></tr>'+((c.staff||[]).map(function(x){return'<tr><td><b>'+esc(x.name)+'</b> <code>'+esc(x.username)+'</code>'+(x.status!=='active'?' <span class="b no">موقوف</span>':'')+'</td>'+(lk?'':['can_edit','can_add','can_delete'].map(function(k){return'<td><input type="checkbox" data-cr="'+esc(c.slug)+'" data-sid="'+x.staff_id+'" data-k="'+k+'"'+(x[k]?' checked':'')+'></td>'}).join(''))+'<td><button class="r sm" data-act="courseRm" data-c="'+esc(c.slug)+'" data-id="'+x.staff_id+'">إزالة من المقرر</button></td></tr>'}).join('')||'<tr><td colspan="5" class="empty">لا يوجد معلمون في هذا المقرر بعد.</td></tr>')+'</table></div>';
    var av=pick.filter(function(u){return!ids[u.id]});
    h+=av.length?'<div class="row" style="margin-top:10px"><select data-cadd="'+esc(c.slug)+'" style="max-width:260px"><option value="">+ إسناد المقرر لمعلم…</option>'+av.map(function(u){return'<option value="'+u.id+'">'+esc(u.name)+(u.status!=='active'?' (موقوف)':'')+'</option>'}).join('')+'</select>'+(lk?'':'<label class="m"><input type="checkbox" data-cnew="'+esc(c.slug)+'" data-k="can_edit" checked> تعديل</label><label class="m"><input type="checkbox" data-cnew="'+esc(c.slug)+'" data-k="can_add"> إضافة</label><label class="m"><input type="checkbox" data-cnew="'+esc(c.slug)+'" data-k="can_delete"> حذف</label>')+'<button class="sm" data-act="courseAdd" data-c="'+esc(c.slug)+'">إسناد</button></div>':(pick.length?'':'<p class="m" style="margin-top:8px">أنشئ حسابات المعلمين أولًا من «فريق العمل والصلاحيات».</p>')}
@@ -542,6 +563,7 @@ SECTIONS.splice(SECTIONS.map(function(s){return s.id}).indexOf('settings')+1,0,{
 /* ---------- الأحداث ---------- */
 app.addEventListener('click',async function(e){var t=e.target.closest('[data-act]');if(!t)return;var a=t.dataset.act,id=t.dataset.id;
  if(a==='rvF'){st.rvf=id;$('sec').innerHTML=drawReview();return}
+ if(a==='rpClose'){api('exam/report-close',{id:+id}).then(function(){st.qr=(st.qr||[]).filter(function(x){return x.id!==+id});toast('تم إغلاق البلاغ','ok');$('sec').innerHTML=drawReview()}).catch(function(e){toast(e.message,'err')});return}
  if(a==='rvZoom'){var o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:#0c2440d9;display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out';o.innerHTML='<img src="'+esc(id)+'" style="max-width:100%;max-height:100%;background:#fff;border-radius:12px">';o.onclick=function(){o.remove()};document.body.appendChild(o);return}
  if(a==='rvHE'){st.rvH=t.dataset.c+'|'+t.dataset.k;$('sec').innerHTML=drawReview();var ta=$('rvht');if(ta){ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)}return}
  if(a==='rvHC'){st.rvH=null;$('sec').innerHTML=drawReview();return}

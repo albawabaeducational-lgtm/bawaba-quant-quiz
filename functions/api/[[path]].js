@@ -115,7 +115,8 @@ const LEAD_STATUS = ['new', 'contacted', 'added', 'subscribed', 'not_interested'
 // نفس القائمة موجودة في functions/_middleware.js — أي مقرر جديد يُضاف في الملفين.
 const COURSES = [
   { slug: 'aksam kamy', title: 'أقسام الكمي', file: '/aksam kamy.html', model: 'bank', img: true, hints: true },
-  { slug: 'ak_kamyadd', title: 'أقسام الكمي الإضافية', file: '/ak_kamyadd.html', model: 'bank', img: true, hints: true }, // صور الأسئلة في assets/images/ (وليس img/<id>.webp)
+  { slug: 'maharat kamy', title: 'تأسيس الكمي حسب المهارة', file: '/maharat kamy.html', model: 'bank', img: true, hints: true, imgOk: /^(tasis%20kamy%20)?img\// }, // صور الأسئلة في «tasis kamy img/»
+  { slug: 'ak_kamyadd', title: 'أقسام الكمي الإضافية', file: '/ak_kamyadd.html', model: 'bank', img: true, hints: true, imgOk: /^(assets\/|data:)/ }, // صور الأسئلة في assets/images/ (وليس img/<id>.webp)
   { slug: 'aksam lafzi', title: 'أقسام اللفظي', file: '/aksam lafzi.html', model: 'bank' },
   { slug: 'muhaky mohawsab', title: 'المحاكي المحوسب', file: '/muhaky mohawsab.html.html', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] }, // يُبنى تلقائيًا من الكمي واللفظي
   { slug: 'muhaky warky1', title: 'المحاكي الورقي – النموذج الأول', file: '/muhaky warky1.html', model: 'key' },
@@ -196,7 +197,7 @@ function freeDb(text, n, kind) {
   return JSON.stringify(d).replace(/</g, '\\u003c');
 }
 // الاختبارات التي يمكن إخفاؤها عن الطلاب من لوحة التحكم
-const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
+const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['maharat kamy', 'تأسيس الكمي حسب المهارة'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
 // ===================== إعدادات الصفحة الرئيسية (تُعدَّل من لوحة التحكم ← الصفحة الرئيسية) =====================
 const HOME_FONTS = ['ibm', 'readex', 'tajawal', 'cairo', 'almarai', 'kufi'];
 const homeStr = (x, n) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u2028\u2029]/g, ' ').trim().slice(0, n);
@@ -222,7 +223,7 @@ const SUB_KEYS = VIS.map(v => v[0]).filter(k => k !== 'placement');
 const SUB_TITLE = Object.fromEntries(VIS);
 // أي البنوك يحتاجها كل اشتراك (لتحميل بيانات الاختبارات المرتبطة كاملة)
 const SUB_LINKS = { 'muhaky mohawsab': ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
-const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'skills:kamy': ['computer_quant'], 'skills:lafzi': ['computer_verbal'] };
+const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'skills:kamy': ['computer_quant'], 'skills:lafzi': ['computer_verbal'] };
 const packageIncludes = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}; const groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; const need = PACKAGE_COURSE_GROUPS[key] || []; if (need.some(g => groups.includes(g))) return true; if (key === 'skills') return groups.includes('computer_quant') || groups.includes('computer_verbal'); return false; } catch (e) { return false; } };
 let acctReady = false;
 const ensureAcctSchema = async DB => {
@@ -277,8 +278,9 @@ html body:not(.bw-home) > main > :is(h1,h2,h3,p), html body:not(.bw-home) .wrap 
 html body:not(.bw-home) ${C} { background-color:${card} !important; color:${ct} !important; border-color:${bd} !important; }
 html body:not(.bw-home) ${C} :is(h1,h2,h3,h4,h5,p,li,label,th,td,b,strong,.stem,.qt,.sec,.qans,.ty):not(:is(.hero,.simtile,[class*=hero]) *) { color:${ct}; }
 html body:not(.bw-home) ${C} :is(.m,.sub,small,.d,.note,.hint):not(:is(.hero,.simtile,[class*=hero]) *) { color:${mu} !important; }
-html body:not(.bw-home) :is(.opt,.chip:not(.on),input,select,textarea,table td) { background-color:${card} !important; color:${ct} !important; border-color:${bd} !important; }
-html body:not(.bw-home) :is(.opt.on,.chip.on) { border-color:${pr} !important; }
+html body:not(.bw-home) :is(.opt:not(.on):not(.sel):not(.ok):not(.no):not(.right):not(.wrong),.chip:not(.on):not(.good):not(.mid):not(.low):not(.ok):not(.no),input,select,textarea,table td) { background-color:${card} !important; color:${ct} !important; border-color:${bd} !important; }
+html body:not(.bw-home) :is(.opt.on,.opt.sel,.chip.on) { background-color:${pr} !important; color:${bt} !important; border-color:${pr} !important; }
+html body:not(.bw-home) :is(input,textarea)::placeholder { color:${mu} !important; opacity:1; }
 html body:not(.bw-home) table th { background:${soft} !important; color:${sct} !important; }
 html body:not(.bw-home) :is(.btn-navy,.btn.primary,button.primary,#nx,#sNx,#next,[data-a=next],#bNext,.btn:not(.ghost):not(.soft):not(.red):not(.gold):not(.wa):not(.btn-soft):not(.btn-gold):not(.btn-line):not(.dan):not(.g):not(.r)) { background:${pr} !important; color:${bt} !important; border-color:${pr} !important; }
 html body:not(.bw-home) :is(.btn.ghost,.btn.soft,.btn-soft) { background:${soft} !important; color:${sct} !important; border-color:${bd} !important; }
@@ -390,7 +392,8 @@ const bankItems = async (env, request, DB, slug) => {
     const SN = Object.fromEntries(secs.map(x => [x.id, x.name]));
     qs = qs.filter(q => SN[q[1]] !== undefined);
     if (slug === 'aksam lafzi') items = qs.map(q => ({ key: String(q[0]), secId: q[1], sec: SN[q[1]], t: q[2], p: q[3] >= 0 && D.ps ? D.ps[q[3]] || '' : '', s: q[4], o: q[5], c: q[6] }));
-    else items = qs.map(q => { const m = /\/api\/exam\/img\/\d+/.exec(q[4] || ''); return { key: String(q[0]), secId: q[1], sec: SN[q[1]], img: m ? m[0] : '/img/' + q[0] + '.webp', c: q[6], h: q[7] || '' }; });
+    // صورة السؤال بنفس قاعدة صفحة المقرر (imgOk): المسار المكتوب في السؤال إن كانت الصفحة تقبله، وإلا img/رقم.webp
+    else items = qs.map(q => { const m = /\/api\/exam\/img\/\d+/.exec(q[4] || ''), sm = /src=["']([^"']+)["']/i.exec(q[4] || ''); let im = m ? m[0] : sm && c.imgOk && c.imgOk.test(sm[1]) ? sm[1] : 'img/' + q[0] + '.webp'; if (!/^(\/|https?:|data:)/i.test(im)) im = '/' + im; return { key: String(q[0]), secId: q[1], sec: SN[q[1]], img: im, c: q[6], h: q[7] || '' }; });
   }
   bankCache[slug] = { sig, items };
   return items;
@@ -1266,7 +1269,8 @@ export async function onRequest({ request, env, params }) {
       const sec = int(d[1]); if (!(sec > 0)) bad('اختر القسم');
       let t = int(d[2]) || 0, pi = int(d[3]), stem = txt(d[4], 6000), opts = (Array.isArray(d[5]) ? d[5] : []).slice(0, 5).map(x => txt(x, 800)), cor = int(d[6]);
       const hint = c.hints ? txt(d[7], 2000).trim() : '';
-      if (c.img) { const mm = /\/api\/exam\/img\/(\d+)/.exec(stem); const am = /<img[^>]*\ssrc="(assets\/images\/[^"]+)"/.exec(stem); stem = '<p><img src="' + (mm ? '/api/exam/img/' + mm[1] : am ? am[1] : 'img/' + id + '.webp') + '" alt="صورة السؤال"></p>'; opts = LETTERS.slice(); t = 0; pi = -1; }
+      // مسار الصورة: صورة مرفوعة، أو صورة في مجلد صور المقرر نفسه (imgOk، بأحرف آمنة فقط)، وإلا img/رقم.webp
+      if (c.img) { const mm = /\/api\/exam\/img\/(\d+)/.exec(stem); const am = /<img[^>]*\ssrc="(assets\/images\/[^"]+)"/.exec(stem); const om = /<img[^>]*\ssrc="([^"]+)"/.exec(stem), own = om && c.imgOk && c.imgOk.test(om[1]) && /^[\w%.\/-]+$/.test(om[1]) ? om[1] : ''; stem = '<p><img src="' + (mm ? '/api/exam/img/' + mm[1] : own || (am ? am[1] : 'img/' + id + '.webp')) + '" alt="صورة السؤال"></p>'; opts = LETTERS.slice(); t = 0; pi = -1; }
       else { if (!stem.trim()) bad('اكتب نص السؤال'); if (opts.length < 2 || opts.some(o => !o.trim())) bad('اكتب كل الاختيارات'); if (!(t >= 0 && t < 20)) t = 0; if (!(pi >= -1)) pi = -1; }
       if (!(cor >= 0 && cor < opts.length)) bad('اختر الإجابة الصحيحة');
       return hint ? [id, sec, t, pi, stem, opts, cor, hint] : [id, sec, t, pi, stem, opts, cor];
@@ -1385,6 +1389,21 @@ export async function onRequest({ request, env, params }) {
     if (!r || !(await courseRights(r.course))) return deny();
     await DB.prepare("UPDATE question_reports SET status='closed',handled_by=?,handled_at=? WHERE id=?").bind(A.name, iso, int(b.id)).run();
     return J({ ok: 1 });
+  }
+  // بلاغات الطلاب على الأسئلة من كل المقررات المسموحة للمستخدم، مع صورة السؤال أو نصه لمراجعته مباشرة
+  if (p === 'admin/qreports' && m === 'GET') {
+    await ensureMoodleSchema(DB);
+    const rows = await all("SELECT r.id,r.course,r.qkey,r.reason,r.note,r.created_at,s.name student FROM question_reports r LEFT JOIN students s ON s.id=r.student_id WHERE r.status='open' ORDER BY r.id DESC LIMIT 300");
+    const RT = {}, IT = {}, out = [];
+    for (const r of rows) {
+      const c = COURSE[r.course]; if (!c) continue;
+      if (!(r.course in RT)) RT[r.course] = await courseRights(r.course);
+      if (!RT[r.course]) continue;
+      if (!(r.course in IT)) { let its = []; try { its = await bankItems(env, request, DB, r.course); } catch (e) { } IT[r.course] = Object.fromEntries(its.map(x => [x.key, x])); }
+      const it = r.qkey ? IT[r.course][r.qkey] : null;
+      out.push({ id: r.id, course: r.course, title: c.title, url: '/' + c.file.replace(/^\//, '').replace(/\.html$/, ''), model: c.model, edit: !!RT[r.course].edit, key: r.qkey, reason: r.reason, note: r.note, student: r.student, at: r.created_at, img: it && it.img || null, q: it && !it.img && it.s !== undefined ? { p: it.p || '', s: it.s, o: it.o, c: it.c } : null });
+    }
+    return J({ items: out });
   }
   if (p === 'admin/exam/upload' && m === 'POST') {
     const b = await body(), c = COURSE[b.course], R = c && await courseRights(c.slug);

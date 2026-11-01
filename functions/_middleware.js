@@ -10,6 +10,8 @@ const DAY30 = 30 * 864e5;
 const COURSES = {
   'aksam kamy': { title: 'أقسام الكمي', model: 'bank', img: true, hints: true, url: '/aksam kamy' },
   'ak_kamyadd': { title: 'أقسام الكمي الإضافية', model: 'bank', img: true, hints: true, url: '/ak_kamyadd' },
+  // تأسيس الكمي حسب المهارة (صور الأسئلة في مجلد «tasis kamy img»)
+  'maharat kamy': { title: 'تأسيس الكمي حسب المهارة', model: 'bank', img: true, hints: true, url: '/maharat kamy' },
   'aksam lafzi': { title: 'أقسام اللفظي', model: 'bank', url: '/aksam lafzi' },
   // المحاكي المحوسب يُبنى تلقائيًا من أقسام الكمي واللفظي (أي قسم جديد فيهما يظهر فيه مباشرة)
   'muhaky mohawsab': { title: 'المحاكي المحوسب', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] },
@@ -24,7 +26,7 @@ const COURSES = {
 // skills: مهارات اللفظي في «التأسيس حسب المهارة» تُبنى تلقائيًا من هذه البنوك حسب نوع كل سؤال
 // (أي ملف لفظي محوسب جديد يُضاف اسمه هنا فتنسحب أسئلته لمهاراتها مباشرة، مع تعديلات المعلمين)
 const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
-const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'skills': ['computer_quant', 'computer_verbal'] };
+const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'skills': ['computer_quant', 'computer_verbal'] };
 const packageAllows = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}, groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; return (PACKAGE_COURSE_GROUPS[key] || []).some(g => groups.includes(g)); } catch (e) { return false; } };
 // النسخة المجانية: تُحذف من الصفحة نفسها أسئلة الأجزاء المقفولة (لا تصل للمتصفح أصلًا).
 // نفس الدالة موجودة في functions/api/[[path]].js

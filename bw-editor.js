@@ -116,7 +116,11 @@
   // ---------- بنك الأسئلة ----------
   var secName = function (id) { var s = D.secs.filter(function (x) { return x.id === id; })[0]; return s ? s.name : ''; };
   var secQs = function (id) { return D.qs.filter(function (a) { return a[1] === id; }); };
-  var qImg = function (a) { var m = /\/api\/exam\/img\/\d+/.exec(a[4] || ''); if (m) return m[0]; var as = /\ssrc="(assets\/images\/[^"]+)"/.exec(a[4] || ''); return as ? as[1] : 'img/' + a[0] + '.webp'; };
+  // صورة السؤال كما يراها الطالب: بدالة الصفحة نفسها (كل مقرر له مجلد صوره وقاعدته)، وإلا بالقاعدة القديمة
+  var qImg = function (a) {
+    var pf = g('img'); if (typeof pf === 'function') { try { var hm = /src="([^"]+)"/.exec(pf({ text: String(a[4] || ''), id: a[0] }) || ''); if (hm) return hm[1]; } catch (e) { } }
+    var m = /\/api\/exam\/img\/\d+/.exec(a[4] || ''); if (m) return m[0]; var as = /\ssrc="(assets\/images\/[^"]+)"/.exec(a[4] || ''); return as ? as[1] : 'img/' + a[0] + '.webp';
+  };
   function badge(kind, key) { var p = patched[kind + '|' + key]; if (!p || p === 'del') return ''; return inBase(kind, key) ? '<span class="b mod">معدّل</span>' : '<span class="b new">مضاف</span>'; }
   function viewHome() {
     var h = '';
@@ -201,7 +205,8 @@
     syncQ(); var q = E.q, a = q.a, ops = [];
     if (C.img) {
       if (!q.img) { toast('ارفع صورة السؤال أولًا', 'err'); return; }
-      a[4] = /^(\/api\/|assets\/images\/)/.test(q.img) ? '<p><img src="' + q.img + '" alt="صورة السؤال"></p>' : '<p><img src="img/' + a[0] + '.webp" alt="صورة السؤال"></p>'; a[5] = L.slice(); a[2] = 0; a[3] = -1;
+      // يُحفظ مسار الصورة كما هو (صورة مرفوعة جديدة أو مسار الصورة الحالي في مجلد المقرر) حتى لا تتبدل صورة السؤال
+      a[4] = '<p><img src="' + String(q.img).replace(/"/g, '%22') + '" alt="صورة السؤال"></p>'; a[5] = L.slice(); a[2] = 0; a[3] = -1;
     } else {
       if (!String(a[4]).trim()) { toast('اكتب نص السؤال', 'err'); return; }
       while (a[5].length && !String(a[5][a[5].length - 1]).trim() && a[5].length > 2 && a[6] < a[5].length - 1) a[5].pop();
@@ -447,6 +452,6 @@
   if (/[?&](edit|admin)\b/.test(location.search)) {
     var u = new URL(location.href), oq = u.searchParams.get('q'); u.searchParams.delete('edit'); u.searchParams.delete('admin'); u.searchParams.delete('q'); history.replaceState(null, '', u.toString());
     // ?edit=1&q=رقم يفتح السؤال مباشرة (من تقارير المقرر: «الأسئلة الأكثر خطأ»)
-    setTimeout(function () { open(); if (oq && D && M === 'static' && R.edit) startSt(+oq); if (oq && D && M === 'bank' && R.edit) { var rq = D.qs.filter(function (q) { return String(q[0]) === oq; })[0]; if (rq) { E.sec = rq[1]; startQ(rq[0]); } } }, 0);
+    setTimeout(function () { open(); if (oq && D && M === 'static' && R.edit) startSt(+oq); if (oq && D && M === 'bank' && R.edit) { var rq = D.qs.filter(function (q) { return String(q[0]) === oq; })[0]; if (rq) { E.sec = rq[1]; startQ(rq[0]); } } if (oq && D && M === 'raw' && R.edit && RAWK) { var ri = RAWK.indexOf(oq); if (ri >= 0) { E.q = { a: clone(D[ri]), isNew: false, i: ri }; E.view = 'q'; draw(); } } }, 0);
   }
 })();

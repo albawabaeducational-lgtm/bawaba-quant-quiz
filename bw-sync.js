@@ -11,11 +11,21 @@
     var M = meta(), items = {};
     keys.forEach(function (k) { var v = origGet.call(L, k); if (v != null) items[k] = { v: v, t: M.t[k] || Date.now() }; });
     dirty = {};
-    var body = JSON.stringify({ items: items });
-    try {
-      if (useBeacon && navigator.sendBeacon) navigator.sendBeacon('/api/progress', new Blob([body], { type: 'application/json' }));
-      else fetch('/api/progress', { method: 'POST', headers: { 'content-type': 'application/json' }, body: body, keepalive: true, credentials: 'same-origin' }).catch(function () { keys.forEach(function (k) { dirty[k] = 1; }); });
-    } catch (e) { }
+    // المتصفح يرفض طلبات keepalive وsendBeacon الأكبر من ٦٤ كيلوبايت؛ فالبيانات الكبيرة تُرسل بطلب عادي،
+    // وكل مفتاح كبير يُرسل وحده حتى لا يمنع حفظ بقية المفاتيح. وعند الفشل تُعاد المحاولة لاحقًا.
+    var small = {}, big = [], size = 0;
+    Object.keys(items).forEach(function (k) { var n = items[k].v.length + k.length + 40; if (size + n < 60000) { small[k] = items[k]; size += n; } else big.push(k); });
+    var retry = function (ks) { ks.forEach(function (k) { dirty[k] = 1; }); if (!timer) timer = setTimeout(flush, 15000); };
+    var send = function (obj, ka) {
+      var ks = Object.keys(obj); if (!ks.length) return; var body = JSON.stringify({ items: obj });
+      try {
+        if (ka && useBeacon && navigator.sendBeacon && navigator.sendBeacon('/api/progress', new Blob([body], { type: 'application/json' }))) return;
+        fetch('/api/progress', { method: 'POST', headers: { 'content-type': 'application/json' }, body: body, keepalive: !!ka, credentials: 'same-origin' })
+          .then(function (r) { if (!r.ok) retry(ks); }).catch(function () { retry(ks); });
+      } catch (e) { retry(ks); }
+    };
+    send(small, true);
+    big.forEach(function (k) { var o = {}; o[k] = items[k]; send(o, false); });
   }
   function mark(k) {
     var M = meta(); M.t[k] = Date.now(); orig.call(L, 'bw-sync-meta', JSON.stringify(M));
