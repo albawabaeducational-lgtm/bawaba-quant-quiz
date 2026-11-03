@@ -443,7 +443,12 @@ body.testing .side { margin: 0; overflow: auto; }
   // يكمل المؤقت من حيث كان عند العودة للصفحة
   var r0 = get(K.run, null);
   if (r0 && r0.ids && !r0.done && r0.total && !r0.paused && Date.now() - r0.t0 >= r0.total * 1000) { R = r0; finish(true); }
-  else home();
+  else {
+    home();
+    // فتح نموذج مباشرة من «خطتي»: warky kamy1447.html#model=3
+    var mh = /^#model=(\d+)$/.exec(location.hash), M0 = mh ? MODELS[+mh[1] - 1] : null;
+    if (M0) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } start(M0.ids.slice(), { kind: 'model', model: M0.id }); }
+  }
 })();
 </script>
 <script src="bw-shell.js"></script>

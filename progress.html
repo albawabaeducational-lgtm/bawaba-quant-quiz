@@ -112,6 +112,79 @@
     .study-table tr.is-today { box-shadow: inset 4px 0 0 var(--bw-gold); }
     .study-table tr.is-today > th { background:#fff8e6; }
     .today-tag { display:inline-block; background:var(--bw-gold); color:var(--bw-night); font-size:11px; font-weight:700; border-radius:99px; padding:0 8px; margin-inline-end:6px; }
+    /* ===== خطط الاستعداد (bw-plan.js) ===== */
+    .study-plan-page .card { margin-bottom: 16px; }
+    .pv-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+    .pv-top h2 { margin:2px 0 4px; font-size:clamp(20px,3vw,26px); color:var(--bw-navy); }
+    .pv-k { color:#8a5a00; font-weight:700; background:var(--bw-gold-soft); border-radius:99px; padding:2px 12px; font-size:13px; }
+    .pv-prog { margin-top:10px; color:var(--bw-navy); }
+    .pv-late { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; background:#fff4e5; border:1px solid #f1d28a; color:#7a4b00; border-radius:16px; padding:12px 16px; margin-bottom:16px; font-weight:600; }
+    .pv-ok { color:#17633f !important; font-weight:600; }
+    .pv-list { list-style:none; margin:6px 0 0; padding:0; display:grid; gap:8px; }
+    .pv-list li { display:flex; align-items:center; gap:10px; background:#f7f9fc; border:1px solid var(--bw-line); border-radius:12px; padding:9px 12px; }
+    .pv-list li.st-done { background:#f1faf5; border-color:#c9ead8; }
+    .pv-n { flex:1; min-width:0; display:flex; flex-direction:column; }
+    .pv-n b { color:var(--bw-navy); font-size:14.5px; }
+    .pv-n small { color:#5a6b80; font-size:12.5px; }
+    .pv-n em { color:#b4321f; font-style:normal; font-weight:700; }
+    .pv-more > summary { cursor:pointer; font-weight:700; color:var(--bw-navy); }
+    .pv-days { display:grid; gap:10px; margin-top:12px; }
+    .pv-day { border:1px solid var(--bw-line); border-radius:14px; padding:10px 12px; }
+    .pv-day.done { background:#eef8f1; } .pv-day.is-today { box-shadow:0 0 0 2px var(--bw-gold); }
+    .pv-dh { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .pv-dh b { color:var(--bw-navy); } .pv-dh .m { margin:0; flex:1; }
+    .wz h2 { margin:6px 0 4px; color:var(--bw-navy); font-size:clamp(20px,3vw,24px); }
+    .wz-steps { list-style:none; display:flex; gap:6px; flex-wrap:wrap; margin:0 0 10px; padding:0; }
+    .wz-steps li { font-size:12.5px; font-weight:600; color:#8494a8; background:#f1f5f9; border-radius:99px; padding:3px 12px; }
+    .wz-steps li.on { background:var(--bw-navy); color:#fff; } .wz-steps li.ok { background:#e1f4ea; color:#17633f; }
+    .wz-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:14px; }
+    .wz-card { display:flex; flex-direction:column; gap:4px; text-align:right; background:#fff; border:2px solid var(--bw-line); border-radius:16px; padding:18px; font:inherit; cursor:pointer; transition:border-color .15s, transform .15s; }
+    .wz-card:hover { border-color:var(--bw-gold); transform:translateY(-2px); }
+    .wz-card b { font-size:18px; color:var(--bw-navy); } .wz-card small { color:#5a6b80; font-size:13.5px; }
+    .wz-rec { margin:12px 0 0; background:#f5f8fc; border-radius:14px; padding:12px 14px; line-height:1.9; color:#3b4b60; }
+    .wz-rec a { color:#1769aa; font-weight:700; } .rk-g { color:#17633f; } .rk-o { color:#8a5a00; }
+    .wz-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:12px 0; }
+    .wz-row > span { font-weight:700; color:var(--bw-navy); margin-inline-end:4px; }
+    .chip { font:600 14px "IBM Plex Sans Arabic", Tahoma, sans-serif; border:1.5px solid var(--bw-line); background:#fff; color:#142338; border-radius:12px; padding:8px 14px; cursor:pointer; text-align:center; }
+    .chip small { display:block; font-size:11.5px; color:#5a6b80; font-weight:500; }
+    .chip.on { background:var(--bw-navy); border-color:var(--bw-navy); color:#fff; } .chip.on small { color:#c3d3e4; }
+    .wz-src { border:1px solid var(--bw-line); border-radius:14px; padding:10px 12px; margin:8px 0; background:#fff; }
+    .wz-src > summary { cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .wz-src > summary .m { margin:0; font-size:13px; }
+    .wz-sl { display:flex; align-items:center; gap:8px; color:var(--bw-navy); }
+    .wz-sl input, .wz-u input { width:18px; height:18px; accent-color:var(--bw-navy); }
+    .wz-units { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:4px 12px; margin-top:10px; max-height:360px; overflow:auto; padding:2px; }
+    .wz-g { grid-column:1/-1; font-weight:700; color:#8a5a00; font-size:13px; margin-top:8px; }
+    .wz-u { display:flex; align-items:center; gap:6px; font-size:13.5px; padding:3px 0; }
+    .wz-u small { color:#8494a8; }
+    .wz-sum { margin-top:12px; background:#f5f8fc; border-radius:14px; padding:12px 14px; line-height:2; color:#3b4b60; }
+    .wz-warn { color:#b4321f; font-weight:600; }
+    .wz-nav { display:flex; justify-content:space-between; gap:10px; margin-top:16px; }
+    .btn:disabled { opacity:.45; cursor:default; }
+    .pv-acts { display:flex; gap:8px; flex-wrap:wrap; }
+    .pv-on { color:#17633f; font-weight:700; } .pv-off { color:#b4321f; font-weight:700; }
+    .pv-th { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+    .pv-th h3 { margin:0; }
+    .pv-sug { border-color:#f1d28a; background:#fffcf3; }
+    .pv-sug .row, .pv-edit .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .pv-edit { border:2px solid var(--bw-gold); }
+    .pv-pause { background:#eef4fb; border-color:#c3d6e8; color:var(--bw-navy); }
+    .pv-rv { background:#f5f8fc; border-style:dashed; }
+    .wz-goal { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:#f7f9fc; border:1px solid var(--bw-line); border-radius:14px; padding:10px 12px; margin:10px 0; }
+    .wz-goal > b { min-width:110px; color:var(--bw-navy); } .wz-goal > b small { color:#5a6b80; font-weight:500; }
+    .wz-goal .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .chip small { color:#8a5a00; } .chip.on small { color:var(--bw-gold); }
+    .wz-hint { font-size:12.5px !important; }
+    .wz-chk { display:flex; align-items:center; gap:8px; margin:10px 0; font-weight:600; color:var(--bw-navy); }
+    .wz-chk input { width:18px; height:18px; accent-color:var(--bw-navy); }
+    .wz-cap { display:flex; align-items:center; gap:6px; font-size:13.5px; color:#5a6b80; }
+    .wz-cap input, .wz-row input[type=date], .pv-edit input[type=date] { width:120px; min-height:40px; padding:6px 10px; border:1px solid var(--bw-line); border-radius:10px; font:inherit; background:#fff; }
+    .wz-row input[type=date], .pv-edit input[type=date] { width:170px; }
+    .wz-fix { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .wz-main { border-color:var(--bw-gold); background:#fffaf0; }
+    .wz-custom > summary b { color:var(--bw-navy); }
+    .study-plan-page h1 { margin:0 0 14px; }
+    @media (max-width: 720px) { .pv-list li { flex-wrap:wrap; } .pv-list li .btn { margin-inline-start:auto; } .wz-units { grid-template-columns:1fr; } .wz-nav .btn { flex:1; } }
     /* الجوال: كل يوم بطاقة مستقلة بدل جدول عريض يحتاج تمريرًا جانبيًا */
     @media (max-width: 720px) {
       .pw { width: calc(100% - 24px); margin-top: 22px; }
@@ -419,19 +492,14 @@
     if (sc && keepTop !== null) sc.scrollTop = keepTop;
     else if (sc && tr && !scrolled) { scrolled = true; var head = sc.querySelector('thead'); sc.scrollTop = Math.max(0, tr.offsetTop - (head ? head.offsetHeight : 0) - 6); }
   }
-  // عند الرجوع للخطة من صفحة اختبار (زر الرجوع أو تبويب آخر) تُقرأ النتائج من جديد
-  addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
-  addEventListener('storage', function (e) { if (!e.key || /stats-v1$/.test(e.key) || e.key === PLAN_KEY) draw(); });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && GOAL.exam && BANK_COUNTS) draw(); });
-  try { sessionStorage.removeItem('bw-plan-return'); } catch (e) { }
-  draw();
-  if (GOAL.exam) { PLAN_STATUS = 'loading'; loadExamCounts(); }
+  // صفحة «خطتي» تعرضها الآن خطط الاستعداد الجديدة (bw-plan.js)، والخطة القديمة تُرحَّل إليها تلقائيًا
   // أسماء الأقسام من ملفات الأقسام نفسها (تُحمّل في الخلفية)
   function loadNames(sj) {
     fetch('/api/exam/secs?c=' + encodeURIComponent(SUBJ[sj].slug)).then(function (r) { return r.json(); }).then(function (d) { if (d.secs) { names[sj] = {}; d.secs.forEach(function (x) { names[sj][x.id] = x.name; }); draw(); } }).catch(function () { });
   }
 })();
 </script>
+<script src="/bw-plan.js"></script>
 <script src="/bw-shell.js"></script>
 <script src="/bw-theme-toggle.js" defer></script></body>
 </html>

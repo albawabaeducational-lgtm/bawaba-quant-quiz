@@ -127,6 +127,7 @@
     .psbar button:active { background: #d3e0ff; }
     #app .card:has(.psg) .stem { font-size: 17px !important; line-height: 1.75 !important; margin-bottom: 8px !important; }
     #app .card:has(.psg) .opt { font-size: 15px !important; font-weight: 600 !important; }
+.plan-go{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#fff8e6;border:2px solid #e3a92b;border-radius:18px;padding:14px 18px;margin:0 0 16px}.plan-go b{display:block;color:#0c2440;font-size:17px}.plan-go span{color:#5a6b80;font-size:14px}
 </style>
 <link rel="stylesheet" href="/api/site-colors.css"></head>
 <body class="bwt-hub">
@@ -199,7 +200,7 @@
         + (last ? '<div class="prev">آخر مرة: ' + esc(last.lvl) + ' بنسبة ' + AR(last.p) + '٪ (' + new Date(last.d).toLocaleDateString('ar-SA-u-nu-arab', { day: 'numeric', month: 'long' }) + '). أعد الاختبار لترى تقدمك.</div>' : '')
         + '<div class="card"><div class="facts" style="margin-top:0"><div><b>' + AR(Q.length) + '</b><span>سؤالًا</span></div><div><b>~' + AR(Q.length) + '</b><span>دقيقة تقريبًا</span></div><div><b>٥</b><span>مهارات لفظية + الكمي</span></div></div>'
         + '<ul class="how"><li>الأسئلة مختارة عشوائيًا من بنوك المنصة، فكل محاولة مختلفة.</li><li>لا يوجد مؤقت إجباري، لكن حاول أن تجيب في دقيقة تقريبًا لكل سؤال كالاختبار الحقيقي.</li><li>أجب حتى لو لم تكن متأكدًا؛ الهدف معرفة مستواك الحقيقي.</li><li>في النهاية تحصل على تقرير بمستواك في كل مهارة، وتُحفظ أخطاؤك في مجلد الأسئلة الخاطئة.</li></ul>'
-        + '<button class="btn btn-gold" id="go">ابدأ الاختبار</button></div>';
+        + '<button class="btn btn-gold" id="go">ابدأ الاختبار</button>' + (function () { try { return sessionStorage.getItem('bw-plan-flow') ? '<p class="note" style="margin:10px 0 0">بعد ما تخلّص هترجع لخطتك على طول.</p>' : ''; } catch (x) { return ''; } })() + '</div>';
       document.getElementById('go').onclick = start;
     }
     function start() {
@@ -260,6 +261,8 @@
         + '<p class="note" style="text-align:start;margin:10px 0 0">الوقت: ' + fmt(used) + ' دقيقة · عدد الأسئلة قليل، فاعتبر النتيجة مؤشرًا لمستواك وليست درجة نهائية.</p></div>';
       if (wrong.length) h += '<div class="card" id="review"><h3>حلول الأسئلة التي أخطأت فيها</h3>' + wrong.map(function (i, j) { var q = Q[i], a = q.a, pq = j ? Q[wrong[j - 1]].a : null, same = q.s === 'v' && pq && a[3] >= 0 && pq[3] === a[3] && pq[1] === a[1], opt = function (k) { return q.s === 'k' ? L[k] : L[k] + ') ' + esc(a[5][k]); }; return '<div class="rv">' + (q.s === 'v' ? '<span class="ty">' + TYN[a[2]] + '</span>' : '') + stemHtml(q, same) + '<div class="ans">' + (ans[i] === undefined ? '<span class="x">لم تجب</span>' : 'إجابتك: <span class="x">' + opt(ans[i]) + '</span>') + ' · الصحيحة: <span class="ok">' + opt(a[6]) + '</span></div></div>'; }).join('') + '</div>';
       h += '<p style="text-align:center"><button class="btn btn-soft" id="again">أعد اختبار تحديد المستوى</button>' + (wrong.length ? ' <button class="btn btn-navy" id="practiceWrong">أعد تدريب الخاطئ والمتروك (' + AR(wrong.length) + ')</button>' : '') + '</p>';
+      // «خطتي»: تحديد المستوى أول خطوة في الخطة؛ بعد النتيجة يكمل الطالب بناء خطته عليها
+      if (!practiceRun) { var flow = null; try { flow = JSON.parse(sessionStorage.getItem('bw-plan-flow') || 'null'); } catch (x) { } h = '<div class="plan-go"><div><b>' + (flow ? (flow.check ? '✓ تم قياس تقدمك' : '✓ تم تحديد مستواك') : 'ابنِ خطتك على مستواك ده') + '</b><span>' + (flow ? (flow.check ? 'ارجع لخطتك وشوف اتحسنت قد إيه.' : 'كمّل بناء خطتك: بنختار لك الهدف المناسب لكل قسم.') : 'خطة يومية بالمهارات اللي محتاجها، على قد وقتك.') + '</span></div><a class="btn btn-gold" href="/progress.html">' + (flow ? 'كمّل لخطتي ←' : 'ابنِ خطتي ←') + '</a></div>' + h; }
       app.innerHTML = h; scrollTo(0, 0);
     }
     app.addEventListener('click', function (e) {
