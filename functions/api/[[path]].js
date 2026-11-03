@@ -123,7 +123,8 @@ const COURSES = [
   { slug: 'muhaky warky2', title: 'المحاكي الورقي – النموذج الثاني', file: '/muhaky warky2.html', model: 'key' },
   { slug: 'tasis lafzi', title: 'تأسيس اللفظي', file: '/tasis lafzi.html.html', model: 'raw' },
   { slug: 'ikmal_aljumal', title: 'إكمال الجمل', file: '/ikmal_aljumal.html', model: 'raw' },
-  { slug: 'aktar kamy', title: 'الأسئلة الأكثر تكرارًا – كمي', file: '/aktar kamy.html', model: 'static' } // بنك صور: تصنيف المهارات والتقارير فقط
+  { slug: 'aktar kamy', title: 'الأسئلة الأكثر تكرارًا – كمي', file: '/aktar kamy.html', model: 'static' }, // بنك صور: تصنيف المهارات والتقارير فقط
+  { slug: 'warky kamy1447', title: 'تجميعات الورقي 1447 هـ', file: '/warky kamy1447.html', model: 'static', imgPat: '/warky-kamy-img/{id}.webp' } // بنك صور ثابت مثل «الأكثر تكرارًا»
 ];
 const COURSE = Object.fromEntries(COURSES.map(c => [c.slug, c]));
 const KINDS = { bank: ['q', 's', 'p', 'o'], raw: ['r'], key: ['k'], linked: [], static: ['ak', 'ah', 'ai', 'ax'] };
@@ -417,7 +418,7 @@ const bankItems = async (env, request, DB, slug) => {
     const MN = Object.fromEntries((D.models || []).map(m => [m.id, m.name]));
     const SP = { ak: {}, ah: {}, ai: {}, ax: {} }; try { for (const r of ((await DB.prepare("SELECT kind,key,data FROM exam_patch WHERE course=? AND kind IN ('ak','ah','ai','ax') AND deleted=0").bind(slug).all()).results || [])) SP[r.kind][r.key] = JSON.parse(r.data); } catch (e) { }
     const { ak: AK, ah: AH, ai: AI, ax: AX } = SP;
-    items = D.qs.filter(q => !AX[q[0]]).map(q => ({ key: String(q[0]), sec: MN[q[1]] || '', img: AI[q[0]] || '/mt/' + String(q[0]).padStart(4, '0') + '.webp', c: AK[q[0]] !== undefined ? AK[q[0]] : q[2], h: AH[q[0]] !== undefined ? AH[q[0]] : (q[3] || '') }));
+    items = D.qs.filter(q => !AX[q[0]]).map(q => ({ key: String(q[0]), sec: MN[q[1]] || '', img: AI[q[0]] || (c.imgPat ? c.imgPat.replace('{id}', q[0]) : '/mt/' + String(q[0]).padStart(4, '0') + '.webp'), c: AK[q[0]] !== undefined ? AK[q[0]] : q[2], h: AH[q[0]] !== undefined ? AH[q[0]] : (q[3] || '') }));
   } else {
     let secs = D.secs.slice(), qs = D.qs.slice();
     let rows = []; try { rows = (await DB.prepare('SELECT kind,key,data,deleted FROM exam_patch WHERE course=? ORDER BY created_at,rowid').bind(slug).all()).results || []; } catch (e) { }

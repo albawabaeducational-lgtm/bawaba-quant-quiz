@@ -20,7 +20,9 @@ const COURSES = {
   'tasis lafzi': { title: 'تأسيس اللفظي', model: 'raw' },
   'ikmal_aljumal': { title: 'إكمال الجمل', model: 'raw' },
   // بنك صور ثابت: يعدّل المعلم الإجابة والإرشاد وصورة السؤال، أو يخفي السؤال
-  'aktar kamy': { title: 'الأسئلة الأكثر تكرارًا – كمي', model: 'static', img: true, hints: true, url: '/aktar kamy' }
+  'aktar kamy': { title: 'الأسئلة الأكثر تكرارًا – كمي', model: 'static', img: true, hints: true, url: '/aktar kamy' },
+  // تجميعات الورقي 1447 هـ: بنك صور ثابت مثل «الأكثر تكرارًا» (صور الأسئلة في warky-kamy-img/)
+  'warky kamy1447': { title: 'تجميعات الورقي 1447 هـ', model: 'static', img: true, hints: true, url: '/warky kamy1447', imgPat: 'warky-kamy-img/{id}.webp' }
 };
 // صفحات ليست مقررات لكنها تقرأ أسئلة المقررات (مع تعديلات المعلمين): اختبار تحديد المستوى
 // skills: مهارات اللفظي في «التأسيس حسب المهارة» تُبنى تلقائيًا من هذه البنوك حسب نوع كل سؤال
@@ -153,8 +155,8 @@ export async function onRequest({ request, env, next }) {
   }
   let head = (course || links.length) ? `<script>window.__BWX=${safeJson({ c: course || slug, p: patches, linked })}</script><script src="/bw-content.js"></script>` + links.map(l => `<script src="/api/exam/data?c=${encodeURIComponent(l)}"></script>`).join('') : '';
   // الأكثر تكرارًا (بنك صور ثابت): تصحيحات مفاتيح الإجابات المعتمدة من «مراجعة الإجابات» في لوحة التحكم
-  if (slug === 'aktar kamy') {
-    try { const P = { ak: {}, ah: {}, ai: {}, ax: {} }; for (const r of ((await env.DB.prepare("SELECT kind,key,data FROM exam_patch WHERE course='aktar kamy' AND kind IN ('ak','ah','ai','ax') AND deleted=0").all()).results || [])) P[r.kind][r.key] = JSON.parse(r.data); for (const k of Object.keys(P)) if (Object.keys(P[k]).length) head += `<script>window.__BW${k.toUpperCase()}=${safeJson(P[k])}</script>`; } catch (e) { }
+  if (course && COURSES[course].model === 'static') {
+    try { const P = { ak: {}, ah: {}, ai: {}, ax: {} }; for (const r of ((await env.DB.prepare("SELECT kind,key,data FROM exam_patch WHERE course=? AND kind IN ('ak','ah','ai','ax') AND deleted=0").bind(course).all()).results || [])) P[r.kind][r.key] = JSON.parse(r.data); for (const k of Object.keys(P)) if (Object.keys(P[k]).length) head += `<script>window.__BW${k.toUpperCase()}=${safeJson(P[k])}</script>`; } catch (e) { }
   }
   const paused = !!st && (st.pause_until || 0) > now;
   const valid = !!st && st.status === 'active' && (!st.expires_at || st.expires_at > iso) && !paused;
@@ -212,7 +214,7 @@ export async function onRequest({ request, env, next }) {
     if (staff.super) [course].concat(links).forEach(c => mine[c] = { edit: true, add: true, delete: true });
     else { try { for (const r of (await env.DB.prepare('SELECT course,can_edit,can_add,can_delete FROM course_staff WHERE staff_id=?').bind(staff.id).all()).results) mine[r.course] = { edit: !!r.can_edit, add: !!r.can_add, delete: !!r.can_delete }; } catch (e) { } }
     const C = COURSES[course];
-    const ed = `<script>window.__BWE=${safeJson({ course, title: C.title, model: C.model, img: !!C.img, hints: !!C.hints, rights: mine[course] || null, name: staff.name, super: staff.super, links: links.map(l => ({ slug: l, title: COURSES[l].title, url: COURSES[l].url, rights: mine[l] || null })) })}</script><script src="/bw-editor.js"></script>`;
+    const ed = `<script>window.__BWE=${safeJson({ course, title: C.title, model: C.model, img: !!C.img, hints: !!C.hints, imgPat: C.imgPat || '', rights: mine[course] || null, name: staff.name, super: staff.super, links: links.map(l => ({ slug: l, title: COURSES[l].title, url: COURSES[l].url, rights: mine[l] || null })) })}</script><script src="/bw-editor.js"></script>`;
     return serve(ed);
   }
 

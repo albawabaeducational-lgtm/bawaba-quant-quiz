@@ -246,7 +246,7 @@
 
   // ---------- بنك صور ثابت (الأكثر تكرارًا): الإجابة والإرشاد وصورة السؤال وإخفاؤه ----------
   var SAI = clone(window.__BWAI || {}), SAX = clone(window.__BWAX || {});
-  var stImg = function (id) { return SAI[id] || 'mt/' + String(id).padStart(4, '0') + '.webp'; };
+  var stImg = function (id) { return SAI[id] || (C.imgPat ? C.imgPat.replace('{id}', id) : 'mt/' + String(id).padStart(4, '0') + '.webp'); };
   var stMod = function (id) { return ['ak', 'ah', 'ai', 'ax'].some(function (k) { return patched[k + '|' + id] === 1; }); };
   var stModel = function (id) { var m = (D.models || []).filter(function (x) { return x.id === id; })[0]; return m ? m.name : 'نموذج ' + id; };
   function stRow(a, withModel) {
