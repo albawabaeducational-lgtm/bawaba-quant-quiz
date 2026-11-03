@@ -91,6 +91,47 @@
     .study-date-row input { max-width:220px; min-height:42px; padding:8px 12px; border:1px solid var(--bw-line); border-radius:10px; background:#fff; color:var(--bw-ink); font:inherit; }
     .study-date-row [role="status"] { color:#17633f; font-size:14px; }
     .study-plan-page { max-width:1080px; margin:0 auto; }
+    /* الإنجاز التلقائي والأقسام التفاعلية */
+    .plan-prog { background:#f5f8fc; border:1px solid var(--bw-line); border-radius:14px; padding:12px 14px; margin:0 0 14px; }
+    .pp-top { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; color:var(--bw-navy); }
+    .pp-top .btn { white-space:normal; text-align:center; line-height:1.4; padding:9px 14px; font-size:14px; }
+    .pp-all { color:#17633f; font-weight:700; }
+    .pp-legend { margin:6px 0 0; font-size:12.5px; color:#5a6b80; line-height:1.9; }
+    .st { display:inline-grid; place-items:center; width:20px; height:20px; border-radius:50%; font-size:12px; font-style:normal; font-weight:700; flex:none; vertical-align:middle; }
+    .st.st-done { background:#1d8a58; color:#fff; } .st.st-part { background:#fff1cc; color:#8a5a00; } .st.st-new { background:#eef3f8; color:#8a99ad; }
+    .study-table ul.secs { list-style:none; margin:6px 0 0; padding:0; display:grid; gap:4px; }
+    .study-table ul.secs li { display:flex; align-items:center; gap:7px; font-size:13px; line-height:1.5; }
+    .study-table ul.secs li em { font-style:normal; color:#5a6b80; font-size:12px; white-space:nowrap; margin-inline-start:auto; }
+    .study-table ul.secs li.st-done em { color:#17633f; font-weight:600; }
+    .sec-go { background:none; border:0; padding:2px 0; font:inherit; color:var(--bw-navy); text-align:right; cursor:pointer; text-decoration:underline; text-decoration-color:#b9c8d8; text-underline-offset:3px; min-width:0; }
+    .sec-go:hover, .sec-go:focus-visible { color:#1769aa; text-decoration-color:currentColor; }
+    li.st-done .sec-go { color:#2f5d46; }
+    .btn.sm { padding:6px 12px; font-size:13px; border-radius:10px; margin-top:8px; white-space:normal; text-align:center; }
+    .auto-st { font-size:12.5px; color:#5a6b80; margin-bottom:6px; white-space:nowrap; }
+    .auto-st.ok { color:#17633f; font-weight:700; }
+    .study-table tr.is-today { box-shadow: inset 4px 0 0 var(--bw-gold); }
+    .study-table tr.is-today > th { background:#fff8e6; }
+    .today-tag { display:inline-block; background:var(--bw-gold); color:var(--bw-night); font-size:11px; font-weight:700; border-radius:99px; padding:0 8px; margin-inline-end:6px; }
+    /* الجوال: كل يوم بطاقة مستقلة بدل جدول عريض يحتاج تمريرًا جانبيًا */
+    @media (max-width: 720px) {
+      .pw { width: calc(100% - 24px); margin-top: 22px; }
+      .card { padding: 16px; }
+      .schedule-scroll { max-height: none; overflow: visible; border: 0; }
+      .study-table { min-width: 0; display: block; }
+      .study-table thead { display: none; }
+      .study-table tbody { display: grid; gap: 10px; }
+      .study-table tr { display: block; border: 1px solid var(--bw-line); border-radius: 14px; overflow: hidden; background: #fff; }
+      .study-table tbody tr.done { background: #eef8f1; }
+      .study-table th, .study-table td { display: block; border-bottom: 1px solid #eef3f8; padding: 9px 12px; }
+      .study-table td:last-child { border-bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .study-table td:last-child .auto-st { margin: 0; }
+      .study-table th { background: #eaf2f9; color: var(--bw-navy); }
+      .study-table td[data-l]::before { content: attr(data-l); display: block; font-size: 12px; font-weight: 700; color: #5a6b80; margin-bottom: 2px; }
+      .study-table td:last-child::before { display: none; }
+      .study-table tr.is-today { box-shadow: 0 0 0 2px var(--bw-gold); }
+      .study-table ul.secs li { flex-wrap: wrap; }
+      .study-date-row input { max-width: none; flex: 1 1 180px; }
+    }
   </style>
 <link rel="stylesheet" href="/api/site-colors.css"></head>
 <body class="bwt-hub">
@@ -238,7 +279,7 @@
     Object.keys(BANK_COUNTS || {}).forEach(function (slug, si) {
       var bank = BANK_COUNTS[slug]; if (!bank || !Array.isArray(bank.sections)) return;
       var key = bank.subject === 'v' ? 'v' : 'q';
-      bank.sections.slice().sort(function (a, b) { return (+a.id) - (+b.id); }).forEach(function (s) { flat[key].push({ id: String(s.id), name: s.name, questions: +s.questions || 0, bank: bank.title, sourceOrder: si }); });
+      bank.sections.slice().sort(function (a, b) { return (+a.id) - (+b.id); }).forEach(function (s) { flat[key].push({ id: String(s.id), name: s.name, questions: +s.questions || 0, bank: bank.title, slug: slug, sourceOrder: si }); });
     });
     var planDays = [];
     for (var i = 0; i < days; i++) planDays.push({ date: dateKey(new Date(st.getFullYear(), st.getMonth(), st.getDate() + i, 12)), q: [], v: [], qn: 0, vn: 0 });
@@ -260,15 +301,62 @@
     var p = studyPlan(); if (!p) return h + '<p class="m">لا يمكن إنشاء الخطة الآن.</p></div>';
     if (p.error) return h + '<p class="m">' + esc(p.error) + '</p></div>';
     var allQ = p.days.reduce(function (s, d) { return s + d.qn; }, 0), allV = p.days.reduce(function (s, d) { return s + d.vn; }, 0);
-    h += '<p class="m">الخطة مبنية على المحتوى الذي يستطيع حسابك فتحه الآن، وتشمل كل قسم متاح مرة واحدة: <b>' + AR(allQ) + '</b> سؤالًا كميًا و<b>' + AR(allV) + '</b> سؤالًا لفظيًا خلال <b>' + AR(p.days.length) + '</b> يومًا. عدد الأسئلة في اليوم يختلف قليلًا لأن أحجام الأقسام متفاوتة.</p>';
-    h += '<div class="schedule-scroll"><table class="study-table"><thead><tr><th>اليوم</th><th>الكمي (بما فيه الإضافي)</th><th>اللفظي</th><th>الإنجاز</th></tr></thead><tbody>';
-    p.days.forEach(function (d) {
+    // الإنجاز التلقائي: يُحسب من نتائج الطالب نفسها (محفوظة في حسابه) لا من ضغطة «تم»
+    var tot = 0, fin = 0, firstOpen = null, todayKey = dateKey(new Date()), todayIdx = -1;
+    p.days.forEach(function (d, i) { if (d.date === todayKey) todayIdx = i; d.q.concat(d.v).forEach(function (s) { var x = secStatus(s); tot++; if (x.done) fin++; else if (!firstOpen && SECBANK[s.slug]) firstOpen = s; }); });
+    var pct = tot ? Math.round(fin * 100 / tot) : 0;
+    h += '<p class="m">الخطة مبنية على المحتوى الذي يستطيع حسابك فتحه الآن، وتشمل كل قسم متاح مرة واحدة: <b>' + AR(allQ) + '</b> سؤالًا كميًا و<b>' + AR(allV) + '</b> سؤالًا لفظيًا خلال <b>' + AR(p.days.length) + '</b> يومًا.</p>';
+    h += '<div class="plan-prog"><div class="pp-top"><b>أنجزت ' + AR(fin) + ' من ' + AR(tot) + ' قسمًا (' + AR(pct) + '٪)</b>' + (firstOpen ? '<button class="btn btn-gold" type="button" data-go-sec="' + esc(firstOpen.slug) + '|' + esc(firstOpen.id) + '">▶ أكمل من حيث توقفت: ' + esc(firstOpen.name) + '</button>' : (tot ? '<span class="pp-all">🎉 أنهيت كل أقسام الخطة</span>' : '')) + '</div><div class="gbar"><i style="width:' + pct + '%"></i></div>'
+      + '<p class="pp-legend"><span class="st st-done">✓</span> أنهيت القسم <span class="st st-part">◐</span> بدأته ولم تكمله <span class="st st-new">○</span> لم تبدأه بعد. اضغط اسم أي قسم لتختبر فيه مباشرة.</p></div>';
+    h += '<div class="schedule-scroll" id="planScroll"><table class="study-table"><thead><tr><th>اليوم</th><th>الكمي (بما فيه الإضافي)</th><th>اللفظي</th><th>الإنجاز</th></tr></thead><tbody>';
+    p.days.forEach(function (d, i) {
       var day = new Date(d.date + 'T00:00:00'), label = day.toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'short' }), checked = !!p.done[d.date];
-      function cell(key, count) { return count ? '<b>' + AR(count) + ' سؤالًا · ' + AR(d[key].length) + ' قسم</b><small>' + d[key].map(function (s) { return esc(s.bank + ' — ' + s.name); }).join('<br>') + '</small>' : '<span class="m">مراجعة أو راحة</span>'; }
-      h += '<tr class="' + (checked ? 'done' : '') + '"><th>' + esc(label) + '</th><td>' + cell('q', d.qn) + '</td><td>' + cell('v', d.vn) + '</td><td><label class="study-check"><input type="checkbox" data-plan-date="' + esc(d.date) + '"' + (checked ? ' checked' : '') + '> تم</label></td></tr>';
+      var all = d.q.concat(d.v), dn = all.filter(function (s) { return secStatus(s).done; }).length, auto = all.length > 0 && dn === all.length;
+      function cell(key, count) {
+        if (!count) return '<span class="m">مراجعة أو راحة</span>';
+        var L = d[key], open = {};
+        L.forEach(function (s) { if (!secStatus(s).done && SECBANK[s.slug]) (open[s.slug] = open[s.slug] || []).push(s.id); });
+        var out = '<b>' + AR(count) + ' سؤالًا · ' + AR(L.length) + ' قسم</b><ul class="secs">' + L.map(secRow).join('') + '</ul>';
+        var ks = Object.keys(open);
+        ks.forEach(function (slug) { var n = open[slug].length; if (n > 1) out += '<button class="btn btn-soft sm" type="button" data-go-day="' + esc(slug) + '|' + esc(open[slug].join(',')) + '">ابدأ الأقسام المتبقية (' + AR(n) + ')' + (ks.length > 1 ? ' · ' + esc(BANKNAME(slug)) : '') + '</button>'; });
+        return out;
+      }
+      var lab = (i === todayIdx ? '<span class="today-tag">اليوم</span>' : '') + esc(label);
+      var prog = all.length ? '<div class="auto-st' + (auto ? ' ok' : '') + '">' + (auto ? '✓ مكتمل تلقائيًا' : 'تلقائيًا: ' + AR(dn) + ' من ' + AR(all.length)) + '</div>' : '';
+      h += '<tr class="' + (checked || auto ? 'done' : '') + (i === todayIdx ? ' is-today' : '') + '" data-day="' + i + '"><th data-l="اليوم">' + lab + '</th><td data-l="الكمي">' + cell('q', d.qn) + '</td><td data-l="اللفظي">' + cell('v', d.vn) + '</td><td data-l="الإنجاز">' + prog + '<label class="study-check"><input type="checkbox" data-plan-date="' + esc(d.date) + '"' + (checked ? ' checked' : '') + '> تم</label></td></tr>';
     });
-    h += '</tbody></table></div><p class="m study-foot">' + (window.__bwSid ? 'علّم كل يوم تنجزه. الخطة وعلاماتها محفوظة في حسابك، فتجدها كما هي على أي جهاز تدخل منه.' : 'علّم كل يوم تنجزه. سجّل الدخول لتُحفظ الخطة في حسابك وتجدها على أي جهاز.') + '</p></div>';
+    h += '</tbody></table></div><p class="m study-foot">' + (window.__bwSid ? 'علامات ✓ تتحدث تلقائيًا من نتائجك المحفوظة في حسابك، على أي جهاز تدخل منه. زر «تم» يبقى لك لتعلّم اليوم بنفسك.' : 'علامات ✓ تُحسب من نتائجك على هذا الجهاز. سجّل الدخول لتُحفظ الخطة ونتائجك في حسابك وتجدها على أي جهاز.') + '</p></div>';
     return h;
+  }
+  // ربط أقسام الخطة بصفحات الاختبار وإحصائياتها (نفس المفاتيح التي تحفظها صفحات الأقسام وتُزامَن مع الحساب)
+  var SECBANK = {
+    'aksam kamy': { stats: 'bw-stats-v1', sel: 'bw-sel-v1', page: '/aksam%20kamy.html', name: 'أقسام الكمي' },
+    'ak_kamyadd': { stats: 'bwa-stats-v1', sel: 'bwa-sel-v1', page: '/ak_kamyadd.html', name: 'الكمي الإضافي' },
+    'aksam lafzi': { stats: 'bwv-stats-v1', sel: 'bwv-sel-v1', page: '/aksam%20lafzi.html', name: 'أقسام اللفظي' }
+  };
+  function BANKNAME(slug) { return (SECBANK[slug] && SECBANK[slug].name) || slug; }
+  var STATC = {};
+  function bankStats(slug) {
+    if (STATC[slug]) return STATC[slug];
+    var B = SECBANK[slug], S = B ? get(B.stats, null) : null;
+    return (STATC[slug] = S && S.s && typeof S.s === 'object' ? S.s : {});
+  }
+  // القسم «منجز» إذا حلّ الطالب عددًا من الأسئلة يساوي أسئلة القسم أو أكثر، و«بدأه» إذا حل جزءًا منه
+  function secStatus(s) {
+    var a = bankStats(s.slug)[s.id] || bankStats(s.slug)[+s.id], t = a ? +a.t || 0 : 0, c = a ? +a.c || 0 : 0, q = Math.max(1, s.questions || 0);
+    return { t: t, c: c, done: t >= q, part: t > 0 && t < q, cov: Math.min(100, Math.round(t * 100 / q)), acc: t ? Math.round(c * 100 / t) : 0 };
+  }
+  function secRow(s) {
+    var x = secStatus(s), cls = x.done ? 'st-done' : x.part ? 'st-part' : 'st-new', ic = x.done ? '✓' : x.part ? '◐' : '○';
+    var info = x.done ? 'دقتك ' + AR(x.acc) + '٪' : x.part ? 'أنجزت ' + AR(x.cov) + '٪' : AR(s.questions) + ' سؤالًا';
+    var nm = esc(s.bank + ' — ' + s.name);
+    return '<li class="' + cls + '"><span class="st ' + cls + '" aria-hidden="true">' + ic + '</span>' + (SECBANK[s.slug] ? '<button type="button" class="sec-go" data-go-sec="' + esc(s.slug) + '|' + esc(s.id) + '" title="' + (x.done ? 'أعد الاختبار في هذا القسم' : 'اختبر في هذا القسم الآن') + '">' + nm + '</button>' : '<span>' + nm + '</span>') + '<em>' + info + '</em></li>';
+  }
+  function goSections(slug, ids) {
+    var B = SECBANK[slug]; if (!B || !ids.length) return;
+    try { localStorage.setItem(B.sel, JSON.stringify(ids.map(function (x) { return +x; }))); } catch (e) { }
+    try { sessionStorage.setItem('bw-plan-return', JSON.stringify({ u: location.pathname + '#plan', t: Date.now() })); } catch (e) { }
+    location.href = B.page;
   }
   function goalCard() {
     return '<section class="card study-goal"><h2>خطة الاستعداد للاختبار</h2><p class="m">أدخل موعد اختبارك ثم اضغط حفظ لتوليد جدول الاستعداد.</p><div class="study-date-row"><label for="gExam">موعد الاختبار</label><input type="date" id="gExam" value="' + esc(GOAL.exam || '') + '"><button type="button" class="btn btn-navy" id="saveExamDate">حفظ الموعد</button><span id="studySaveMsg" role="status">' + (GOAL.exam ? (window.__bwSid ? 'موعد الاختبار محفوظ في حسابك.' : 'موعد الاختبار محفوظ على هذا الجهاز فقط؛ سجّل الدخول ليُحفظ في حسابك.') : '') + '</span></div></section>';
@@ -307,7 +395,10 @@
     h += '<div class="acts">' + (weakIds.length ? '<button class="btn btn-navy" data-weak="' + sj + '" data-ids="' + weakIds.join(',') + '">تدرّب على أضعف ' + AR(weakIds.length) + ' أقسام</button>' : '') + (X.errs.length ? '<a class="btn btn-soft" href="' + T.page + '#errors">راجع أخطاءك (' + AR(X.errs.length) + ')' + (X.due ? ' · ' + AR(X.due) + ' جاهزة اليوم' : '') + '</a>' : '') + '</div>';
     return h + '</div>';
   }
+  var scrolled = false;
   function draw() {
+    STATC = {};
+    var oldSc = document.getElementById('planScroll'), keepTop = oldSc ? oldSc.scrollTop : null;
     var h = '<main class="study-plan-page"><h1>خطة الاستعداد</h1>' + goalCard();
     if (GOAL.exam) h += studyPlanCard();
     h += '</main>';
@@ -321,7 +412,18 @@
     };
     var retry = document.getElementById('planRetry'); if (retry) retry.onclick = loadExamCounts;
     app.querySelectorAll('[data-plan-date]').forEach(function (c) { c.onchange = function () { var p = planState(); if (!p) return; p.done = p.done || {}; p.done[c.getAttribute('data-plan-date')] = c.checked; savePlan(p); draw(); }; });
+    app.querySelectorAll('[data-go-sec]').forEach(function (b) { b.onclick = function () { var v = b.getAttribute('data-go-sec').split('|'); goSections(v[0], [v[1]]); }; });
+    app.querySelectorAll('[data-go-day]').forEach(function (b) { b.onclick = function () { var v = b.getAttribute('data-go-day').split('|'); goSections(v[0], v[1].split(',')); }; });
+    // أول عرض للخطة: انزل تلقائيًا لصف اليوم داخل الجدول
+    var sc = document.getElementById('planScroll'), tr = sc && sc.querySelector('tr.is-today');
+    if (sc && keepTop !== null) sc.scrollTop = keepTop;
+    else if (sc && tr && !scrolled) { scrolled = true; var head = sc.querySelector('thead'); sc.scrollTop = Math.max(0, tr.offsetTop - (head ? head.offsetHeight : 0) - 6); }
   }
+  // عند الرجوع للخطة من صفحة اختبار (زر الرجوع أو تبويب آخر) تُقرأ النتائج من جديد
+  addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
+  addEventListener('storage', function (e) { if (!e.key || /stats-v1$/.test(e.key) || e.key === PLAN_KEY) draw(); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && GOAL.exam && BANK_COUNTS) draw(); });
+  try { sessionStorage.removeItem('bw-plan-return'); } catch (e) { }
   draw();
   if (GOAL.exam) { PLAN_STATUS = 'loading'; loadExamCounts(); }
   // أسماء الأقسام من ملفات الأقسام نفسها (تُحمّل في الخلفية)

@@ -25,8 +25,10 @@ const COURSES = {
 // صفحات ليست مقررات لكنها تقرأ أسئلة المقررات (مع تعديلات المعلمين): اختبار تحديد المستوى
 // skills: مهارات اللفظي في «التأسيس حسب المهارة» تُبنى تلقائيًا من هذه البنوك حسب نوع كل سؤال
 // (أي ملف لفظي محوسب جديد يُضاف اسمه هنا فتنسحب أسئلته لمهاراتها مباشرة، مع تعديلات المعلمين)
+// تجميعات الورقي 1447 هـ: صفحة مستقلة (أسئلة مصوّرة في warky-kamy-img/)، تُفتح لمشتركي الورقي فقط مثل النموذج الثاني
+const PAPER1447 = 'warky kamy1447';
 const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
-const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'skills': ['computer_quant', 'computer_verbal'] };
+const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'skills': ['computer_quant', 'computer_verbal'] };
 const packageAllows = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}, groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; return (PACKAGE_COURSE_GROUPS[key] || []).some(g => groups.includes(g)); } catch (e) { return false; } };
 // النسخة المجانية: تُحذف من الصفحة نفسها أسئلة الأجزاء المقفولة (لا تصل للمتصفح أصلًا).
 // نفس الدالة موجودة في functions/api/[[path]].js
@@ -198,7 +200,7 @@ export async function onRequest({ request, env, next }) {
   // اختبار مخفي عن الطلاب من لوحة التحكم: يرجع الطالب للرئيسية (العاملون يرونه دائمًا)
   if (!staff) {
     let hid = []; try { hid = JSON.parse(S.hidden_courses || '[]'); } catch (e) { }
-    const vk = /^muhaky warky[12]$|^waraqi$/.test(slug) ? 'waraqi' : slug;
+    const vk = /^muhaky warky[12]$|^waraqi$|^warky kamy1447$/.test(slug) ? 'waraqi' : slug;
     if (Array.isArray(hid) && vk && hid.includes(vk)) return new Response(null, { status: 302, headers: { location: '/?unavailable=1' } });
   }
 
@@ -217,19 +219,19 @@ export async function onRequest({ request, env, next }) {
   // حساب الطالب (تسجيل ذاتي): يدخل فقط الأقسام المشترك فيها والسارية. لا نسخة مجانية بعد تسجيل الدخول؛
   // أي قسم غير مشترك فيه (حتى بالرابط المباشر) يرجعه إلى «اختباراتي». الانتهاء يُفحص مع كل طلب فيُسحب الوصول تلقائيًا.
   if (st && st.kind === 'account' && st.status === 'active') {
-    const GATED2 = !!(course || slug === 'aktar kamy' || slug === 'skills');
+    const GATED2 = !!(course || slug === 'aktar kamy' || slug === 'skills' || slug === PAPER1447);
     // حساب بلا أي اشتراك ساري = يأخذ النسخة المجانية مثل الزائر (حتى لا يخسر شيئًا بإنشاء الحساب)
     let anySub = false;
     try { anySub = !!(await env.DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND status='active' AND end_at>?").bind(st.id, iso).first()); } catch (e) { anySub = false; }
     const freeOn2 = S.free_mode !== '0', fN2 = Math.max(1, Math.min(50, +S.free_count || 10));
     const tail = ui({}) + '<script src="/bw-tracker.js"></script><script src="/bw-sync.js"></script>';
     if (GATED2) {
-      const key = /^muhaky warky[12]$/.test(slug) ? 'waraqi' : slug;
+      const key = /^muhaky warky[12]$/.test(slug) || slug === PAPER1447 ? 'waraqi' : slug;
       let ok = false;
       try { ok = !!(await env.DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND course=? AND status='active' AND end_at>?").bind(st.id, key, iso).first()); } catch (e) { ok = false; }
       if (!ok) { try { const rows = await env.DB.prepare("SELECT package_access FROM subscriptions WHERE student_id=? AND status='active' AND end_at>? AND package_id IS NOT NULL").bind(st.id, iso).all(); ok = (rows.results || []).some(r => packageAllows(r.package_access, key)); } catch (e) { /* Legacy subscriptions remain governed by the direct check above. */ } }
       if (!ok && !anySub && freeOn2) {
-        if (slug === 'muhaky warky2') return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
+        if (slug === 'muhaky warky2' || slug === PAPER1447) return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
         const tf = slug === 'muhaky warky1' ? null : async (html, etag) => { try { const o = await freePage(html, slug, fN2, etag); return o.tests ? o.html.replace('</head>', '<script>window.__BWFT=' + o.tests + '</script></head>') : o.html; } catch (e) { return '<!doctype html><meta charset="utf-8"><p style="font-family:sans-serif;text-align:center;margin:40px">تعذّر تحميل الصفحة. <a href="/">الرئيسية</a></p>'; } };
         head += '<script>document.documentElement.classList.add("bw-acct")</script>' + `<script>window.__BWF=${safeJson({ n: fN2, why: 'acct', acct: 1, c: slug, wa: contact })}</script><script src="/bw-free.js"></script>`;
         return serve(tail, null, tf);
@@ -243,11 +245,11 @@ export async function onRequest({ request, env, next }) {
   if (S.require_login === '1' && !valid) {
     // الصفحة الرئيسية وصفحات التعريف (تحديد المستوى، تقدمي، قائمة الورقي…) مفتوحة دائمًا لأنها واجهة المنصة ودعايتها.
     // القفل على صفحات الاختبارات فقط.
-    const GATED = !!(course || slug === 'aktar kamy' || slug === 'skills');
+    const GATED = !!(course || slug === 'aktar kamy' || slug === 'skills' || slug === PAPER1447);
     const freeOn = S.free_mode !== '0', fN = Math.max(1, Math.min(50, +S.free_count || 10)), tm = +S.trial_minutes || 0;
     // النسخة المجانية المحدودة: أول N من كل اختبار مفتوحة، والباقي يظهر بقفل ويطلب التسجيل
     const free = (why, setCookie) => {
-      if (slug === 'muhaky warky2') return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
+      if (slug === 'muhaky warky2' || slug === PAPER1447) return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
       // لو فشل التجهيز لا نرسل الصفحة كاملة: نرسل صفحة بدون بيانات أفضل من كشف كل الأسئلة
       const tf = slug === 'muhaky warky1' ? null : async (html, etag) => { try { const o = await freePage(html, slug, fN, etag); return o.tests ? o.html.replace('</head>', '<script>window.__BWFT=' + o.tests + '</script></head>') : o.html; } catch (e) { return '<!doctype html><meta charset="utf-8"><p style="font-family:sans-serif;text-align:center;margin:40px">تعذّر تحميل الصفحة. <a href="/">الرئيسية</a></p>'; } };
       head += `<script>window.__BWF=${safeJson({ n: fN, why, c: slug, wa: contact })}</script><script src="/bw-free.js"></script>`;
