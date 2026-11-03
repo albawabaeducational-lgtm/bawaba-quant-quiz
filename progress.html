@@ -161,6 +161,29 @@
     .wz-warn { color:#b4321f; font-weight:600; }
     .wz-nav { display:flex; justify-content:space-between; gap:10px; margin-top:16px; }
     .btn:disabled { opacity:.45; cursor:default; }
+    .pv-acts { display:flex; gap:8px; flex-wrap:wrap; }
+    .pv-on { color:#17633f; font-weight:700; } .pv-off { color:#b4321f; font-weight:700; }
+    .pv-th { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+    .pv-th h3 { margin:0; }
+    .pv-sug { border-color:#f1d28a; background:#fffcf3; }
+    .pv-sug .row, .pv-edit .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .pv-edit { border:2px solid var(--bw-gold); }
+    .pv-pause { background:#eef4fb; border-color:#c3d6e8; color:var(--bw-navy); }
+    .pv-rv { background:#f5f8fc; border-style:dashed; }
+    .wz-goal { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:#f7f9fc; border:1px solid var(--bw-line); border-radius:14px; padding:10px 12px; margin:10px 0; }
+    .wz-goal > b { min-width:110px; color:var(--bw-navy); } .wz-goal > b small { color:#5a6b80; font-weight:500; }
+    .wz-goal .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .chip small { color:#8a5a00; } .chip.on small { color:var(--bw-gold); }
+    .wz-hint { font-size:12.5px !important; }
+    .wz-chk { display:flex; align-items:center; gap:8px; margin:10px 0; font-weight:600; color:var(--bw-navy); }
+    .wz-chk input { width:18px; height:18px; accent-color:var(--bw-navy); }
+    .wz-cap { display:flex; align-items:center; gap:6px; font-size:13.5px; color:#5a6b80; }
+    .wz-cap input, .wz-row input[type=date], .pv-edit input[type=date] { width:120px; min-height:40px; padding:6px 10px; border:1px solid var(--bw-line); border-radius:10px; font:inherit; background:#fff; }
+    .wz-row input[type=date], .pv-edit input[type=date] { width:170px; }
+    .wz-fix { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .wz-main { border-color:var(--bw-gold); background:#fffaf0; }
+    .wz-custom > summary b { color:var(--bw-navy); }
+    .study-plan-page h1 { margin:0 0 14px; }
     @media (max-width: 720px) { .pv-list li { flex-wrap:wrap; } .pv-list li .btn { margin-inline-start:auto; } .wz-units { grid-template-columns:1fr; } .wz-nav .btn { flex:1; } }
     /* الجوال: كل يوم بطاقة مستقلة بدل جدول عريض يحتاج تمريرًا جانبيًا */
     @media (max-width: 720px) {

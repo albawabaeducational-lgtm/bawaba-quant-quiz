@@ -311,7 +311,7 @@ const PLAN_SOURCES = [
 const PLAN_SRC = Object.fromEntries(PLAN_SOURCES.map(x => [x.id, x]));
 // الإعداد الافتراضي (تغيّره الإدارة من «خطط الاستعداد»). ترتيب مصادر التجميعات = أولويتها.
 const PLAN_DEFAULT = {
-  threshold: 75, dailyMax: 120,
+  threshold: 75, dailyMax: 120, reviewDays: 5, checkEvery: 14,
   tracks: [
     { id: 'computer', title: 'القدرات المحوسب', on: true, until: '', subjects: true, all: true, tasis: ['maharat', 'tanazur', 'ikmal', 'khata'], tajm: ['aktar', 'kamy', 'kamy2', 'lafzi'] },
     { id: 'paper', title: 'القدرات الورقي', on: true, until: '', subjects: false, all: false, tasis: ['maharat', 'tanazur', 'ikmal', 'khata'], tajm: ['w1447', 'mock1', 'mock2'] }
@@ -319,8 +319,8 @@ const PLAN_DEFAULT = {
 };
 const planCfgOf = raw => {
   let c = null; try { c = JSON.parse(raw || 'null'); } catch (e) { }
-  const out = { threshold: PLAN_DEFAULT.threshold, dailyMax: PLAN_DEFAULT.dailyMax, tracks: [] };
-  if (c && typeof c === 'object') { const t = +c.threshold; if (t >= 30 && t <= 100) out.threshold = Math.round(t); const d = +c.dailyMax; if (d >= 20 && d <= 500) out.dailyMax = Math.round(d); }
+  const out = { threshold: PLAN_DEFAULT.threshold, dailyMax: PLAN_DEFAULT.dailyMax, reviewDays: PLAN_DEFAULT.reviewDays, checkEvery: PLAN_DEFAULT.checkEvery, tracks: [] };
+  if (c && typeof c === 'object') { const t = +c.threshold; if (t >= 30 && t <= 100) out.threshold = Math.round(t); const d = +c.dailyMax; if (d >= 20 && d <= 500) out.dailyMax = Math.round(d); if (c.reviewDays !== undefined && +c.reviewDays >= 0 && +c.reviewDays <= 10) out.reviewDays = Math.round(+c.reviewDays); if (c.checkEvery !== undefined && +c.checkEvery >= 0 && +c.checkEvery <= 60) out.checkEvery = Math.round(+c.checkEvery); }
   const src = c && Array.isArray(c.tracks) && c.tracks.length ? c.tracks : PLAN_DEFAULT.tracks, seen = new Set();
   for (const t of src.slice(0, 12)) {
     const id = String(t && t.id || '').replace(/[^\w-]/g, '').slice(0, 30); if (!id || seen.has(id)) continue; seen.add(id);
@@ -913,7 +913,8 @@ export async function onRequest({ request, env, params }) {
       } catch (e) { o.units = []; }
       sources[id] = o;
     }
-    return J({ threshold: cfg.threshold, dailyMax: cfg.dailyMax, tracks, sources, today });
+    const hid = hiddenOf(await setting('hidden_courses'));
+    return J({ threshold: cfg.threshold, dailyMax: cfg.dailyMax, reviewDays: cfg.reviewDays, checkEvery: cfg.checkEvery, placement: hid.indexOf('placement') < 0, tracks, allTracks: cfg.tracks, sources, today });
   }
   if (p === 'exam/counts' && m === 'GET') {
     const u = new URL(request.url), rawRequested = (u.searchParams.get('c') || '').split('|').filter(Boolean);
