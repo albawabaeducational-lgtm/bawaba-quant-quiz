@@ -158,7 +158,7 @@ let schemaReady = false, leadsReady = false, moodleReady = false;
 const GOOGLE_CLIENT_ID = '1017687433947-oscl9bci17amtnqp8hlrgogk1p29ub23.apps.googleusercontent.com';
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
-const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-study-plan-v1', 'bw-skill-v1', 'bw-rank-off', 'warky1447.seen', 'warky1447.err', 'warky1447.hist', 'warky1447.run', 'warky1447.pref', 'warky1447.res'];
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-study-plan-v1', 'bw-skill-v1', 'bw-rank-off', 'warky1447.seen', 'warky1447.err', 'warky1447.hist', 'warky1447.run', 'warky1447.pref', 'warky1447.res', 'bw-stats-v2', 'bw-sel-v2', 'tanazur.best.50q.dedup.v1', 'khata.best', 'bw-plan-v2'];
 let progressReady = false;
 const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
@@ -292,6 +292,44 @@ html body.admin-page .main, html body.admin-page main { background:${bg} !import
 // خطط الاشتراك المحفوظة؛ والإعداد القديم (سعر شهري واحد sub_prices) يتحول تلقائيًا لخطة ٣٠ يومًا فلا تضيع الأسعار السابقة
 const subPlansOf = (plansRaw, pricesRaw) => { let o = null; try { o = JSON.parse(plansRaw || 'null'); } catch (e) { } if (o && typeof o === 'object') return o; let pr = {}; try { pr = JSON.parse(pricesRaw || '{}') || {}; } catch (e) { } const r = {}; for (const k in pr) if (+pr[k] > 0) r[k] = [{ days: 30, price: +pr[k] }]; return r; };
 const subRow = (r, nowIso) => { const end = new Date(r.end_at).getTime(), left = Math.ceil((end - Date.parse(nowIso)) / 864e5); return { id: r.id, course: r.course, package_id: r.package_id || null, title: r.package_name || SUB_TITLE[r.course] || r.course, start: r.start_at, end: r.end_at, days: Math.max(0, left), state: r.status !== 'active' ? 'cancelled' : r.end_at <= nowIso ? 'expired' : left <= 3 ? 'soon' : 'active' }; };
+// ===================== خطط الاستعداد (صفحة «خطتي») =====================
+// كل مصدر محتوى يدخل في الخطط: من أين تُعد وحداته (مهارة/قسم/اختبار/نموذج) وأين يُحفظ تقدم الطالب فيه.
+// الإدارة تختار من هذه المصادر لكل اختبار (محوسب/ورقي/تحصيلي…) في «تأسيس» و«تجميعات».
+const PLAN_SOURCES = [
+  { id: 'maharat', slug: 'maharat kamy', title: 'التأسيس حسب المهارة (كمي)', subj: 'q', kind: 'bank', unit: 'مهارة', page: '/maharat%20kamy.html', stats: 'bw-stats-v2', sel: 'bw-sel-v2', groups: true },
+  { id: 'tanazur', file: '/tasis lafzi.html.html', title: 'التناظر اللفظي', subj: 'v', kind: 'raw', unit: 'اختبار', page: '/tasis%20lafzi.html.html', best: 'tanazur.best.50q.dedup.v1' },
+  { id: 'ikmal', file: '/ikmal_aljumal.html', title: 'إكمال الجمل', subj: 'v', kind: 'raw', unit: 'اختبار', page: '/ikmal_aljumal.html', best: 'ikmal.best' },
+  { id: 'khata', file: '/khata siaky.html', title: 'الخطأ السياقي', subj: 'v', kind: 'raw', unit: 'اختبار', page: '/khata%20siaky.html', best: 'khata.best' },
+  { id: 'aktar', slug: 'aktar kamy', title: 'الأسئلة الأكثر تكرارًا (كمي)', subj: 'q', kind: 'pool', unit: 'دفعة', page: '/aktar%20kamy.html', seen: 'bwmt-seen', chunk: 50 },
+  { id: 'kamy', slug: 'aksam kamy', title: 'أقسام الكمي المحدثة 2026', subj: 'q', kind: 'bank', unit: 'قسم', page: '/aksam%20kamy.html', stats: 'bw-stats-v1', sel: 'bw-sel-v1' },
+  { id: 'kamy2', slug: 'ak_kamyadd', title: 'أقسام الكمي الإضافية', subj: 'q', kind: 'bank', unit: 'قسم', page: '/ak_kamyadd.html', stats: 'bwa-stats-v1', sel: 'bwa-sel-v1' },
+  { id: 'lafzi', slug: 'aksam lafzi', title: 'أقسام اللفظي', subj: 'v', kind: 'bank', unit: 'قسم', page: '/aksam%20lafzi.html', stats: 'bwv-stats-v1', sel: 'bwv-sel-v1' },
+  { id: 'w1447', title: 'تجميعات الورقي 1447 هـ', subj: 'q', kind: 'models', unit: 'نموذج', page: '/warky%20kamy1447.html', res: 'warky1447.res', n: 18, size: 50 },
+  { id: 'mock1', title: 'المحاكي الورقي – النموذج الأول', subj: 'm', kind: 'mock', unit: 'اختبار', page: '/muhaky%20warky1.html', done: 'bawaba_folder_v1_e1', q: 120 },
+  { id: 'mock2', title: 'المحاكي الورقي – النموذج الثاني', subj: 'm', kind: 'mock', unit: 'اختبار', page: '/muhaky%20warky2.html', done: 'bawaba_folder_v1_e2', q: 120 }
+];
+const PLAN_SRC = Object.fromEntries(PLAN_SOURCES.map(x => [x.id, x]));
+// الإعداد الافتراضي (تغيّره الإدارة من «خطط الاستعداد»). ترتيب مصادر التجميعات = أولويتها.
+const PLAN_DEFAULT = {
+  threshold: 75, dailyMax: 120,
+  tracks: [
+    { id: 'computer', title: 'القدرات المحوسب', on: true, until: '', subjects: true, all: true, tasis: ['maharat', 'tanazur', 'ikmal', 'khata'], tajm: ['aktar', 'kamy', 'kamy2', 'lafzi'] },
+    { id: 'paper', title: 'القدرات الورقي', on: true, until: '', subjects: false, all: false, tasis: ['maharat', 'tanazur', 'ikmal', 'khata'], tajm: ['w1447', 'mock1', 'mock2'] }
+  ]
+};
+const planCfgOf = raw => {
+  let c = null; try { c = JSON.parse(raw || 'null'); } catch (e) { }
+  const out = { threshold: PLAN_DEFAULT.threshold, dailyMax: PLAN_DEFAULT.dailyMax, tracks: [] };
+  if (c && typeof c === 'object') { const t = +c.threshold; if (t >= 30 && t <= 100) out.threshold = Math.round(t); const d = +c.dailyMax; if (d >= 20 && d <= 500) out.dailyMax = Math.round(d); }
+  const src = c && Array.isArray(c.tracks) && c.tracks.length ? c.tracks : PLAN_DEFAULT.tracks, seen = new Set();
+  for (const t of src.slice(0, 12)) {
+    const id = String(t && t.id || '').replace(/[^\w-]/g, '').slice(0, 30); if (!id || seen.has(id)) continue; seen.add(id);
+    const list = a => [...new Set((Array.isArray(a) ? a : []).filter(x => PLAN_SRC[x]))];
+    out.tracks.push({ id, title: String(t.title || id).slice(0, 60), on: t.on !== false, until: /^\d{4}-\d{2}-\d{2}$/.test(t.until || '') ? t.until : '', subjects: t.subjects !== false, all: !!t.all, tasis: list(t.tasis), tajm: list(t.tajm) });
+  }
+  return out;
+};
+const rawCache = {}, groupCache = {};
 const SKILL_BANKS = { 'aksam kamy': 'kamy', 'aktar kamy': 'kamy', 'aksam lafzi': 'lafzi' };
 const SUBJECTS = { kamy: 'الكمي', lafzi: 'اللفظي' };
 const SEED_SKILLS = {
@@ -828,6 +866,55 @@ export async function onRequest({ request, env, params }) {
   }
 
   // إحصاء آمن لأعداد الأسئلة التي يستطيع هذا الزائر حلها؛ لا يعيد نصوص الأسئلة أو إجاباتها.
+  // كتالوج خطط الاستعداد: الاختبارات الظاهرة للطالب ووحدات كل مصدر (بنفس ما يستطيع حسابه فتحه)
+  if (p === 'plan/catalog' && m === 'GET') {
+    const cfg = planCfgOf(await setting('plan_tracks')), today = iso.slice(0, 10);
+    const tracks = cfg.tracks.filter(t => t.on && (!t.until || t.until >= today));
+    const need = new Set(); for (const t of cfg.tracks) [...t.tasis, ...t.tajm].forEach(x => need.add(x));
+    const n = await freeN(), sources = {};
+    for (const id of need) {
+      const S = PLAN_SRC[id], o = { id, title: S.title, subj: S.subj, kind: S.kind, unit: S.unit, page: S.page };
+      ['stats', 'sel', 'best', 'seen', 'res', 'done'].forEach(k => { if (S[k]) o[k] = S[k]; });
+      try {
+        if (S.kind === 'bank') {
+          const rows = await bankItems(env, request, DB, S.slug), map = new Map();
+          for (const q of rows) { const k = String(q.secId == null ? q.sec : q.secId); if (!k) continue; const x = map.get(k) || { id: k, name: String(q.sec || ''), q: 0 }; x.q++; map.set(k, x); }
+          let units = [...map.values()].sort((a, b) => (+a.id) - (+b.id));
+          if (S.groups) {
+            const res = await fetchAsset(env, request, COURSE[S.slug].file), etag = res ? (res.headers.get('etag') || '') : '';
+            if (res && (!groupCache[S.slug] || groupCache[S.slug].etag !== etag)) { const h = await res.text(), a = h.indexOf('<script id="db" type="application/json">'), z = a < 0 ? -1 : h.indexOf('</script>', a); let g = {}; try { JSON.parse(h.slice(a + 40, z)).secs.forEach(x => { if (x.group) g[x.id] = x.group; }); } catch (e) { } groupCache[S.slug] = { etag, g }; }
+            else if (res) { try { await res.body.cancel(); } catch (e) { } }
+            const g = (groupCache[S.slug] || {}).g || {}; units.forEach(u => { if (g[u.id]) u.group = g[u.id]; });
+          }
+          if (!(await fullAccess(S.slug))) units = units.slice(0, n);
+          o.units = units;
+        } else if (S.kind === 'raw') {
+          const res = await fetchAsset(env, request, S.file), etag = res ? (res.headers.get('etag') || res.headers.get('last-modified') || '') : '';
+          if (res && (!rawCache[id] || rawCache[id].etag !== etag)) {
+            const h = await res.text(), a = h.indexOf('RAW = [') + 6; let d = 0, j = a;
+            for (; j < h.length; j++) { const c = h[j]; if (c === '[') d++; else if (c === ']') { d--; if (!d) break; } else if (c === '"') { j++; while (j < h.length && h[j] !== '"') { if (h[j] === '\\') j++; j++; } } }
+            const total = a > 5 ? JSON.parse(h.slice(a, j + 1)).length : 0, pm = /PER\s*=\s*(\d+)/.exec(h), per = pm ? +pm[1] : 25;
+            // نفس تقسيم الصفحة نفسها للاختبارات (التناظر: كل PER سؤال، والباقي: أعداد متقاربة)
+            let sizes = [];
+            if (id === 'tanazur') { for (let s0 = 0; s0 < total; s0 += per) sizes.push(Math.min(per, total - s0)); }
+            else { const k = Math.max(1, Math.round(total / per)); for (let i = 0; i < k; i++) sizes.push(Math.floor(total / k) + (i < total % k ? 1 : 0)); }
+            rawCache[id] = { etag, total, sizes };
+          } else if (res) { try { await res.body.cancel(); } catch (e) { } }
+          o.units = ((rawCache[id] || {}).sizes || []).map((q, i) => ({ id: String(i), name: 'الاختبار ' + (i + 1), q }));
+        } else if (S.kind === 'pool') {
+          const total = (await bankItems(env, request, DB, S.slug)).length, units = [];
+          for (let s0 = 0, i = 0; s0 < total; s0 += S.chunk, i++) units.push({ id: String(i), name: 'الدفعة ' + (i + 1), q: Math.min(S.chunk, total - s0), upto: Math.min(total, s0 + S.chunk) });
+          o.units = units; o.total = total;
+        } else if (S.kind === 'models') {
+          o.units = Array.from({ length: S.n }, (_, i) => ({ id: String(i + 1), name: 'النموذج ' + (i + 1), q: S.size }));
+        } else if (S.kind === 'mock') {
+          o.units = [{ id: '1', name: S.title, q: S.q }];
+        }
+      } catch (e) { o.units = []; }
+      sources[id] = o;
+    }
+    return J({ threshold: cfg.threshold, dailyMax: cfg.dailyMax, tracks, sources, today });
+  }
   if (p === 'exam/counts' && m === 'GET') {
     const u = new URL(request.url), rawRequested = (u.searchParams.get('c') || '').split('|').filter(Boolean);
     const allowed = new Set(COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => c.slug));
@@ -1903,7 +1990,7 @@ export async function onRequest({ request, env, params }) {
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;
     const settings = {};
-    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; settings.study_plan_options = COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => ({ slug: c.slug, title: c.title })); try { settings.study_plan_banks = JSON.parse(S.study_plan_banks || 'null'); } catch (e) { settings.study_plan_banks = null; } if (!Array.isArray(settings.study_plan_banks) || !settings.study_plan_banks.length) settings.study_plan_banks = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi']; }
+    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; settings.study_plan_options = COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => ({ slug: c.slug, title: c.title })); try { settings.study_plan_banks = JSON.parse(S.study_plan_banks || 'null'); } catch (e) { settings.study_plan_banks = null; } if (!Array.isArray(settings.study_plan_banks) || !settings.study_plan_banks.length) settings.study_plan_banks = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi']; settings.plan_tracks = planCfgOf(S.plan_tracks); settings.plan_sources = PLAN_SOURCES.map(x => ({ id: x.id, title: x.title, subj: x.subj })); }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
     if (can('settings.home')) { settings.site_colors = siteColorsOf(S.site_colors); settings.home_config = homeOf(S.home_config); if (!can('settings.access')) { settings.vis = VIS; settings.hidden_courses = hiddenOf(S.hidden_courses); } }
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
@@ -1999,6 +2086,7 @@ export async function onRequest({ request, env, params }) {
     else if (b.key === 'free_mode') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
     else if (b.key === 'free_count') { if (!can('settings.access')) return deny(); v = String(Math.max(1, Math.min(50, int(b.value) || 10))); }
     else if (b.key === 'study_plan_banks') { if (!can('settings.access')) return deny(); const allowed = new Set(COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => c.slug)); const a = Array.isArray(b.value) ? [...new Set(b.value.filter(x => typeof x === 'string' && allowed.has(x)))].slice(0, allowed.size) : []; if (!a.length) return J({ error: 'اختر بنكًا واحدًا على الأقل للخطة' }, 400); v = JSON.stringify(a); }
+    else if (b.key === 'plan_tracks') { if (!can('settings.access')) return deny(); v = JSON.stringify(planCfgOf(JSON.stringify(b.value || {}))); }
     else if (b.key === 'hidden_courses') { if (!can('settings.access') && !can('settings.home')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
     else if (b.key === 'site_colors') {
       if (!can('settings.home')) return deny(); const sc = siteColorsOf(JSON.stringify(b.value || {})); v = JSON.stringify(sc);
