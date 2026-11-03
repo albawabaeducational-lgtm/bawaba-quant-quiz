@@ -31,6 +31,30 @@ const COURSES = {
 const PAPER1447 = 'warky kamy1447';
 const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
 const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'skills': ['computer_quant', 'computer_verbal'] };
+// مقررات تضيفها الإدارة من لوحة التحكم (نفس الدالة في functions/api/[[path]].js)
+const CC_MODELS = { static: 1, bank: 1, raw: 1, key: 1 }, CC_GROUPS = ['computer_quant', 'computer_verbal', 'computer_combined', 'paper'];
+const customOf = raw => {
+  let a = []; try { a = JSON.parse(raw || '[]'); } catch (e) { } if (!Array.isArray(a)) return [];
+  const seen = new Set(), out = [];
+  for (const x of a.slice(0, 40)) {
+    const c = { slug: String(x && x.slug || '').trim().replace(/\.html$/i, '').slice(0, 60), title: String(x && x.title || '').trim().slice(0, 80), model: CC_MODELS[x && x.model] ? x.model : '', imgPat: String(x && x.imgPat || '').trim().replace(/^\/+/, '').slice(0, 120), group: CC_GROUPS.includes(x && x.group) ? x.group : '', locked: !!(x && x.locked) };
+    if (!c.slug || !/^[\w؀-ۿ .-]+$/.test(c.slug) || c.slug.includes('..') || !c.title || !c.model || seen.has(c.slug)) continue;
+    if (c.model === 'static' && c.imgPat && !c.imgPat.includes('{id}')) c.imgPat = c.imgPat.replace(/\/+$/, '') + '/{id}.webp';
+    if (c.imgPat && !/^[\w؀-ۿ .\/{}-]+$/.test(c.imgPat)) c.imgPat = '';
+    seen.add(c.slug); out.push(c);
+  }
+  return out;
+};
+let customRaw = null; const BUILTIN_SLUGS = new Set(Object.keys(COURSES).concat(['waraqi', 'skills', 'placement']));
+const applyCustom = raw => {
+  if (raw === customRaw) return; customRaw = raw;
+  for (const k of Object.keys(COURSES)) if (COURSES[k].custom) { delete COURSES[k]; delete PACKAGE_COURSE_GROUPS[k]; }
+  for (const c of customOf(raw)) {
+    if (BUILTIN_SLUGS.has(c.slug)) continue;
+    COURSES[c.slug] = { title: c.title, model: c.model, img: c.model === 'static', hints: c.model === 'static', url: '/' + c.slug, custom: true, locked: c.locked || c.model === 'key', imgPat: c.model === 'static' ? '/' + (c.imgPat || 'img/{id}.webp') : '' };
+    if (c.group) PACKAGE_COURSE_GROUPS[c.slug] = [c.group];
+  }
+};
 const packageAllows = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}, groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; return (PACKAGE_COURSE_GROUPS[key] || []).some(g => groups.includes(g)); } catch (e) { return false; } };
 // النسخة المجانية: تُحذف من الصفحة نفسها أسئلة الأجزاء المقفولة (لا تصل للمتصفح أصلًا).
 // نفس الدالة موجودة في functions/api/[[path]].js
@@ -58,10 +82,11 @@ async function freePage(html, slug, n, etag) {
   const key = etag && typeof caches !== 'undefined' ? new Request('https://bw-free.cache/' + encodeURIComponent(slug) + '/' + n + '/' + encodeURIComponent(etag)) : null;
   if (key) { try { const c = await caches.default.match(key); if (c) return JSON.parse(await c.text()); } catch (e) { } }
   let out = { html, tests: 0 };
-  if (slug === 'tasis lafzi' || slug === 'ikmal_aljumal') out = freeRaw(html, n);
+  const md = (COURSES[slug] || {}).model;
+  if (slug === 'tasis lafzi' || slug === 'ikmal_aljumal' || (md === 'raw' && COURSES[slug].custom)) out = freeRaw(html, n);
   else {
     const a = html.indexOf(DB_TAG), z = a < 0 ? -1 : html.indexOf('</script>', a);
-    if (a >= 0 && z >= 0) out.html = html.slice(0, a + DB_TAG.length) + freeDb(html.slice(a + DB_TAG.length, z), n, slug === 'aktar kamy' ? 'aktar' : 'bank') + html.slice(z);
+    if (a >= 0 && z >= 0) out.html = html.slice(0, a + DB_TAG.length) + freeDb(html.slice(a + DB_TAG.length, z), n, slug === 'aktar kamy' || md === 'static' ? 'aktar' : 'bank') + html.slice(z);
   }
   // نخزن فقط الجزء المتغير (البيانات) بدلًا من الصفحة كلها؟ الصفحة نفسها ثابتة لكل نسخة، فتخزينها كاملة أبسط
   if (key) { try { await caches.default.put(key, new Response(JSON.stringify(out), { headers: { 'cache-control': 'public, max-age=604800' } })); } catch (e) { } }
@@ -138,7 +163,7 @@ export async function onRequest({ request, env, next }) {
   if (!env.DB || !isPage || /^\/(login|admin|api\/)/.test(p)) return next();
   const now = Date.now(), iso = new Date(now).toISOString();
   let slug = ''; try { slug = decodeURIComponent(p).replace(/^\//, '').replace(/(\.html)+$/i, ''); } catch (e) { }
-  const course = COURSES[slug] ? slug : '';
+  let course = COURSES[slug] ? slug : '';
   let st = null, S = {}, staff = null, patches = [];
   try {
     for (const r of (await env.DB.prepare('SELECT key,value FROM settings').all()).results) S[r.key] = r.value;
@@ -146,6 +171,8 @@ export async function onRequest({ request, env, next }) {
     if (code) st = await env.DB.prepare('SELECT id,status,expires_at,kind,created_at,duration_minutes,pause_used,pause_until FROM students WHERE code=?').bind(code).first();
     if (cookie(request, 'bw_staff') || cookie(request, 'bw_admin')) staff = await staffOf(env, request, iso);
   } catch (e) { return next(); }
+  applyCustom(S.custom_courses || '');
+  if (!course && COURSES[slug]) course = slug;
   const links = course ? (COURSES[course].link || []) : (VIRTUAL[slug] || []), linked = {};
   if (course || links.length) {
     try {
@@ -202,7 +229,7 @@ export async function onRequest({ request, env, next }) {
   // اختبار مخفي عن الطلاب من لوحة التحكم: يرجع الطالب للرئيسية (العاملون يرونه دائمًا)
   if (!staff) {
     let hid = []; try { hid = JSON.parse(S.hidden_courses || '[]'); } catch (e) { }
-    const vk = /^muhaky warky[12]$|^waraqi$|^warky kamy1447$/.test(slug) ? 'waraqi' : slug;
+    const vk = /^muhaky warky[12]$|^waraqi$/.test(slug) ? 'waraqi' : slug;
     if (Array.isArray(hid) && vk && hid.includes(vk)) return new Response(null, { status: 302, headers: { location: '/?unavailable=1' } });
   }
 
@@ -233,6 +260,7 @@ export async function onRequest({ request, env, next }) {
       try { ok = !!(await env.DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND course=? AND status='active' AND end_at>?").bind(st.id, key, iso).first()); } catch (e) { ok = false; }
       if (!ok) { try { const rows = await env.DB.prepare("SELECT package_access FROM subscriptions WHERE student_id=? AND status='active' AND end_at>? AND package_id IS NOT NULL").bind(st.id, iso).all(); ok = (rows.results || []).some(r => packageAllows(r.package_access, key)); } catch (e) { /* Legacy subscriptions remain governed by the direct check above. */ } }
       if (!ok && !anySub && freeOn2) {
+        if (slug === 'muhaky warky2' || slug === PAPER1447 || (COURSES[slug] && COURSES[slug].locked)) return new Response(null, { status: 302, headers: { location: COURSES[slug] && COURSES[slug].locked ? '/account.html?tab=exams&need=' + encodeURIComponent(slug) : '/waraqi.html?locked=1' } });
         if (slug === 'muhaky warky2' || slug === PAPER1447) return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
         const tf = slug === 'muhaky warky1' ? null : async (html, etag) => { try { const o = await freePage(html, slug, fN2, etag); return o.tests ? o.html.replace('</head>', '<script>window.__BWFT=' + o.tests + '</script></head>') : o.html; } catch (e) { return '<!doctype html><meta charset="utf-8"><p style="font-family:sans-serif;text-align:center;margin:40px">تعذّر تحميل الصفحة. <a href="/">الرئيسية</a></p>'; } };
         head += '<script>document.documentElement.classList.add("bw-acct")</script>' + `<script>window.__BWF=${safeJson({ n: fN2, why: 'acct', acct: 1, c: slug, wa: contact })}</script><script src="/bw-free.js"></script>`;
@@ -252,6 +280,7 @@ export async function onRequest({ request, env, next }) {
     // النسخة المجانية المحدودة: أول N من كل اختبار مفتوحة، والباقي يظهر بقفل ويطلب التسجيل
     const free = (why, setCookie) => {
       if (slug === 'muhaky warky2' || slug === PAPER1447) return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
+      if (COURSES[slug] && COURSES[slug].locked) return go(why === 'need' ? 'need' : why);
       // لو فشل التجهيز لا نرسل الصفحة كاملة: نرسل صفحة بدون بيانات أفضل من كشف كل الأسئلة
       const tf = slug === 'muhaky warky1' ? null : async (html, etag) => { try { const o = await freePage(html, slug, fN, etag); return o.tests ? o.html.replace('</head>', '<script>window.__BWFT=' + o.tests + '</script></head>') : o.html; } catch (e) { return '<!doctype html><meta charset="utf-8"><p style="font-family:sans-serif;text-align:center;margin:40px">تعذّر تحميل الصفحة. <a href="/">الرئيسية</a></p>'; } };
       head += `<script>window.__BWF=${safeJson({ n: fN, why, c: slug, wa: contact })}</script><script src="/bw-free.js"></script>`;

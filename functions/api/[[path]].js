@@ -198,7 +198,7 @@ function freeDb(text, n, kind) {
   return JSON.stringify(d).replace(/</g, '\\u003c');
 }
 // الاختبارات التي يمكن إخفاؤها عن الطلاب من لوحة التحكم
-const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['maharat kamy', 'تأسيس الكمي حسب المهارة'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['placement', 'اختبار تحديد المستوى']];
+const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['maharat kamy', 'تأسيس الكمي حسب المهارة'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['warky kamy1447', 'تجميعات الورقي 1447 هـ'], ['placement', 'اختبار تحديد المستوى']];
 // ===================== إعدادات الصفحة الرئيسية (تُعدَّل من لوحة التحكم ← الصفحة الرئيسية) =====================
 const HOME_FONTS = ['ibm', 'readex', 'tajawal', 'cairo', 'almarai', 'kufi'];
 const homeStr = (x, n) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u2028\u2029]/g, ' ').trim().slice(0, n);
@@ -220,12 +220,52 @@ const homeOf = v => { try { return homeClean(JSON.parse(v || '{}')); } catch (e)
 const hiddenOf = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a.filter(k => VIS.some(x => x[0] === k)) : []; } catch (e) { return []; } };
 // ===================== الحسابات والاشتراكات لكل قسم =====================
 // وحدة الاشتراك: مفتاح من VIS (قسم أو اختبار). «waraqi» يشمل النموذجين الورقيين.
-const SUB_KEYS = VIS.map(v => v[0]).filter(k => k !== 'placement');
+const SUB_KEYS = VIS.map(v => v[0]).filter(k => k !== 'placement' && k !== 'warky kamy1447'); // 1447 يدخل ضمن اشتراك الورقي
 const SUB_TITLE = Object.fromEntries(VIS);
 // أي البنوك يحتاجها كل اشتراك (لتحميل بيانات الاختبارات المرتبطة كاملة)
 const SUB_LINKS = { 'muhaky mohawsab': ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
 const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'skills:kamy': ['computer_quant'], 'skills:lafzi': ['computer_verbal'] };
 const packageIncludes = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}; const groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; const need = PACKAGE_COURSE_GROUPS[key] || []; if (need.some(g => groups.includes(g))) return true; if (key === 'skills') return groups.includes('computer_quant') || groups.includes('computer_verbal'); return false; } catch (e) { return false; } };
+// ===================== مقررات تضيفها الإدارة من لوحة التحكم =====================
+// الإدارة تحدد ملف الصفحة ونوع أسئلتها (بنفس بنية صفحة موجودة)، فيظهر المقرر في «المقررات» بأدوات التعديل المناسبة
+// وفي «ظهور الاختبارات للطلاب» وفي الاشتراكات. نفس الدالة في functions/_middleware.js
+const CC_MODELS = { static: 1, bank: 1, raw: 1, key: 1 }, CC_GROUPS = ['computer_quant', 'computer_verbal', 'computer_combined', 'paper'];
+const customOf = raw => {
+  let a = []; try { a = JSON.parse(raw || '[]'); } catch (e) { } if (!Array.isArray(a)) return [];
+  const seen = new Set(), out = [];
+  for (const x of a.slice(0, 40)) {
+    const c = { slug: String(x && x.slug || '').trim().replace(/\.html$/i, '').slice(0, 60), title: String(x && x.title || '').trim().slice(0, 80), model: CC_MODELS[x && x.model] ? x.model : '', imgPat: String(x && x.imgPat || '').trim().replace(/^\/+/, '').slice(0, 120), group: CC_GROUPS.includes(x && x.group) ? x.group : '', locked: !!(x && x.locked) };
+    if (!c.slug || !/^[\w؀-ۿ .-]+$/.test(c.slug) || c.slug.includes('..') || !c.title || !c.model || seen.has(c.slug)) continue;
+    if (c.model === 'static' && c.imgPat && !c.imgPat.includes('{id}')) c.imgPat = c.imgPat.replace(/\/+$/, '') + '/{id}.webp';
+    if (c.imgPat && !/^[\w؀-ۿ .\/{}-]+$/.test(c.imgPat)) c.imgPat = '';
+    seen.add(c.slug); out.push(c);
+  }
+  return out;
+};
+let customRaw = null; const BUILTIN_SLUGS = new Set(COURSES.map(c => c.slug).concat(VIS.map(v => v[0]))), VIS_N = VIS.length, SUBK_N = SUB_KEYS.length;
+const applyCustom = raw => {
+  if (raw === customRaw) return; customRaw = raw;
+  for (let i = COURSES.length - 1; i >= 0; i--) if (COURSES[i].custom) { const k = COURSES[i].slug; delete COURSE[k]; delete SUB_TITLE[k]; delete PACKAGE_COURSE_GROUPS[k]; COURSES.splice(i, 1); }
+  VIS.length = VIS_N; SUB_KEYS.length = SUBK_N;
+  for (const c of customOf(raw)) {
+    if (BUILTIN_SLUGS.has(c.slug)) continue;
+    const o = { slug: c.slug, title: c.title, file: '/' + c.slug + '.html', model: c.model, custom: true, locked: c.locked };
+    if (c.model === 'static') o.imgPat = '/' + (c.imgPat || 'img/{id}.webp');
+    COURSES.push(o); COURSE[c.slug] = o; VIS.splice(VIS.length - 1, 0, [c.slug, c.title]); SUB_TITLE[c.slug] = c.title; SUB_KEYS.push(c.slug);
+    if (c.group) PACKAGE_COURSE_GROUPS[c.slug] = [c.group];
+  }
+};
+// يتأكد أن ملف الصفحة موجود وبنيته تطابق النوع المختار (حتى لا تُضاف صفحة لا تعمل معها أدوات التعديل)
+const checkCustomFile = async (env, request, c) => {
+  const res = await fetchAsset(env, request, '/' + c.slug + '.html'); if (!res) return 'الملف «' + c.slug + '.html» غير موجود على الموقع. ارفعه أولًا.';
+  const h = await res.text(), a = h.indexOf('<script id="db" type="application/json">'), z = a < 0 ? -1 : h.indexOf('</script>', a);
+  let d = null; if (a >= 0 && z > a) { try { d = JSON.parse(h.slice(a + 40, z)); } catch (e) { } }
+  if (c.model === 'static' && !(d && Array.isArray(d.qs) && Array.isArray(d.models))) return '«' + c.title + '»: الصفحة ليست بنك صور بنفس بنية «الأكثر تكرارًا» أو «تجميعات 1447».';
+  if (c.model === 'bank' && !(d && Array.isArray(d.qs) && Array.isArray(d.secs))) return '«' + c.title + '»: الصفحة ليست أقسامًا بنفس بنية «أقسام الكمي».';
+  if (c.model === 'raw' && h.indexOf('const RAW = ') < 0) return '«' + c.title + '»: الصفحة ليست أسئلة نصية بنفس بنية «التأسيس اللفظي».';
+  if (c.model === 'key' && h.indexOf('KEY=') < 0) return '«' + c.title + '»: الصفحة ليست اختبارًا مصوّرًا بمفتاح إجابات مثل «المحاكي الورقي».';
+  return '';
+};
 let acctReady = false;
 const ensureAcctSchema = async DB => {
   if (acctReady) return;
@@ -489,6 +529,7 @@ const ensureStaffSchema = async DB => {
 export async function onRequest({ request, env, params }) {
   const DB = env.DB, p = (params.path || []).join('/'), m = request.method;
   if (!DB) return J({ error: 'قاعدة البيانات غير مربوطة بعد' }, 500);
+  try { const r = await DB.prepare("SELECT value FROM settings WHERE key='custom_courses'").first(); applyCustom(r ? r.value : ''); } catch (e) { }
   const now = Date.now(), iso = new Date(now).toISOString(), day = iso.slice(0, 10);
   const ip = request.headers.get('cf-connecting-ip') || 'x';
   const body = async () => { try { return await request.json(); } catch (e) { return {}; } };
@@ -1992,7 +2033,7 @@ export async function onRequest({ request, env, params }) {
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;
     const settings = {};
-    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; settings.study_plan_options = COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => ({ slug: c.slug, title: c.title })); try { settings.study_plan_banks = JSON.parse(S.study_plan_banks || 'null'); } catch (e) { settings.study_plan_banks = null; } if (!Array.isArray(settings.study_plan_banks) || !settings.study_plan_banks.length) settings.study_plan_banks = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi']; settings.plan_tracks = planCfgOf(S.plan_tracks); settings.plan_sources = PLAN_SOURCES.map(x => ({ id: x.id, title: x.title, subj: x.subj })); }
+    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; settings.study_plan_options = COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => ({ slug: c.slug, title: c.title })); try { settings.study_plan_banks = JSON.parse(S.study_plan_banks || 'null'); } catch (e) { settings.study_plan_banks = null; } if (!Array.isArray(settings.study_plan_banks) || !settings.study_plan_banks.length) settings.study_plan_banks = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi']; settings.plan_tracks = planCfgOf(S.plan_tracks); settings.custom_courses = customOf(S.custom_courses); settings.plan_sources = PLAN_SOURCES.map(x => ({ id: x.id, title: x.title, subj: x.subj })); }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
     if (can('settings.home')) { settings.site_colors = siteColorsOf(S.site_colors); settings.home_config = homeOf(S.home_config); if (!can('settings.access')) { settings.vis = VIS; settings.hidden_courses = hiddenOf(S.hidden_courses); } }
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
@@ -2088,6 +2129,12 @@ export async function onRequest({ request, env, params }) {
     else if (b.key === 'free_mode') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
     else if (b.key === 'free_count') { if (!can('settings.access')) return deny(); v = String(Math.max(1, Math.min(50, int(b.value) || 10))); }
     else if (b.key === 'study_plan_banks') { if (!can('settings.access')) return deny(); const allowed = new Set(COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => c.slug)); const a = Array.isArray(b.value) ? [...new Set(b.value.filter(x => typeof x === 'string' && allowed.has(x)))].slice(0, allowed.size) : []; if (!a.length) return J({ error: 'اختر بنكًا واحدًا على الأقل للخطة' }, 400); v = JSON.stringify(a); }
+    else if (b.key === 'custom_courses') {
+      if (!can('settings.access')) return deny();
+      const list = customOf(JSON.stringify(Array.isArray(b.value) ? b.value : [])), old = new Set(customOf(customRaw || '[]').map(x => x.slug));
+      for (const c of list) { if (BUILTIN_SLUGS.has(c.slug)) return J({ error: '«' + c.slug + '» مقرر موجود أصلًا في المنصة.' }, 400); if (!old.has(c.slug)) { const er = await checkCustomFile(env, request, c); if (er) return J({ error: er }, 400); } }
+      v = JSON.stringify(list);
+    }
     else if (b.key === 'plan_tracks') { if (!can('settings.access')) return deny(); v = JSON.stringify(planCfgOf(JSON.stringify(b.value || {}))); }
     else if (b.key === 'hidden_courses') { if (!can('settings.access') && !can('settings.home')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
     else if (b.key === 'site_colors') {
