@@ -344,3 +344,26 @@ window.__bwReadFit = function (b, o, calc) {
   o.style.maxHeight = Math.max(keep, oh - (nd - h)) + 'px'; o.style.overflowY = 'auto'; o.style.overscrollBehavior = 'contain';
   return calc();
 };
+
+// زر الهيدر يصبح «↩ قائمة الاختبارات» أثناء أي اختبار: يرجع لقائمة اختبارات نفس الصفحة (وليس للرئيسية).
+// يستخدم زر الرجوع الموجود داخل الصفحة نفسها، فيحفظ الاختبار أو يطلب التأكيد حسب كل صفحة.
+(function () {
+  var sh = document.getElementById('bw-shell'); if (!sh) return;
+  var back = sh.querySelector('.bws-back'); if (!back) return;
+  var SEL = ['[data-a="tolist"]', '[onclick="bwToList()"]', '#quit', '.sim-block[data-a="home"]', '#simHomeTop'];
+  var orig = { t: back.textContent, ti: back.title || '' }, target = null, q = 0;
+  var st = document.createElement('style');
+  st.textContent = '#bw-shell #simHomeTop{display:none!important}#bw-shell .bws-back.bws-inx{background:var(--bw-gold,#e3a92b);color:var(--bw-night,#0c2440)!important;box-shadow:none}@media(max-width:700px){#bw-shell .bws-back.bws-inx{font-size:13px!important;padding:7px 10px!important;line-height:1.2}#bw-shell .bws-back.bws-inx::before{content:none!important}}';
+  document.head.appendChild(st);
+  // زر «قائمة الأقسام» العلوي في المحاكي يندمج في زر الهيدر (لا داعي لزرين)
+  var vis = function (e) { if (!e || e === back || e.disabled) return false; if (e.id === 'simHomeTop') { var live = false; try { live = !!(SM && SM.live); } catch (x) { } return live && document.body.classList.contains('insim'); } return e.offsetParent !== null; };
+  var find = function () { for (var i = 0; i < SEL.length; i++) { var l = document.querySelectorAll(SEL[i]); for (var j = 0; j < l.length; j++) if (vis(l[j])) return l[j]; } return null; };
+  var upd = function () {
+    q = 0; var t = find(); if (t === target) return; target = t;
+    if (t) { var x = (t.textContent || '').replace(/[↩🏠]/g, '').trim(); back.textContent = '↩ ' + (/^قائمة/.test(x) ? x : 'قائمة الاختبارات'); back.title = 'ارجع إلى قائمة الاختبارات في هذه الصفحة'; back.classList.add('bws-inx'); }
+    else { back.textContent = orig.t; back.title = orig.ti; back.classList.remove('bws-inx'); }
+  };
+  back.addEventListener('click', function (e) { if (target && vis(target)) { e.preventDefault(); e.stopPropagation(); target.click(); setTimeout(upd, 50); } }, true);
+  new MutationObserver(function () { if (!q) { q = 1; setTimeout(upd, 120); } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
+  upd();
+})();
