@@ -1132,8 +1132,8 @@ export async function onRequest({ request, env, params }) {
     }
     if (p === 'admin/ref/referred') {
       const id = int(new URL(request.url).searchParams.get('id'));
-      const rows = await all("SELECT s.id,s.name,a.phone,a.created_at,(SELECT GROUP_CONCAT(COALESCE(package_name,course)) FROM subscriptions x WHERE x.student_id=s.id AND x.status!='cancelled') courses FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_by=? ORDER BY a.created_at DESC", id);
-      return J({ rows: rows.map(r => ({ ...r, courses: String(r.courses || '').split(',').filter(Boolean).map(k => SUB_TITLE[k] || k) })) });
+      const rows = await all("SELECT s.id,s.name,a.phone,a.email,a.created_at,(SELECT GROUP_CONCAT(COALESCE(package_name,course)) FROM subscriptions x WHERE x.student_id=s.id AND x.status!='cancelled') courses,(SELECT MAX(end_at) FROM subscriptions x WHERE x.student_id=s.id AND x.status='active') sub_end,(SELECT COALESCE(SUM(amount),0) FROM commissions c WHERE c.referred_id=s.id AND c.status!='cancelled') comm FROM accounts a JOIN students s ON s.id=a.student_id WHERE a.ref_by=? ORDER BY a.created_at DESC", id);
+      return J({ rows: rows.map(r => ({ ...r, active: !!(r.sub_end && r.sub_end > iso), courses: [...new Set(String(r.courses || '').split(',').filter(Boolean).map(k => SUB_TITLE[k] || k))] })) });
     }
     if (p === 'admin/ref/rate' && W) {
       const id = int(b.student_id), rate = b.rate === '' || b.rate == null ? null : +b.rate;
