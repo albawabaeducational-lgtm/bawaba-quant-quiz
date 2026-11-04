@@ -1647,7 +1647,7 @@ export async function onRequest({ request, env, params }) {
   // ---------- مراجعة مفاتيح الإجابات: أسئلة يُشك في إجابتها، تُعتمد كما هي أو تُصحَّح من مكان واحد ----------
   if (p.startsWith('admin/review')) {
     await DB.prepare("CREATE TABLE IF NOT EXISTS qreview (course TEXT NOT NULL, qkey TEXT NOT NULL, note TEXT, status TEXT NOT NULL DEFAULT 'open', old_c INTEGER, new_c INTEGER, added_by TEXT, resolved_by TEXT, created_at TEXT NOT NULL, resolved_at TEXT, PRIMARY KEY (course, qkey))").run();
-    const RC = ['aksam kamy', 'aktar kamy'], mine = {};
+    const RC = ['aksam kamy', 'aktar kamy', 'warky kamy1447'], mine = {};
     for (const c of RC) { const r = await courseRights(c); if (r) mine[c] = r; }
     if (!Object.keys(mine).length) return deny('لا توجد مقررات مسندة لك');
     if (p === 'admin/review' && m === 'GET') {
