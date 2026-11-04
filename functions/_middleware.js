@@ -10,7 +10,7 @@ const DAY30 = 30 * 864e5;
 const COURSES = {
   'aksam kamy': { title: 'أقسام الكمي', model: 'bank', img: true, hints: true, url: '/aksam kamy' },
   'ak_kamyadd': { title: 'أقسام الكمي الإضافية', model: 'bank', img: true, hints: true, url: '/ak_kamyadd' },
-  // تأسيس الكمي حسب المهارة (صور الأسئلة في مجلد «tasis kamy img»)
+  // تأسيس الكمي حسب المهارة (صور الأسئلة في مجلد «maharat-kamy-img»)
   'maharat kamy': { title: 'تأسيس الكمي حسب المهارة', model: 'bank', img: true, hints: true, url: '/maharat kamy' },
   'aksam lafzi': { title: 'أقسام اللفظي', model: 'bank', url: '/aksam lafzi' },
   // المحاكي المحوسب يُبنى تلقائيًا من أقسام الكمي واللفظي (أي قسم جديد فيهما يظهر فيه مباشرة)
@@ -140,6 +140,9 @@ export async function onRequest({ request, env, next }) {
   const SHORT = { '/kamy': '/aksam%20kamy.html', '/lafzi': '/aksam%20lafzi.html', '/mock': '/muhaky%20mohawsab.html', '/mohawsab': '/muhaky%20mohawsab.html', '/tasis': '/tasis%20lafzi.html.html', '/paper': '/waraqi.html', '/signup': '/account.html?tab=signup', '/my': '/account.html?tab=exams', '/aktar': '/aktar%20kamy.html', '/level': '/placement.html' };
   const sp = SHORT[p.replace(/\/+$/, '').toLowerCase()];
   if (sp) return new Response(null, { status: 302, headers: { location: sp + url.search + url.hash } });
+  // صور «التأسيس حسب المهارة» القديمة (tasis kamy img/N.jpg) انتقلت إلى maharat-kamy-img/qN_1.webp — لأي سؤال معدّل قديم ما زال يشير إليها
+  const om = p.match(/^\/tasis(?:%20| )kamy(?:%20| )img\/(\d+)\.(?:jpe?g|png|webp)$/i);
+  if (om) return new Response(null, { status: 301, headers: { location: '/maharat-kamy-img/q' + om[1] + '_1.webp' } });
   // رابط الإحالة: /r/CODE يفتح الصفحة الرئيسية ليتصفح الزائر بحرية، ويُسجَّل في قاعدة البيانات «زيارة إحالة» برمز عشوائي
   // لا يمكن تخمينه، صالحة لمدة تحددها الإدارة (ref_cookie_days، الافتراضي ٣٠ يومًا). أول رابط صالح هو المعتمد،
   // وعند إنشاء الحساب يتحقق الخادم من الرمز ويربط الحساب بصاحبه مرة واحدة ويعلّم الرمز مستخدمًا.

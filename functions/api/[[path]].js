@@ -115,7 +115,7 @@ const LEAD_STATUS = ['new', 'contacted', 'added', 'subscribed', 'not_interested'
 // نفس القائمة موجودة في functions/_middleware.js — أي مقرر جديد يُضاف في الملفين.
 const COURSES = [
   { slug: 'aksam kamy', title: 'أقسام الكمي', file: '/aksam kamy.html', model: 'bank', img: true, hints: true },
-  { slug: 'maharat kamy', title: 'تأسيس الكمي حسب المهارة', file: '/maharat kamy.html', model: 'bank', img: true, hints: true, imgOk: /^(tasis%20kamy%20)?img\// }, // صور الأسئلة في «tasis kamy img/»
+  { slug: 'maharat kamy', title: 'تأسيس الكمي حسب المهارة', file: '/maharat kamy.html', model: 'bank', img: true, hints: true, imgOk: /^(maharat-kamy-img\/|(tasis%20kamy%20)?img\/)/ }, // صور الأسئلة في «maharat-kamy-img/q<رقم>_<n>.webp»
   { slug: 'ak_kamyadd', title: 'أقسام الكمي الإضافية', file: '/ak_kamyadd.html', model: 'bank', img: true, hints: true, imgOk: /^(assets\/|data:)/ }, // صور الأسئلة في assets/images/ (وليس img/<id>.webp)
   { slug: 'aksam lafzi', title: 'أقسام اللفظي', file: '/aksam lafzi.html', model: 'bank' },
   { slug: 'muhaky mohawsab', title: 'المحاكي المحوسب', file: '/muhaky mohawsab.html.html', model: 'linked', link: ['aksam lafzi', 'aksam kamy'] }, // يُبنى تلقائيًا من الكمي واللفظي
