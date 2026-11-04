@@ -124,7 +124,8 @@ const COURSES = [
   { slug: 'tasis lafzi', title: 'تأسيس اللفظي', file: '/tasis lafzi.html.html', model: 'raw' },
   { slug: 'ikmal_aljumal', title: 'إكمال الجمل', file: '/ikmal_aljumal.html', model: 'raw' },
   { slug: 'aktar kamy', title: 'الأسئلة الأكثر تكرارًا – كمي', file: '/aktar kamy.html', model: 'static' }, // بنك صور: تصنيف المهارات والتقارير فقط
-  { slug: 'warky kamy1447', title: 'تجميعات الورقي 1447 هـ', file: '/warky kamy1447.html', model: 'static', imgPat: '/warky-kamy-img/{id}.webp' } // بنك صور ثابت مثل «الأكثر تكرارًا»
+  { slug: 'warky kamy1447', title: 'تجميعات الورقي 1447 هـ', file: '/warky kamy1447.html', model: 'static', imgPat: '/warky-kamy-img/{id}.webp' }, // بنك صور ثابت مثل «الأكثر تكرارًا»
+  { slug: 'tajmee warky 5years', title: 'تجميعات الورقي – الخمس سنوات السابقة', file: '/tajmee warky 5years.html', model: 'static', imgPat: '/tajmee-waraqi-5-years/{id}.webp' } // نفس بنية 1447
 ];
 const COURSE = Object.fromEntries(COURSES.map(c => [c.slug, c]));
 const KINDS = { bank: ['q', 's', 'p', 'o'], raw: ['r'], key: ['k'], linked: [], static: ['ak', 'ah', 'ai', 'ax'] };
@@ -159,7 +160,7 @@ let schemaReady = false, leadsReady = false, moodleReady = false;
 const GOOGLE_CLIENT_ID = '1017687433947-oscl9bci17amtnqp8hlrgogk1p29ub23.apps.googleusercontent.com';
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
-const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-study-plan-v1', 'bw-skill-v1', 'bw-rank-off', 'warky1447.seen', 'warky1447.err', 'warky1447.hist', 'warky1447.run', 'warky1447.pref', 'warky1447.res', 'bw-stats-v2', 'bw-sel-v2', 'tanazur.best.50q.dedup.v1', 'khata.best', 'bw-plan-v2'];
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-study-plan-v1', 'bw-skill-v1', 'bw-rank-off', 'warky1447.seen', 'warky1447.err', 'warky1447.hist', 'warky1447.run', 'warky1447.pref', 'warky1447.res', 'bw-stats-v2', 'bw-sel-v2', 'tanazur.best.50q.dedup.v1', 'khata.best', 'bw-plan-v2', 'tw5y1447.seen', 'tw5y1447.err', 'tw5y1447.hist', 'tw5y1447.run', 'tw5y1447.pref', 'tw5y1447.res'];
 let progressReady = false;
 const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
@@ -198,7 +199,7 @@ function freeDb(text, n, kind) {
   return JSON.stringify(d).replace(/</g, '\\u003c');
 }
 // الاختبارات التي يمكن إخفاؤها عن الطلاب من لوحة التحكم
-const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['maharat kamy', 'تأسيس الكمي حسب المهارة'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['warky kamy1447', 'تجميعات الورقي 1447 هـ'], ['placement', 'اختبار تحديد المستوى']];
+const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['maharat kamy', 'تأسيس الكمي حسب المهارة'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['warky kamy1447', 'تجميعات الورقي 1447 هـ'], ['tajmee warky 5years', 'تجميعات الورقي – الخمس سنوات السابقة'], ['placement', 'اختبار تحديد المستوى']];
 // ===================== إعدادات الصفحة الرئيسية (تُعدَّل من لوحة التحكم ← الصفحة الرئيسية) =====================
 const HOME_FONTS = ['ibm', 'readex', 'tajawal', 'cairo', 'almarai', 'kufi'];
 const homeStr = (x, n) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u2028\u2029]/g, ' ').trim().slice(0, n);
@@ -220,11 +221,11 @@ const homeOf = v => { try { return homeClean(JSON.parse(v || '{}')); } catch (e)
 const hiddenOf = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a.filter(k => VIS.some(x => x[0] === k)) : []; } catch (e) { return []; } };
 // ===================== الحسابات والاشتراكات لكل قسم =====================
 // وحدة الاشتراك: مفتاح من VIS (قسم أو اختبار). «waraqi» يشمل النموذجين الورقيين.
-const SUB_KEYS = VIS.map(v => v[0]).filter(k => k !== 'placement' && k !== 'warky kamy1447'); // 1447 يدخل ضمن اشتراك الورقي
+const SUB_KEYS = VIS.map(v => v[0]).filter(k => k !== 'placement' && k !== 'warky kamy1447' && k !== 'tajmee warky 5years'); // تجميعات الورقي تدخل ضمن اشتراك الورقي
 const SUB_TITLE = Object.fromEntries(VIS);
 // أي البنوك يحتاجها كل اشتراك (لتحميل بيانات الاختبارات المرتبطة كاملة)
 const SUB_LINKS = { 'muhaky mohawsab': ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
-const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'skills:kamy': ['computer_quant'], 'skills:lafzi': ['computer_verbal'] };
+const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'tajmee warky 5years': ['paper'], 'skills:kamy': ['computer_quant'], 'skills:lafzi': ['computer_verbal'] };
 const packageIncludes = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}; const groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; const need = PACKAGE_COURSE_GROUPS[key] || []; if (need.some(g => groups.includes(g))) return true; if (key === 'skills') return groups.includes('computer_quant') || groups.includes('computer_verbal'); return false; } catch (e) { return false; } };
 // ===================== مقررات تضيفها الإدارة من لوحة التحكم =====================
 // الإدارة تحدد ملف الصفحة ونوع أسئلتها (بنفس بنية صفحة موجودة)، فيظهر المقرر في «المقررات» بأدوات التعديل المناسبة
@@ -346,16 +347,18 @@ const PLAN_SOURCES = [
   { id: 'kamy2', slug: 'ak_kamyadd', title: 'أقسام الكمي الإضافية', subj: 'q', kind: 'bank', unit: 'قسم', page: '/ak_kamyadd.html', stats: 'bwa-stats-v1', sel: 'bwa-sel-v1' },
   { id: 'lafzi', slug: 'aksam lafzi', title: 'أقسام اللفظي', subj: 'v', kind: 'bank', unit: 'قسم', page: '/aksam%20lafzi.html', stats: 'bwv-stats-v1', sel: 'bwv-sel-v1' },
   { id: 'w1447', title: 'تجميعات الورقي 1447 هـ', subj: 'q', kind: 'models', unit: 'نموذج', page: '/warky%20kamy1447.html', res: 'warky1447.res', n: 18, size: 50 },
+  { id: 'w5y', title: 'تجميعات الورقي – الخمس سنوات السابقة', subj: 'q', kind: 'models', unit: 'نموذج', page: '/tajmee%20warky%205years.html', res: 'tw5y1447.res', n: 32, size: 50, last: 35 },
   { id: 'mock1', title: 'المحاكي الورقي – النموذج الأول', subj: 'm', kind: 'mock', unit: 'اختبار', page: '/muhaky%20warky1.html', done: 'bawaba_folder_v1_e1', q: 120 },
   { id: 'mock2', title: 'المحاكي الورقي – النموذج الثاني', subj: 'm', kind: 'mock', unit: 'اختبار', page: '/muhaky%20warky2.html', done: 'bawaba_folder_v1_e2', q: 120 }
 ];
+const PLAN_NEW = ['w5y']; // مصادر أُضيفت بعد إطلاق «خطط الاستعداد»
 const PLAN_SRC = Object.fromEntries(PLAN_SOURCES.map(x => [x.id, x]));
 // الإعداد الافتراضي (تغيّره الإدارة من «خطط الاستعداد»). ترتيب مصادر التجميعات = أولويتها.
 const PLAN_DEFAULT = {
   threshold: 75, dailyMax: 120, reviewDays: 5, checkEvery: 14,
   tracks: [
     { id: 'computer', title: 'القدرات المحوسب', on: true, until: '', subjects: true, all: true, tasis: ['maharat', 'tanazur', 'ikmal', 'khata'], tajm: ['aktar', 'kamy', 'kamy2', 'lafzi'] },
-    { id: 'paper', title: 'القدرات الورقي', on: true, until: '', subjects: false, all: false, tasis: ['maharat', 'tanazur', 'ikmal', 'khata'], tajm: ['w1447', 'mock1', 'mock2'] }
+    { id: 'paper', title: 'القدرات الورقي', on: true, until: '', subjects: false, all: false, tasis: ['maharat', 'tanazur', 'ikmal', 'khata'], tajm: ['w1447', 'w5y', 'mock1', 'mock2'] }
   ]
 };
 const planCfgOf = raw => {
@@ -363,11 +366,15 @@ const planCfgOf = raw => {
   const out = { threshold: PLAN_DEFAULT.threshold, dailyMax: PLAN_DEFAULT.dailyMax, reviewDays: PLAN_DEFAULT.reviewDays, checkEvery: PLAN_DEFAULT.checkEvery, tracks: [] };
   if (c && typeof c === 'object') { const t = +c.threshold; if (t >= 30 && t <= 100) out.threshold = Math.round(t); const d = +c.dailyMax; if (d >= 20 && d <= 500) out.dailyMax = Math.round(d); if (c.reviewDays !== undefined && +c.reviewDays >= 0 && +c.reviewDays <= 10) out.reviewDays = Math.round(+c.reviewDays); if (c.checkEvery !== undefined && +c.checkEvery >= 0 && +c.checkEvery <= 60) out.checkEvery = Math.round(+c.checkEvery); }
   const src = c && Array.isArray(c.tracks) && c.tracks.length ? c.tracks : PLAN_DEFAULT.tracks, seen = new Set();
+  // مصدر جديد أُضيف للمنصة بعد آخر حفظ للإعداد: يدخل تلقائيًا في الخطة الافتراضية المطابقة (مرة واحدة؛ لو حذفته الإدارة بعدها يبقى محذوفًا)
+  const known = c && Array.isArray(c.known) ? c.known : PLAN_SOURCES.map(x => x.id).filter(x => !PLAN_NEW.includes(x));
+  const addNew = (t, k) => { const d = PLAN_DEFAULT.tracks.find(x => x.id === t.id); const a = Array.isArray(t[k]) ? t[k].slice() : []; if (d && src !== PLAN_DEFAULT.tracks) d[k].forEach((x, i) => { if (!known.includes(x) && !a.includes(x)) { const prev = d[k][i - 1], j = prev ? a.indexOf(prev) : -1; a.splice(j >= 0 ? j + 1 : a.length, 0, x); } }); return a; };
   for (const t of src.slice(0, 12)) {
     const id = String(t && t.id || '').replace(/[^\w-]/g, '').slice(0, 30); if (!id || seen.has(id)) continue; seen.add(id);
     const list = a => [...new Set((Array.isArray(a) ? a : []).filter(x => PLAN_SRC[x]))];
-    out.tracks.push({ id, title: String(t.title || id).slice(0, 60), on: t.on !== false, until: /^\d{4}-\d{2}-\d{2}$/.test(t.until || '') ? t.until : '', subjects: t.subjects !== false, all: !!t.all, tasis: list(t.tasis), tajm: list(t.tajm) });
+    out.tracks.push({ id, title: String(t.title || id).slice(0, 60), on: t.on !== false, until: /^\d{4}-\d{2}-\d{2}$/.test(t.until || '') ? t.until : '', subjects: t.subjects !== false, all: !!t.all, tasis: list(addNew(t, 'tasis')), tajm: list(addNew(t, 'tajm')) });
   }
+  out.known = PLAN_SOURCES.map(x => x.id);
   return out;
 };
 const rawCache = {}, groupCache = {};
@@ -948,7 +955,7 @@ export async function onRequest({ request, env, params }) {
           for (let s0 = 0, i = 0; s0 < total; s0 += S.chunk, i++) units.push({ id: String(i), name: 'الدفعة ' + (i + 1), q: Math.min(S.chunk, total - s0), upto: Math.min(total, s0 + S.chunk) });
           o.units = units; o.total = total;
         } else if (S.kind === 'models') {
-          o.units = Array.from({ length: S.n }, (_, i) => ({ id: String(i + 1), name: 'النموذج ' + (i + 1), q: S.size }));
+          o.units = Array.from({ length: S.n }, (_, i) => ({ id: String(i + 1), name: 'النموذج ' + (i + 1), q: i === S.n - 1 && S.last ? S.last : S.size }));
         } else if (S.kind === 'mock') {
           o.units = [{ id: '1', name: S.title, q: S.q }];
         }
@@ -2135,7 +2142,7 @@ export async function onRequest({ request, env, params }) {
       for (const c of list) { if (BUILTIN_SLUGS.has(c.slug)) return J({ error: '«' + c.slug + '» مقرر موجود أصلًا في المنصة.' }, 400); if (!old.has(c.slug)) { const er = await checkCustomFile(env, request, c); if (er) return J({ error: er }, 400); } }
       v = JSON.stringify(list);
     }
-    else if (b.key === 'plan_tracks') { if (!can('settings.access')) return deny(); v = JSON.stringify(planCfgOf(JSON.stringify(b.value || {}))); }
+    else if (b.key === 'plan_tracks') { if (!can('settings.access')) return deny(); v = JSON.stringify(planCfgOf(JSON.stringify(Object.assign({}, b.value || {}, { known: PLAN_SOURCES.map(x => x.id) })))); }
     else if (b.key === 'hidden_courses') { if (!can('settings.access') && !can('settings.home')) return deny(); v = JSON.stringify(hiddenOf(JSON.stringify(Array.isArray(b.value) ? b.value : []))); }
     else if (b.key === 'site_colors') {
       if (!can('settings.home')) return deny(); const sc = siteColorsOf(JSON.stringify(b.value || {})); v = JSON.stringify(sc);

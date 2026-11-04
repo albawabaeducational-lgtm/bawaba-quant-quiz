@@ -154,6 +154,7 @@
   body.testing .card { margin-bottom: 0; }
 }
 .rv { grid-template-columns: 1fr !important; } .rv img { max-width: 900px; margin: 0 auto; } .rv .ans { font-size: 17px; font-weight: 600; }
+  @media (max-width: 700px) { .qhead .qlist { font-size: 0 !important; padding: 5px 10px !important; } .qhead .qlist::before { content: "↩ القائمة"; font-size: 13px; } }
 </style>
 <link rel="stylesheet" href="/api/site-colors.css"></head>
 <body class="bwt-hub">
@@ -260,7 +261,7 @@
   }
   function draw() {
     var n = R.ids.length, id = R.ids[R.pos], q = BY[id], a = R.ans[R.pos], answered = Object.keys(R.ans).length, train = R.mode === 'train', shown = train && R.shown[R.pos];
-    var h = '<div class="qwrap"><div><div class="qhead"><span>السؤال ' + AR(R.pos + 1) + ' من ' + AR(n) + '</span><span class="qans">أجبت ' + AR(answered) + ' · متبقٍ ' + AR(n - answered) + '</span><button type="button" class="btn red sm qsub" data-a="end">تسليم</button><span class="mode">' + (R.kind === 'errors' ? 'مراجعة الأخطاء' : train ? 'تدريب' : 'محاكاة') + '</span></div><div class="qtrack"><i style="width:' + (answered / n * 100) + '%"></i></div>'
+    var h = '<div class="qwrap"><div><div class="qhead"><span>السؤال ' + AR(R.pos + 1) + ' من ' + AR(n) + '</span><span class="qans">أجبت ' + AR(answered) + ' · متبقٍ ' + AR(n - answered) + '</span><button type="button" class="btn ghost sm qlist" data-a="tolist" title="ارجع إلى قائمة الاختبارات؛ اختبارك يُحفظ وتكمله لاحقًا من «أكمل الاختبار»">↩ قائمة الاختبارات</button><button type="button" class="btn red sm qsub" data-a="end">تسليم</button><span class="mode">' + (R.kind === 'errors' ? 'مراجعة الأخطاء' : train ? 'تدريب' : 'محاكاة') + '</span></div><div class="qtrack"><i style="width:' + (answered / n * 100) + '%"></i></div>'
       + '<div class="card" style="padding:14px"><div class="qimg" data-z="' + id + '"><img src="' + img(id) + '" alt="السؤال ' + AR(R.pos + 1) + '" decoding="async"><span class="zoom">🔍 اضغط للتكبير</span></div>'
       + '<div class="opts">' + L.map(function (l, i) { var c = 'opt'; if (shown) { if (i === q.c) c += ' ok'; else if (i === a) c += ' no'; } else if (a === i) c += ' on'; return '<button type="button" class="' + c + '" data-o="' + i + '"' + (shown ? ' disabled' : '') + ' aria-pressed="' + (a === i) + '">' + l + '</button>'; }).join('') + '</div>'
       + (shown ? '<div class="fb ' + (a === q.c ? 'ok">✓ إجابة صحيحة' : 'no">✗ الإجابة الصحيحة: ' + L[q.c]) + '</div>' : '')
@@ -364,6 +365,7 @@
       case 'hint': (function () { var q = BY[R.ids[R.pos]]; if (!q || !q.h) return; var d = document.createElement('div'); d.className = 'dlg'; d.innerHTML = '<div><h3>💡 إرشاد</h3><p style="line-height:2">' + esc(q.h) + '</p><button type="button" class="btn" style="width:100%">حسنًا</button></div>'; d.onclick = function (e) { if (e.target === d || e.target.tagName === 'BUTTON') d.remove(); }; document.body.appendChild(d); })(); return;
       case 'flag': if (R.flag[R.pos]) delete R.flag[R.pos]; else R.flag[R.pos] = 1; save(); return draw();
       case 'end': return confirmEnd();
+      case 'tolist': if (R.total && !R.paused) R.paused = Math.max(1, left()); save(); stopTimer(); document.body.classList.remove('testing'); R = null; home(); window.scrollTo(0, 0); return;
       case 'pause':
         if (R.paused) { R.t0 = Date.now() - (R.total - R.paused) * 1000; delete R.paused; startTimer(); }
         else { R.paused = left(); stopTimer(); timerEl.classList.remove('hidden'); timerEl.textContent = '⏸ ' + fmt(R.paused); }

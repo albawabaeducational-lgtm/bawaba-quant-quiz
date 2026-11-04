@@ -18,6 +18,12 @@
       <a class="bwh-card" href="muhaky%20warky1.html"><span class="n">١</span><b>النموذج الأول</b><span>اختبار محاكي للقدرات الورقي</span><span class="go">ابدأ النموذج الأول</span></a>
       <a class="bwh-card" href="muhaky%20warky2.html"><span class="n">٢</span><b>النموذج الثاني</b><span>اختبار محاكي للقدرات الورقي</span><span class="go">ابدأ النموذج الثاني</span></a>
     </div>
+    <h2 id="tjH" style="margin-top:28px">تجميعات الكمي الورقي</h2>
+    <div class="bwh-grid" id="tjG">
+      <a class="bwh-card" data-vis="warky kamy1447" href="warky%20kamy1447.html"><span class="n">✎</span><b>تجميعات الورقي 1447 هـ</b><span>١٨ نموذجًا، ٩٠٠ سؤال</span><span class="go">افتح التجميعات</span></a>
+      <a class="bwh-card" data-vis="tajmee warky 5years" href="tajmee%20warky%205years.html"><span class="n">✎</span><b>تجميعات السنوات الخمس الفائتة</b><span>٣٢ نموذجًا، ١٬٥٨٥ سؤالًا</span><span class="go">افتح التجميعات</span></a>
+    </div>
+    <script>fetch('/api/public').then(function (r) { return r.json(); }).then(function (d) { var h = d.hidden || [], n = 0; [].forEach.call(document.querySelectorAll('#tjG [data-vis]'), function (a) { if (h.indexOf(a.getAttribute('data-vis')) >= 0) a.hidden = true; else n++; }); if (!n) { document.getElementById('tjH').hidden = true; document.getElementById('tjG').hidden = true; } }).catch(function () {});</script>
   </main>
   <footer class="bwh-foot">جميع حقوق النشر محفوظة لمنصة البوابة التعليمية 2026</footer>
 <script src="/bw-shell.js"></script>

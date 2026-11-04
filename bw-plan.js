@@ -139,7 +139,7 @@
   function actualDaily() {
     var since = Date.now() - 7 * DAY, n = 0;
     ['bw-stats-v1', 'bwa-stats-v1', 'bwv-stats-v1', 'bw-stats-v2'].forEach(function (k) { var S = get(k, null); ((S && S.h) || []).forEach(function (x) { if (x && x.d && new Date(x.d).getTime() >= since) n += +x.n || 0; }); });
-    ['bwmt-hist', 'warky1447.hist'].forEach(function (k) { (get(k, []) || []).forEach(function (x) { if (x && x.d && new Date(x.d).getTime() >= since) n += +x.n || 0; }); });
+    ['bwmt-hist', 'warky1447.hist', 'tw5y1447.hist'].forEach(function (k) { (get(k, []) || []).forEach(function (x) { if (x && x.d && new Date(x.d).getTime() >= since) n += +x.n || 0; }); });
     return Math.round(n / 7);
   }
 

@@ -177,7 +177,7 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
   }
   function draw() {
     var it = S.items[S.pos], n = S.items.length, a = S.ans[S.pos], shown = opt.mode === 'train' ? a !== undefined : opt.mode === 'test' ? false : !!S.show[S.pos], done = Object.keys(S.ans).length;
-    var h = '<div class="qhead"><span class="sk-t">' + esc(cur.skill.name) + ' · السؤال <b>' + AR(S.pos + 1) + '</b> من ' + AR(n) + '</span><span class="sk-a">أجبت <b>' + AR(done) + '</b> · متبقٍ <b>' + AR(n - done) + '</b></span>' + (S.total ? '<span id="sktm" class="sk-tm">⏱ ' + fmt(S.total - (Date.now() - S.t0) / 1000) + '</span>' : '') + '<button type="button" class="btn red sm" data-a="end">تسليم</button></div><div class="qtrack"><i style="width:' + (done / n * 100) + '%"></i></div>'
+    var h = '<div class="qhead"><span class="sk-t">' + esc(cur.skill.name) + ' · السؤال <b>' + AR(S.pos + 1) + '</b> من ' + AR(n) + '</span><span class="sk-a">أجبت <b>' + AR(done) + '</b> · متبقٍ <b>' + AR(n - done) + '</b></span>' + (S.total ? '<span id="sktm" class="sk-tm">⏱ ' + fmt(S.total - (Date.now() - S.t0) / 1000) + '</span>' : '') + '<button type="button" class="btn ghost sm" data-a="tolist" title="ارجع إلى قائمة المهارات">↩ المهارات</button><button type="button" class="btn red sm" data-a="end">تسليم</button></div><div class="qtrack"><i style="width:' + (done / n * 100) + '%"></i></div>'
       + '<div class="card">' + qBody(it, S.pos) + optsHtml(it, a, shown, opt.mode === 'train' && shown)
       + (shown ? '<div class="fb ' + (a === undefined ? 'in">الإجابة الصحيحة: ' + L[it.c] : a === it.c ? 'ok">✓ إجابة صحيحة' : 'no">✗ الإجابة الصحيحة: ' + L[it.c]) + '</div>' : '')
       + '<div class="qnav"><button class="btn ghost" data-a="prev"' + (S.pos ? '' : ' disabled') + '>السابق</button><button class="btn ghost' + (S.flag[S.pos] ? ' flg' : '') + '" data-a="flag">' + (S.flag[S.pos] ? '⚑ معلَّم' : '⚐ علّم للمراجعة') + '</button>' + (opt.mode === 'present' && !shown ? '<button class="btn soft" data-a="show">أظهر الإجابة</button>' : '') + (S.pos < n - 1 ? '<button class="btn" data-a="next">التالي</button>' : '<button class="btn gold" data-a="end">إنهاء</button>') + '</div></div>'
@@ -229,6 +229,7 @@ html:has(#app > .qhead), html:has(#app > .qhead) body { height: 100%; overflow: 
     if (x.ans !== undefined) { if (!S || S.done) return; if (opt.mode === 'train' && S.ans[S.pos] !== undefined) return; S.ans[S.pos] = +x.ans; if (opt.mode === 'present') S.show[S.pos] = 1; draw(); if (opt.mode === 'test' && S.pos < S.items.length - 1) { var at = S.pos; setTimeout(function () { if (S && !S.done && S.pos === at) { S.pos++; draw(); } }, 250); } return; }
     switch (x.a) {
       case 'go': return go();
+      case 'tolist': if (S && !S.done && Object.keys(S.ans).length && !confirm('العودة إلى قائمة المهارات؟ لن تُحفظ نتيجة هذا الاختبار.')) return; clearInterval(window.__skT); if (S) S.done = true; document.body.classList.remove('present'); history.replaceState(null, '', location.pathname + '?subject=' + encodeURIComponent(sub)); return list();
       case 'back': clearInterval(window.__skT); history.replaceState(null, '', location.pathname + '?subject=' + encodeURIComponent(sub)); return list();
       case 'setup': clearInterval(window.__skT); return setup(cur.skill.id);
       case 'prev': S.pos--; return draw();
