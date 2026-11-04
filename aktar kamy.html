@@ -154,7 +154,8 @@
   body.testing .card { margin-bottom: 0; }
 }
 .rv { grid-template-columns: 1fr !important; } .rv img { max-width: 900px; margin: 0 auto; } .rv .ans { font-size: 17px; font-weight: 600; }
-  @media (max-width: 700px) { .qhead .qlist { font-size: 0 !important; padding: 5px 10px !important; } .qhead .qlist::before { content: "↩ القائمة"; font-size: 13px; } }
+  /* الجوال: العدّاد داخل شريط السؤال (كبسولة فاتحة)، وزر القائمة في الهيدر، وخريطة الأسئلة أيقونة */
+  @media (max-width: 700px) { .qhead .qlist { display: none !important; } .qhead .qans { font-size: 12.5px; line-height: 1.5; } .qhead #timer { background: #eaf2f9; color: var(--bw-navy); font-size: 14px; padding: 5px 14px; min-width: 66px; border-radius: 99px; flex: none; } .qhead #timer.urgent { background: #fbe6e2; color: #c2412f; } .qhead .qmap { font-size: 0 !important; padding: 5px 11px !important; } .qhead .qmap::before { content: "☷"; font-size: 17px; line-height: 1; } }
 </style>
 <link rel="stylesheet" href="/api/site-colors.css"></head>
 <body class="bwt-hub">
@@ -176,7 +177,7 @@
   var MN = {}; DB.models.forEach(function (m) { MN[m.id] = m.name; });
   var L = ['أ', 'ب', 'ج', 'د'], SIZES = [10, 20, 50, 55];
   var K = { seen: 'bwmt-seen', err: 'bwmt-errors', hist: 'bwmt-hist', run: 'bwmt-run', pref: 'bwmt-pref' };
-  var app = document.getElementById('app'), timerEl = document.getElementById('timer');
+  var app = document.getElementById('app'), timerEl = document.getElementById('timer'), timerHome = document.getElementById('timer').parentNode;
   var AR = function (n) { return String(n).replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; }); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   function get(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
@@ -271,6 +272,8 @@
       + '<div class="row" style="margin-top:14px"><button class="btn red sm" data-a="end">إنهاء الاختبار</button>' + (train && R.total ? '<button class="btn ghost sm" data-a="pause">' + (R.paused ? '▶ استئناف المؤقت' : '⏸ إيقاف المؤقت') + '</button>' : '') + '</div>'
       + '<div class="keys">⌨ ١–٤ أو أ–د للإجابة · ← → للتنقل · F للتعليم</div></aside></div>';
     app.innerHTML = h;
+    // على الجوال يظهر العدّاد داخل شريط السؤال، وعلى الكمبيوتر يبقى في الهيدر
+    var qh = app.querySelector('.qhead'); if (qh && window.matchMedia('(max-width: 700px)').matches) qh.insertBefore(timerEl, qh.querySelector('.qsub')); else if (timerEl.parentNode !== timerHome) timerHome.appendChild(timerEl);
     // تحميل مسبق للسؤال التالي
     if (R.pos < n - 1) { var pre = new Image(); pre.src = img(R.ids[R.pos + 1]); }
   }
