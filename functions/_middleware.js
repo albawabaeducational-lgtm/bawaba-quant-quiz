@@ -24,7 +24,9 @@ const COURSES = {
   // تجميعات الورقي 1447 هـ: بنك صور ثابت مثل «الأكثر تكرارًا» (صور الأسئلة في warky-kamy-img/)
   'warky kamy1447': { title: 'تجميعات الورقي 1447 هـ', model: 'static', img: true, hints: true, url: '/warky kamy1447', imgPat: 'warky-kamy-img/{id}.webp' },
   // تجميعات الورقي (كمي) للسنوات الخمس السابقة: نفس بنية 1447 (صور الأسئلة في tajmee-waraqi-5-years/)
-  'tajmee warky 5years': { title: 'تجميعات الورقي – الخمس سنوات السابقة', model: 'static', img: true, hints: true, url: '/tajmee warky 5years', imgPat: 'tajmee-waraqi-5-years/{id}.webp' }
+  'tajmee warky 5years': { title: 'تجميعات الورقي – الخمس سنوات السابقة', model: 'static', img: true, hints: true, url: '/tajmee warky 5years', imgPat: 'tajmee-waraqi-5-years/{id}.webp' },
+  // نماذج المحوسب الكاملة 2026 (كمي): نفس بنية 1447، ٧٩ نموذجًا (صور الأسئلة في mohawsab-2026-img/)
+  'namazej mohawsab 2026': { title: 'نماذج المحوسب الكاملة 2026', model: 'static', img: true, hints: true, url: '/namazej mohawsab 2026', imgPat: 'mohawsab-2026-img/{id}.webp' }
 };
 // صفحات ليست مقررات لكنها تقرأ أسئلة المقررات (مع تعديلات المعلمين): اختبار تحديد المستوى
 // skills: مهارات اللفظي في «التأسيس حسب المهارة» تُبنى تلقائيًا من هذه البنوك حسب نوع كل سؤال
@@ -33,7 +35,7 @@ const COURSES = {
 const PAPER_X = ['warky kamy1447', 'tajmee warky 5years']; // صفحات تجميعات ورقية مستقلة تفتح باشتراك الورقي
 const isPaperX = (s) => PAPER_X.includes(s);
 const VIRTUAL = { placement: ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
-const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'tajmee warky 5years': ['paper'], 'skills': ['computer_quant', 'computer_verbal'] };
+const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'namazej mohawsab 2026': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'tajmee warky 5years': ['paper'], 'skills': ['computer_quant', 'computer_verbal'] };
 // مقررات تضيفها الإدارة من لوحة التحكم (نفس الدالة في functions/api/[[path]].js)
 const CC_MODELS = { static: 1, bank: 1, raw: 1, key: 1 }, CC_GROUPS = ['computer_quant', 'computer_verbal', 'computer_combined', 'paper'];
 const customOf = raw => {

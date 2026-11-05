@@ -125,7 +125,8 @@ const COURSES = [
   { slug: 'ikmal_aljumal', title: 'إكمال الجمل', file: '/ikmal_aljumal.html', model: 'raw' },
   { slug: 'aktar kamy', title: 'الأسئلة الأكثر تكرارًا – كمي', file: '/aktar kamy.html', model: 'static' }, // بنك صور: تصنيف المهارات والتقارير فقط
   { slug: 'warky kamy1447', title: 'تجميعات الورقي 1447 هـ', file: '/warky kamy1447.html', model: 'static', imgPat: '/warky-kamy-img/{id}.webp' }, // بنك صور ثابت مثل «الأكثر تكرارًا»
-  { slug: 'tajmee warky 5years', title: 'تجميعات الورقي – الخمس سنوات السابقة', file: '/tajmee warky 5years.html', model: 'static', imgPat: '/tajmee-waraqi-5-years/{id}.webp' } // نفس بنية 1447
+  { slug: 'tajmee warky 5years', title: 'تجميعات الورقي – الخمس سنوات السابقة', file: '/tajmee warky 5years.html', model: 'static', imgPat: '/tajmee-waraqi-5-years/{id}.webp' }, // نفس بنية 1447
+  { slug: 'namazej mohawsab 2026', title: 'نماذج المحوسب الكاملة 2026', file: '/namazej mohawsab 2026.html', model: 'static', imgPat: '/mohawsab-2026-img/{id}.webp' } // نفس بنية 1447 (٧٩ نموذجًا)
 ];
 const COURSE = Object.fromEntries(COURSES.map(c => [c.slug, c]));
 const KINDS = { bank: ['q', 's', 'p', 'o'], raw: ['r'], key: ['k'], linked: [], static: ['ak', 'ah', 'ai', 'ax'] };
@@ -160,7 +161,7 @@ let schemaReady = false, leadsReady = false, moodleReady = false;
 const GOOGLE_CLIENT_ID = '1017687433947-oscl9bci17amtnqp8hlrgogk1p29ub23.apps.googleusercontent.com';
 const MOODLE_URL = 'https://albawaba-edu.com/e';
 // مفاتيح التقدم التي تُحفظ على الخادم لكل طالب (نفس مفاتيح صفحات الاختبارات في المتصفح)
-const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-study-plan-v1', 'bw-skill-v1', 'bw-rank-off', 'warky1447.seen', 'warky1447.err', 'warky1447.hist', 'warky1447.run', 'warky1447.pref', 'warky1447.res', 'bw-stats-v2', 'bw-sel-v2', 'tanazur.best.50q.dedup.v1', 'khata.best', 'bw-plan-v2', 'tw5y1447.seen', 'tw5y1447.err', 'tw5y1447.hist', 'tw5y1447.run', 'tw5y1447.pref', 'tw5y1447.res'];
+const SYNC_KEYS = ['bw-stats-v1', 'quant-quiz-errors-v1', 'bw-sim-v1', 'bw-sel-v1', 'bwq-seen', 'bwa-stats-v1', 'bwa-errors-v1', 'bwa-sim-v1', 'bwa-sel-v1', 'bwa-seen', 'bwv-stats-v1', 'verbal-quiz-errors-v1', 'bwv-sim-v1', 'bwv-sel-v1', 'bwm-sim-v1', 'bwm-seen', 'tanazur.best', 'ikmal.best', 'ikmal.prefs', 'tanazur.prefs', 'bawaba_folder_v1_e1', 'bawaba_folder_v1_e2', 'bw-place-v1', 'bw-why-v1', 'bwmt-seen', 'bwmt-errors', 'bwmt-hist', 'bw-goal-v1', 'bw-study-plan-v1', 'bw-skill-v1', 'bw-rank-off', 'warky1447.seen', 'warky1447.err', 'warky1447.hist', 'warky1447.run', 'warky1447.pref', 'warky1447.res', 'bw-stats-v2', 'bw-sel-v2', 'tanazur.best.50q.dedup.v1', 'khata.best', 'bw-plan-v2', 'tw5y1447.seen', 'tw5y1447.err', 'tw5y1447.hist', 'tw5y1447.run', 'tw5y1447.pref', 'tw5y1447.res', 'nmh2026.seen', 'nmh2026.err', 'nmh2026.hist', 'nmh2026.run', 'nmh2026.pref', 'nmh2026.res'];
 let progressReady = false;
 const ensureProgressSchema = async DB => { if (progressReady) return; await DB.prepare('CREATE TABLE IF NOT EXISTS student_progress (student_id INTEGER NOT NULL, key TEXT NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (student_id, key))').run(); progressReady = true; };
 const ensureMoodleSchema = async DB => {
@@ -199,7 +200,7 @@ function freeDb(text, n, kind) {
   return JSON.stringify(d).replace(/</g, '\\u003c');
 }
 // الاختبارات التي يمكن إخفاؤها عن الطلاب من لوحة التحكم
-const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['maharat kamy', 'تأسيس الكمي حسب المهارة'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['warky kamy1447', 'تجميعات الورقي 1447 هـ'], ['tajmee warky 5years', 'تجميعات الورقي – الخمس سنوات السابقة'], ['placement', 'اختبار تحديد المستوى']];
+const VIS = [['muhaky mohawsab', 'المحاكي المحوسب'], ['tasis lafzi', 'تأسيس اللفظي'], ['ikmal_aljumal', 'إكمال الجمل'], ['aksam kamy', 'أقسام الكمي'], ['ak_kamyadd', 'أقسام الكمي الإضافية'], ['maharat kamy', 'تأسيس الكمي حسب المهارة'], ['aksam lafzi', 'أقسام اللفظي'], ['aktar kamy', 'الأسئلة الأكثر تكرارًا – كمي'], ['namazej mohawsab 2026', 'نماذج المحوسب الكاملة 2026'], ['skills', 'التدريب حسب المهارة'], ['waraqi', 'المحاكي الورقي (النموذجان)'], ['warky kamy1447', 'تجميعات الورقي 1447 هـ'], ['tajmee warky 5years', 'تجميعات الورقي – الخمس سنوات السابقة'], ['placement', 'اختبار تحديد المستوى']];
 // ===================== إعدادات الصفحة الرئيسية (تُعدَّل من لوحة التحكم ← الصفحة الرئيسية) =====================
 const HOME_FONTS = ['ibm', 'readex', 'tajawal', 'cairo', 'almarai', 'kufi'];
 const homeStr = (x, n) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u2028\u2029]/g, ' ').trim().slice(0, n);
@@ -225,7 +226,7 @@ const SUB_KEYS = VIS.map(v => v[0]).filter(k => k !== 'placement' && k !== 'wark
 const SUB_TITLE = Object.fromEntries(VIS);
 // أي البنوك يحتاجها كل اشتراك (لتحميل بيانات الاختبارات المرتبطة كاملة)
 const SUB_LINKS = { 'muhaky mohawsab': ['aksam lafzi', 'aksam kamy'], skills: ['aksam lafzi'] };
-const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'tajmee warky 5years': ['paper'], 'skills:kamy': ['computer_quant'], 'skills:lafzi': ['computer_verbal'] };
+const PACKAGE_COURSE_GROUPS = { 'aksam kamy': ['computer_quant'], 'ak_kamyadd': ['computer_quant'], 'maharat kamy': ['computer_quant', 'paper'], 'aktar kamy': ['computer_quant'], 'namazej mohawsab 2026': ['computer_quant'], 'tasis lafzi': ['computer_verbal'], 'ikmal_aljumal': ['computer_verbal'], 'aksam lafzi': ['computer_verbal'], 'muhaky mohawsab': ['computer_combined'], 'waraqi': ['paper'], 'muhaky warky1': ['paper'], 'muhaky warky2': ['paper'], 'warky kamy1447': ['paper'], 'tajmee warky 5years': ['paper'], 'skills:kamy': ['computer_quant'], 'skills:lafzi': ['computer_verbal'] };
 const packageIncludes = (access, key) => { try { const a = typeof access === 'string' ? JSON.parse(access || '{}') : access || {}; const groups = Array.isArray(a.groups) ? a.groups : [], courses = Array.isArray(a.courses) ? a.courses : []; if (courses.includes(key)) return true; const need = PACKAGE_COURSE_GROUPS[key] || []; if (need.some(g => groups.includes(g))) return true; if (key === 'skills') return groups.includes('computer_quant') || groups.includes('computer_verbal'); return false; } catch (e) { return false; } };
 // ===================== مقررات تضيفها الإدارة من لوحة التحكم =====================
 // الإدارة تحدد ملف الصفحة ونوع أسئلتها (بنفس بنية صفحة موجودة)، فيظهر المقرر في «المقررات» بأدوات التعديل المناسبة
@@ -348,6 +349,7 @@ const PLAN_SOURCES = [
   { id: 'lafzi', slug: 'aksam lafzi', title: 'أقسام اللفظي', subj: 'v', kind: 'bank', unit: 'قسم', page: '/aksam%20lafzi.html', stats: 'bwv-stats-v1', sel: 'bwv-sel-v1' },
   { id: 'w1447', title: 'تجميعات الورقي 1447 هـ', subj: 'q', kind: 'models', unit: 'نموذج', page: '/warky%20kamy1447.html', res: 'warky1447.res', n: 18, size: 50 },
   { id: 'w5y', title: 'تجميعات الورقي – الخمس سنوات السابقة', subj: 'q', kind: 'models', unit: 'نموذج', page: '/tajmee%20warky%205years.html', res: 'tw5y1447.res', n: 32, size: 50, last: 35 },
+  { id: 'nmh2026', title: 'نماذج المحوسب الكاملة 2026', subj: 'q', kind: 'models', unit: 'نموذج', page: '/namazej%20mohawsab%202026.html', res: 'nmh2026.res', n: 79, size: 55, last: 14 },
   { id: 'mock1', title: 'المحاكي الورقي – النموذج الأول', subj: 'm', kind: 'mock', unit: 'اختبار', page: '/muhaky%20warky1.html', done: 'bawaba_folder_v1_e1', q: 120 },
   { id: 'mock2', title: 'المحاكي الورقي – النموذج الثاني', subj: 'm', kind: 'mock', unit: 'اختبار', page: '/muhaky%20warky2.html', done: 'bawaba_folder_v1_e2', q: 120 }
 ];
@@ -1647,7 +1649,7 @@ export async function onRequest({ request, env, params }) {
   // ---------- مراجعة مفاتيح الإجابات: أسئلة يُشك في إجابتها، تُعتمد كما هي أو تُصحَّح من مكان واحد ----------
   if (p.startsWith('admin/review')) {
     await DB.prepare("CREATE TABLE IF NOT EXISTS qreview (course TEXT NOT NULL, qkey TEXT NOT NULL, note TEXT, status TEXT NOT NULL DEFAULT 'open', old_c INTEGER, new_c INTEGER, added_by TEXT, resolved_by TEXT, created_at TEXT NOT NULL, resolved_at TEXT, PRIMARY KEY (course, qkey))").run();
-    const RC = ['aksam kamy', 'aktar kamy', 'warky kamy1447'], mine = {};
+    const RC = ['aksam kamy', 'aktar kamy', 'warky kamy1447', 'namazej mohawsab 2026'], mine = {};
     for (const c of RC) { const r = await courseRights(c); if (r) mine[c] = r; }
     if (!Object.keys(mine).length) return deny('لا توجد مقررات مسندة لك');
     if (p === 'admin/review' && m === 'GET') {

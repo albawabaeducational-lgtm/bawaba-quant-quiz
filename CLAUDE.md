@@ -21,7 +21,7 @@
 ## أنواع صفحات الاختبارات
 - **bank** (`aksam kamy`, `ak_kamyadd`, `maharat kamy`, `aksam lafzi`): البيانات في `<script id="db" type="application/json">` بالشكل
   `{secs:[{id,name,group?,count}], qs:[[id, secId, t, pi, stemHtml, opts, correct, hint, ...]]}`. الإرشاد هو العنصر `q[7]`.
-- **static** (`aktar kamy`, `warky kamy1447`, `tajmee warky 5years`): بنك صور ثابت، `qs:[[id, modelId, correct, hint]]`، الإرشاد `q[3]`، صورة السؤال من `imgPat` (مثل `warky-kamy-img/{id}.webp`).
+- **static** (`aktar kamy`, `warky kamy1447`, `tajmee warky 5years`, `namazej mohawsab 2026` = نماذج المحوسب الكاملة 2026: ٧٩ نموذجًا، ٤٣٠٤ سؤالًا، صورها `mohawsab-2026-img/{id}.webp`): بنك صور ثابت، `qs:[[id, modelId, correct, hint]]`، الإرشاد `q[3]`، صورة السؤال من `imgPat` (مثل `warky-kamy-img/{id}.webp`).
 - **raw/key/linked**: التناظر، إكمال الجمل، الخطأ السياقي، المحاكي الورقي، المحاكي المحوسب (يُبنى من أقسام الكمي واللفظي).
 - صور الأسئلة بصيغة WebP وأسماء ملفات ASCII بدون مسافات قدر الإمكان (مثال `maharat-kamy-img/q12_1.webp`).
 
