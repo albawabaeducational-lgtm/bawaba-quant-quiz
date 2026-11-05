@@ -197,7 +197,8 @@ body.testing .side { margin: 0; overflow: auto; }
   body.testing .opt { padding: 8px 0; font-size: 20px; }
   body.testing .qnav { margin-top: 8px; flex-wrap: nowrap; gap: 6px; }
   body.testing .qnav .btn { padding: 9px 8px; font-size: 13.5px; flex: 1 1 0; min-width: 0; }
-  body.testing .qnav .hintbtn { display: none; }
+  body.testing .qnav .hintbtn { flex: 0 0 auto; font-size: 0; padding: 9px 12px; }
+  body.testing .qnav .hintbtn::before { content: '💡'; font-size: 17px; line-height: 1; }
 }
 @media (max-height: 560px) { body.testing .qtrack { display: none; } body.testing .opt { padding: 5px 0; font-size: 18px; } body.testing .qnav .btn { padding: 6px 10px; } }
   /* الجوال: العدّاد داخل شريط السؤال (كبسولة فاتحة)، وزر القائمة في الهيدر، وخريطة الأسئلة أيقونة */
