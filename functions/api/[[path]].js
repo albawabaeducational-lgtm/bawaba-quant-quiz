@@ -487,6 +487,8 @@ const bankItems = async (env, request, DB, slug) => {
   return items;
 };
 
+// «هدية مقابل الرقم»: الزائر يترك رقم الواتساب فيُفتح له قسم مدفوع (أو أكثر) كاملًا لعدد أيام تحددها الإدارة
+const giftOf = raw => { let g = null; try { g = JSON.parse(raw || 'null'); } catch (e) { } g = g && typeof g === 'object' ? g : {}; const courses = (Array.isArray(g.courses) ? g.courses : ['maharat kamy']).filter(k => typeof k === 'string' && SUB_KEYS.includes(k)).slice(0, 6); return { on: g.on !== false, courses: courses.length || Array.isArray(g.courses) ? courses : ['maharat kamy'], days: Math.max(1, Math.min(30, parseInt(g.days) || 3)) }; };
 const ensureLeadsSchema = async DB => {
   if (leadsReady) return;
   await DB.batch([
@@ -494,6 +496,7 @@ const ensureLeadsSchema = async DB => {
     DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS guest_leads_phone ON guest_leads(phone)"),
     DB.prepare("CREATE INDEX IF NOT EXISTS guest_leads_created ON guest_leads(created_at)")
   ]);
+  await DB.prepare('CREATE TABLE IF NOT EXISTS lead_gifts (token TEXT PRIMARY KEY, phone TEXT NOT NULL, ip TEXT, courses TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL)').run();
   // مكان المهتم والزائر (من Cloudflare) لمعرفة المناطق المستهدفة
   for (const c of ['country TEXT', 'region TEXT', 'city TEXT']) { try { await DB.prepare('ALTER TABLE guest_leads ADD COLUMN ' + c).run(); } catch (e) { } try { await DB.prepare('ALTER TABLE trials ADD COLUMN ' + c).run(); } catch (e) { } }
   leadsReady = true;
@@ -610,9 +613,30 @@ export async function onRequest({ request, env, params }) {
     if (leadPhone.length < 9 || leadPhone.length > 15) return J({ error: 'اكتب رقم واتساب صحيحًا' }, 400);
     const cf = request.cf || {}, loc = [String(cf.country || '').slice(0, 2) || null, String(cf.region || '').slice(0, 60) || null, String(cf.city || '').slice(0, 60) || null];
     await DB.prepare("INSERT INTO guest_leads (name,phone,source,interest,status,created_at,country,region,city) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(phone) DO UPDATE SET name=COALESCE(excluded.name,guest_leads.name),interest=excluded.interest,source=excluded.source,country=COALESCE(excluded.country,guest_leads.country),region=COALESCE(excluded.region,guest_leads.region),city=COALESCE(excluded.city,guest_leads.city)").bind(name || null, leadPhone, source, interest, 'new', iso, ...loc).run();
+    // الهدية: تُفتح مرة واحدة لكل رقم (إعادة نفس الرقم تعيد نفس المدة ولا تمددها)، وبحد أقصى ٣ هدايا لكل شبكة يوميًا
+    const G = giftOf(await setting('lead_gift'));
+    if (b.gift && G.on && G.courses.length && (await setting('require_login')) === '1') {
+      let g = await DB.prepare('SELECT token,courses,expires_at FROM lead_gifts WHERE phone=? ORDER BY created_at DESC LIMIT 1').bind(leadPhone).first();
+      if (!g) {
+        const n = (await DB.prepare('SELECT COUNT(*) n FROM lead_gifts WHERE ip=? AND created_at>?').bind(ip, new Date(now - 864e5).toISOString()).first()).n;
+        if (n < 3) {
+          const tk = [...crypto.getRandomValues(new Uint8Array(18))].map(x => x.toString(16).padStart(2, '0')).join('');
+          g = { token: tk, courses: JSON.stringify(G.courses), expires_at: new Date(now + G.days * 864e5).toISOString() };
+          await DB.prepare('INSERT INTO lead_gifts (token,phone,ip,courses,created_at,expires_at) VALUES (?,?,?,?,?,?)').bind(tk, leadPhone, ip, g.courses, iso, g.expires_at).run();
+        }
+      }
+      if (g && g.expires_at > iso) {
+        let cs = []; try { cs = JSON.parse(g.courses); } catch (e) { }
+        const h = new Headers({ 'content-type': 'application/json', 'cache-control': 'no-store' });
+        h.append('set-cookie', `bw_lg=${g.token}; Path=/; Max-Age=${Math.max(60, Math.floor((new Date(g.expires_at) - now) / 1000))}; HttpOnly; Secure; SameSite=Lax`);
+        return new Response(JSON.stringify({ ok: 1, gift: { until: g.expires_at, courses: cs.map(k => ({ key: k, title: SUB_TITLE[k] || k, url: k === 'waraqi' ? '/waraqi.html' : COURSE[k] ? encodeURI(COURSE[k].file) : '/' + encodeURI(k) + '.html'})) } }), { headers: h });
+      }
+      return J({ ok: 1, gift: null, giftUsed: !!g });
+    }
     return J({ ok: 1 });
   }
   // الصفحة الرئيسية تعرض «تفاصيل الدورات» من نفس رسالة واتساب التي تُرسل للمهتمين (تُعدَّل من لوحة التحكم ← الإعدادات)
+  if (p === 'lead-gift') { const G = giftOf(await setting('lead_gift')); return new Response(JSON.stringify({ on: G.on && G.courses.length > 0 && (await setting('require_login')) === '1', days: G.days, courses: G.courses.map(k => ({ key: k, title: SUB_TITLE[k] || k })) }), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=120' } }); }
   if (p === 'site-colors.css') return new Response(siteColorsCss(siteColorsOf(await setting('site_colors'))), { headers: { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'public, max-age=60' } });
   if (p === 'public') { const gTitle = { computer_quant: 'الكمي المحوسب', computer_verbal: 'اللفظي المحوسب', computer_combined: 'المحاكي المحوسب المشترك', paper: 'الاختبارات الورقية' }; const packages = packagesOf(await setting('packages')).filter(x => x.price > 0 && (x.groups.length || x.courses.length)).map(x => ({ ...x, inclusions: [...x.groups.map(g => gTitle[g] || g), ...x.courses.map(c => SUB_TITLE[c] || c)] })); return J({ contact: await setting('contact'), plans: plansOf(await setting('plans')), packages, courses: (await setting('lead_message')) || DEFAULT_LEAD_MSG, moodle: (await setting('moodle_enabled')) !== '0', google: env.MOODLE_TOKEN ? ((await setting('google_client_id')) || GOOGLE_CLIENT_ID) : '', hidden: hiddenOf(await setting('hidden_courses')), home: homeOf(await setting('home_config')) }); }
 
@@ -2058,7 +2082,7 @@ export async function onRequest({ request, env, params }) {
     const S = {};
     for (const r of await all('SELECT key,value FROM settings')) S[r.key] = r.value;
     const settings = {};
-    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.vis = VIS; settings.study_plan_options = COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => ({ slug: c.slug, title: c.title })); try { settings.study_plan_banks = JSON.parse(S.study_plan_banks || 'null'); } catch (e) { settings.study_plan_banks = null; } if (!Array.isArray(settings.study_plan_banks) || !settings.study_plan_banks.length) settings.study_plan_banks = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi']; settings.plan_tracks = planCfgOf(S.plan_tracks); settings.custom_courses = customOf(S.custom_courses); settings.plan_sources = PLAN_SOURCES.map(x => ({ id: x.id, title: x.title, subj: x.subj })); }
+    if (can('settings.access')) { settings.require_login = S.require_login === '1'; settings.trial_minutes = +S.trial_minutes || 0; settings.moodle_enabled = S.moodle_enabled !== '0'; settings.moodle_url = S.moodle_url || MOODLE_URL; settings.moodle_courses = S.moodle_courses || ''; settings.hidden_courses = hiddenOf(S.hidden_courses); settings.free_mode = S.free_mode !== '0'; settings.google_client_id = S.google_client_id || GOOGLE_CLIENT_ID; settings.google_ready = !!env.MOODLE_TOKEN; settings.free_count = +S.free_count || 10; settings.lead_gift = giftOf(S.lead_gift); settings.lead_gift_options = SUB_KEYS.filter(k => k !== 'skills' && k !== 'placement').map(k => ({ key: k, title: SUB_TITLE[k] || k })); settings.vis = VIS; settings.study_plan_options = COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => ({ slug: c.slug, title: c.title })); try { settings.study_plan_banks = JSON.parse(S.study_plan_banks || 'null'); } catch (e) { settings.study_plan_banks = null; } if (!Array.isArray(settings.study_plan_banks) || !settings.study_plan_banks.length) settings.study_plan_banks = ['aksam kamy', 'ak_kamyadd', 'aksam lafzi']; settings.plan_tracks = planCfgOf(S.plan_tracks); settings.custom_courses = customOf(S.custom_courses); settings.plan_sources = PLAN_SOURCES.map(x => ({ id: x.id, title: x.title, subj: x.subj })); }
     if (can('settings.guard')) settings.trial_guard = S.trial_guard !== '0';
     if (can('settings.home')) { settings.site_colors = siteColorsOf(S.site_colors); settings.home_config = homeOf(S.home_config); if (!can('settings.access')) { settings.vis = VIS; settings.hidden_courses = hiddenOf(S.hidden_courses); } }
     if (can('settings.contact') || can('leads.manage') || can('students.message')) settings.contact = S.contact || '';
@@ -2152,6 +2176,7 @@ export async function onRequest({ request, env, params }) {
     else if (b.key === 'moodle_url') { if (!can('settings.access')) return deny(); v = String(b.value || '').trim().replace(/\/+$/, ''); if (!/^https:\/\/[^\s]+$/.test(v)) return J({ error: 'اكتب رابط منصة الدورات يبدأ بـ https://' }, 400); }
     else if (b.key === 'google_client_id') { if (!can('settings.access')) return deny(); v = String(b.value || '').trim(); if (v && !/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/.test(v)) return J({ error: 'Client ID غير صحيح؛ لازم ينتهي بـ .apps.googleusercontent.com' }, 400); }
     else if (b.key === 'free_mode') { if (!can('settings.access')) return deny(); v = b.value ? '1' : '0'; }
+    else if (b.key === 'lead_gift') { if (!can('settings.access')) return deny(); const x = b.value || {}; v = JSON.stringify({ on: !!x.on, courses: (Array.isArray(x.courses) ? x.courses : []).filter(k => SUB_KEYS.includes(k)).slice(0, 6), days: Math.max(1, Math.min(30, int(x.days) || 3)) }); }
     else if (b.key === 'free_count') { if (!can('settings.access')) return deny(); v = String(Math.max(1, Math.min(50, int(b.value) || 10))); }
     else if (b.key === 'study_plan_banks') { if (!can('settings.access')) return deny(); const allowed = new Set(COURSES.filter(c => c.model === 'bank' || c.model === 'static').map(c => c.slug)); const a = Array.isArray(b.value) ? [...new Set(b.value.filter(x => typeof x === 'string' && allowed.has(x)))].slice(0, allowed.size) : []; if (!a.length) return J({ error: 'اختر بنكًا واحدًا على الأقل للخطة' }, 400); v = JSON.stringify(a); }
     else if (b.key === 'custom_courses') {

@@ -75,10 +75,11 @@
       + (F.acct
         ? '<a class="b b1" href="' + need + '">اطلب الاشتراك الآن</a>'
         : '<a class="b b1" href="/account.html?next=' + nxt + '">تسجيل الدخول</a><a class="b b2" href="/account.html?tab=signup">إنشاء حساب جديد</a>')
+      + (!F.acct && window.bwLead && !window.bwLead.done() ? '<button type="button" class="b b2" data-gift>🎁 افتحه مجانًا برقم الواتساب</button>' : '')
       + (F.wa ? '<a class="b b3" href="https://wa.me/' + esc(F.wa) + '?text=' + encodeURIComponent('أريد الاشتراك في منصة البوابة التعليمية') + '" target="_blank" rel="noopener">اشترك عبر واتساب</a>' : '')
       + '<button type="button" class="b b4" data-x>إغلاق</button>'
       + (F.acct ? '' : '<small>إنشاء الحساب وحده لا يفتح النسخة الكاملة؛ يلزم الاشتراك في القسم.</small>') + '</div>';
-    m.addEventListener('click', function (e) { if (e.target === m || e.target.hasAttribute('data-x')) m.remove(); });
+    m.addEventListener('click', function (e) { if (e.target.hasAttribute && e.target.hasAttribute('data-gift')) { m.remove(); window.bwLead.open(); return; } if (e.target === m || e.target.hasAttribute('data-x')) m.remove(); });
     document.body.appendChild(m);
     var b = m.querySelector('a'); if (b) b.focus();
   }
@@ -128,7 +129,8 @@
     var w = F.why === 'expired' ? 'انتهى اشتراكك، وأنت الآن على النسخة المجانية' : 'أنت على النسخة المجانية';
     var what = PAGE === 'aktar kamy' ? ('أول ' + AR(N * 5) + ' سؤالًا') : PAGE === 'muhaky mohawsab' ? ('أول ' + AR(N) + ' أقسام لفظي و' + AR(N) + ' كمي') : PAGE === 'skills' ? ('أول ' + AR(N) + ' أسئلة من كل مهارة') : ('أول ' + AR(N) + ' من كل اختبار');
     var b = document.createElement('div'); b.className = 'bwf-bar';
-    b.innerHTML = '<span>🔓 ' + w + ': ' + what + '.</span><a href="/login?next=' + nxt + '">تسجيل الدخول</a><a class="o" href="' + SIGNUP + '" target="_blank" rel="noopener">إنشاء حساب</a>';
+    b.innerHTML = '<span>🔓 ' + w + ': ' + what + '.</span>' + (!F.acct && window.bwLead && !window.bwLead.done() ? '<a href="#" data-gift>🎁 افتح الكامل مجانًا</a>' : '') + '<a ' + (!F.acct && window.bwLead && !window.bwLead.done() ? 'class="o" ' : '') + 'href="/login?next=' + nxt + '">تسجيل الدخول</a><a class="o" href="' + SIGNUP + '" target="_blank" rel="noopener">إنشاء حساب</a>';
+    b.addEventListener('click', function (e) { var g = e.target.closest && e.target.closest('[data-gift]'); if (g) { e.preventDefault(); window.bwLead.open(); } });
     document.body.insertBefore(b, document.body.firstChild);
   }
   function boot() {

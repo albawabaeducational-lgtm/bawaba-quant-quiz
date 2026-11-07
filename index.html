@@ -352,6 +352,9 @@
     .tg-channel svg { width: 22px; height: 22px; fill: #fff; }
     .lead-form { background: #fff; color: var(--ink); border-radius: 26px; padding: 26px; display: grid; gap: 12px; box-shadow: 0 24px 50px #00000045; }
     .lead-form h3 { font-size: 20px; color: var(--navy); }
+    .lead-gift { list-style: none; margin: 0; padding: 10px 12px; background: #fbf4e1; border-radius: 14px; display: grid; gap: 4px; font-size: 14px; font-weight: 600; color: var(--navy); }
+    .lead-gift[hidden], .lead-gift li[hidden] { display: none; }
+    .lead-safe { color: var(--muted); font-size: 12.5px; text-align: center; }
     .lead-form label { font-size: 14px; font-weight: 600; color: var(--muted); display: grid; gap: 5px; }
     .lead-form input { font: inherit; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 13px; background: var(--paper); color: var(--ink); width: 100%; }
     .lead-form input:focus { outline: none; border-color: var(--sea); background: #fff; box-shadow: 0 0 0 4px #1d6fb81f; }
@@ -849,11 +852,13 @@
           <a class="btn btn-gold mk-btn" href="/account.html?tab=signup&amp;marketer=1">🤝 سجّل كمسوّق واكسب عمولة</a>
         </div>
         <form class="lead-form" id="leadForm" novalidate>
-          <h3>أضفني لمجموعة المتابعة</h3>
+          <h3>🎁 اترك رقمك واحصل على هديتك</h3>
+          <ul class="lead-gift"><li id="leadGiftOpen" hidden>🔓 فتح <b id="leadGiftC"></b> كاملًا مجانًا</li><li>📄 ملف كل الأسئلة الأكثر تكرارًا</li><li>🗺️ خطة التأهيل المجرّبة مع مئات الطلاب قبلك</li><li>📢 إضافتك لمجموعة المتابعة ومسيرة التميز</li></ul>
           <label for="leadName">الاسم<input id="leadName" name="name" autocomplete="name" maxlength="80" placeholder="اختياري"></label>
           <label for="leadPhone">رقم الواتساب<input id="leadPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" maxlength="20" required placeholder="05XXXXXXXX"></label>
           <label for="leadInterest">ما الذي تريد معرفته؟<input id="leadInterest" name="interest" maxlength="160" placeholder="اختياري: الكمي، اللفظي، موعد الدورة…"></label>
-          <button class="btn btn-navy" id="leadBtn">أضفني للمجموعة</button>
+          <button class="btn btn-navy" id="leadBtn">أرسل لي الهدية</button>
+          <small class="lead-safe">🔒 رقمك عندنا بأمان، ولن نشاركه مع أي جهة.</small>
           <div class="lead-msg" id="leadMsg" role="status" aria-live="polite"></div>
         </form>
       </div>
@@ -1132,11 +1137,12 @@
 
 })();
 
+fetch('/api/lead-gift').then(function(r){return r.json()}).then(function(o){if(o&&o.on&&o.courses.length){document.getElementById('leadGiftC').textContent='«'+o.courses.map(function(c){return c.title}).join('» و«')+'» '+(o.days===1?'يومًا':o.days===2?'يومين':String(o.days).replace(/\d/g,function(d){return'٠١٢٣٤٥٦٧٨٩'[d]})+(o.days<=10?' أيام':' يومًا'));document.getElementById('leadGiftOpen').hidden=false}}).catch(function(){});
 (function(){var f=document.getElementById('leadForm'),m=document.getElementById('leadMsg'),b=document.getElementById('leadBtn'),ph=document.getElementById('leadPhone');if(!f)return;
 var en=function(s){return String(s).replace(/[٠-٩]/g,function(d){return'٠١٢٣٤٥٦٧٨٩'.indexOf(d)}).replace(/[۰-۹]/g,function(d){return'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)})};
 var say=function(t,ok){m.textContent=t;m.className='lead-msg'+(ok===true?' ok':ok===false?' bad':'')};
 f.onsubmit=async function(e){e.preventDefault();var d=en(ph.value).replace(/\D/g,'');if(d.length<9||d.length>15){say('اكتب رقم واتساب صحيحًا، مثال: 05XXXXXXXX',false);ph.focus();return}
-b.disabled=true;say('جارٍ حفظ طلبك...');try{var r=await fetch('/api/guest-lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:document.getElementById('leadName').value,phone:d,interest:document.getElementById('leadInterest').value,source:'home'})});var j=await r.json().catch(function(){return{}});if(r.ok){say('تم تسجيل رقمك ✓ سنضيفك للمجموعة قريبًا بإذن الله.',true);f.reset()}else say(j.error||'تعذر التسجيل، حاول مرة أخرى',false)}catch(_){say('تعذر الاتصال، حاول مرة أخرى',false)}b.disabled=false}})();
+b.disabled=true;say('جارٍ حفظ طلبك...');try{var r=await fetch('/api/guest-lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:document.getElementById('leadName').value,phone:d,interest:document.getElementById('leadInterest').value,source:'home',gift:1})});var j=await r.json().catch(function(){return{}});if(r.ok){try{localStorage.setItem('bw-lead-done','1')}catch(_){}var g=j.gift;say('تم ✓ سنرسل لك الملف والخطة على الواتساب قريبًا بإذن الله.',true);if(g&&g.courses&&g.courses.length){m.innerHTML+='<br>'+g.courses.map(function(c){return'<a href="'+c.url+'" style="display:inline-block;margin-top:6px;font-weight:700">🔓 افتح الآن: '+c.title.replace(/[<>&]/g,'')+' ←</a>'}).join('<br>')}var pl=document.querySelector('.bwl-p');if(pl)pl.remove();f.reset()}else say(j.error||'تعذر التسجيل، حاول مرة أخرى',false)}catch(_){say('تعذر الاتصال، حاول مرة أخرى',false)}b.disabled=false}})();
 
 </script>
 <script src="/bw-account.js" defer></script>

@@ -263,7 +263,10 @@
       h += '<p style="text-align:center"><button class="btn btn-soft" id="again">أعد اختبار تحديد المستوى</button>' + (wrong.length ? ' <button class="btn btn-navy" id="practiceWrong">أعد تدريب الخاطئ والمتروك (' + AR(wrong.length) + ')</button>' : '') + '</p>';
       // «خطتي»: تحديد المستوى أول خطوة في الخطة؛ بعد النتيجة يكمل الطالب بناء خطته عليها
       if (!practiceRun) { var flow = null; try { flow = JSON.parse(sessionStorage.getItem('bw-plan-flow') || 'null'); } catch (x) { } h = '<div class="plan-go"><div><b>' + (flow ? (flow.check ? '✓ تم قياس تقدمك' : '✓ تم تحديد مستواك') : 'ابنِ خطتك على مستواك ده') + '</b><span>' + (flow ? (flow.check ? 'ارجع لخطتك وشوف اتحسنت قد إيه.' : 'كمّل بناء خطتك: بنختار لك الهدف المناسب لكل قسم.') : 'خطة يومية بالمهارات اللي محتاجها، على قد وقتك.') + '</span></div><a class="btn btn-gold" href="/progress.html">' + (flow ? 'كمّل لخطتي ←' : 'ابنِ خطتي ←') + '</a></div>' + h; }
-      app.innerHTML = h; scrollTo(0, 0);
+      // الزائر غير المسجّل: يترك رقم الواتساب ليحصل على النتيجة والخطة (مع رابط «عرض النتيجة فقط»)
+      var showRes = function () { app.innerHTML = h; scrollTo(0, 0); };
+      if (!practiceRun && window.bwLead && !window.bwLead.done()) { app.innerHTML = '<div class="card" style="text-align:center;padding:30px 16px"><h2 style="margin:0 0 8px">🎉 خلصت الاختبار!</h2><p class="sub">نتيجتك وخطتك جاهزتان.</p></div>'; scrollTo(0, 0); window.bwLead.open({ ctx: 'result', onDone: showRes, onSkip: showRes }); }
+      else showRes();
     }
     app.addEventListener('click', function (e) {
       if (live) return;

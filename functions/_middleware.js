@@ -129,6 +129,11 @@ async function guard(env, request, now, iso) {
   return { start: g.started_at, warn: strikes };
 }
 
+// «هدية مقابل الرقم»: كوكي bw_lg تفتح أقسامًا محددة كاملة حتى تاريخ انتهاء الهدية (تُتحقق من قاعدة البيانات في كل طلب)
+async function giftFor(env, request, iso) {
+  const tk = cookie(request, 'bw_lg'); if (!tk || !/^[0-9a-f]{36}$/.test(tk)) return null;
+  try { const g = await env.DB.prepare('SELECT courses,expires_at FROM lead_gifts WHERE token=? AND expires_at>?').bind(tk, iso).first(); if (!g) return null; return { keys: JSON.parse(g.courses || '[]'), until: g.expires_at }; } catch (e) { return null; }
+}
 // حساب العامل (معلم/مشرف/إدارة) من كوكي لوحة التحكم
 async function staffOf(env, request, iso) {
   const raw = cookie(request, 'bw_staff');
@@ -206,7 +211,7 @@ export async function onRequest({ request, env, next }) {
   // bw-in: الطالب مسجّل الدخول (بالكود أو بمنصة الدورات) — تختفي عنه الباقات والاشتراك والتجربة
   if (valid) head += '<script>document.documentElement.classList.add("bw-in")</script><script src="/api/progress/restore.js"></script>';
   const contact = String(S.contact || '').replace(/\D/g, '');
-  const ui = o => `<script>window.__bw=${JSON.stringify({ contact, ...o })}</script><script src="/bw-ui.js"></script>`;
+  const ui = o => `<script>window.__bw=${JSON.stringify({ contact, ...o })}</script><script src="/bw-ui.js"></script>` + (valid ? '' : '<script src="/bw-lead.js" defer></script>');
   const isHtml = r => (r.headers.get('content-type') || '').includes('text/html');
   // يقدّم الصفحة مع الإضافات. الـETag يتضمن بصمة الإضافات، فالمتصفح يعيد استخدام نسخته المحفوظة (304)
   // فقط إذا لم تتغير الصفحة ولا تعديلات الأسئلة ولا حالة المستخدم — فلا يرى أحد نسخة قديمة من الأسئلة.
@@ -274,6 +279,7 @@ export async function onRequest({ request, env, next }) {
       let ok = false;
       try { ok = !!(await env.DB.prepare("SELECT 1 x FROM subscriptions WHERE student_id=? AND course=? AND status='active' AND end_at>?").bind(st.id, key, iso).first()); } catch (e) { ok = false; }
       if (!ok) { try { const rows = await env.DB.prepare("SELECT package_access FROM subscriptions WHERE student_id=? AND status='active' AND end_at>? AND package_id IS NOT NULL").bind(st.id, iso).all(); ok = (rows.results || []).some(r => packageAllows(r.package_access, key)); } catch (e) { /* Legacy subscriptions remain governed by the direct check above. */ } }
+      if (!ok) { const gf = await giftFor(env, request, iso); if (gf && gf.keys.includes(key)) { head += '<script>document.documentElement.classList.add("bw-acct")</script>'; return serve(ui({ giftEnd: new Date(gf.until).getTime() }) + '<script src="/bw-tracker.js"></script><script src="/bw-sync.js"></script>'); } }
       if (!ok && !anySub && freeOn2) {
         if (slug === 'muhaky warky2' || isPaperX(slug) || (COURSES[slug] && COURSES[slug].locked)) return new Response(null, { status: 302, headers: { location: COURSES[slug] && COURSES[slug].locked ? '/account.html?tab=exams&need=' + encodeURIComponent(slug) : '/waraqi.html?locked=1' } });
         if (slug === 'muhaky warky2' || isPaperX(slug)) return new Response(null, { status: 302, headers: { location: '/waraqi.html?locked=1' } });
@@ -307,6 +313,7 @@ export async function onRequest({ request, env, next }) {
       return serve(ui({}));
     }
     if (st && (st.status !== 'active' || paused)) return go(st.status !== 'active' ? 'blocked' : 'paused', paused ? st.pause_until : '');
+    { const gk = /^muhaky warky[12]$/.test(slug) || isPaperX(slug) ? 'waraqi' : slug, gf = await giftFor(env, request, iso); if (gf && gf.keys.includes(gk)) return serve(ui({ giftEnd: new Date(gf.until).getTime() })); }
     if (st) return freeOn ? free('expired') : go('expired');
     if (tm <= 0) return freeOn ? free('need') : go('need');
     let ts = +cookie(request, 'bw_trial') || 0, warn = 0, fresh = false;
