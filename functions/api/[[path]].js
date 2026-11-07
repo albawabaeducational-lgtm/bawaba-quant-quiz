@@ -494,6 +494,8 @@ const ensureLeadsSchema = async DB => {
     DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS guest_leads_phone ON guest_leads(phone)"),
     DB.prepare("CREATE INDEX IF NOT EXISTS guest_leads_created ON guest_leads(created_at)")
   ]);
+  // مكان المهتم والزائر (من Cloudflare) لمعرفة المناطق المستهدفة
+  for (const c of ['country TEXT', 'region TEXT', 'city TEXT']) { try { await DB.prepare('ALTER TABLE guest_leads ADD COLUMN ' + c).run(); } catch (e) { } try { await DB.prepare('ALTER TABLE trials ADD COLUMN ' + c).run(); } catch (e) { } }
   leadsReady = true;
 };
 const ensureStaffSchema = async DB => {
@@ -606,7 +608,8 @@ export async function onRequest({ request, env, params }) {
     await addFail('lead|' + ip);
     const b = await body(), name = String(b.name || '').trim().slice(0, 80), leadPhone = phone(b.phone), interest = String(b.interest || '').trim().slice(0, 160), source = String(b.source || 'website').slice(0, 40);
     if (leadPhone.length < 9 || leadPhone.length > 15) return J({ error: 'اكتب رقم واتساب صحيحًا' }, 400);
-    await DB.prepare("INSERT INTO guest_leads (name,phone,source,interest,status,created_at) VALUES (?,?,?,?,?,?) ON CONFLICT(phone) DO UPDATE SET name=COALESCE(excluded.name,guest_leads.name),interest=excluded.interest,source=excluded.source").bind(name || null, leadPhone, source, interest, 'new', iso).run();
+    const cf = request.cf || {}, loc = [String(cf.country || '').slice(0, 2) || null, String(cf.region || '').slice(0, 60) || null, String(cf.city || '').slice(0, 60) || null];
+    await DB.prepare("INSERT INTO guest_leads (name,phone,source,interest,status,created_at,country,region,city) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(phone) DO UPDATE SET name=COALESCE(excluded.name,guest_leads.name),interest=excluded.interest,source=excluded.source,country=COALESCE(excluded.country,guest_leads.country),region=COALESCE(excluded.region,guest_leads.region),city=COALESCE(excluded.city,guest_leads.city)").bind(name || null, leadPhone, source, interest, 'new', iso, ...loc).run();
     return J({ ok: 1 });
   }
   // الصفحة الرئيسية تعرض «تفاصيل الدورات» من نفس رسالة واتساب التي تُرسل للمهتمين (تُعدَّل من لوحة التحكم ← الإعدادات)
@@ -2005,6 +2008,19 @@ export async function onRequest({ request, env, params }) {
         one("SELECT COUNT(*) n FROM students WHERE status='active' AND expires_at IS NOT NULL AND expires_at>? AND expires_at<?", iso, new Date(now + 7 * 864e5).toISOString()),
         one('SELECT COUNT(*) n FROM guest_leads WHERE created_at>?', new Date(now - 7 * 864e5).toISOString())
       ]).then(r => ({ window_minutes: 15, active: { guests: r[0].n, teachers: r[1].n, staff: r[2].n, students: r[3].n }, totals: { students: r[4].n, teachers: r[5].n, guests: r[6].n, expiringSoon: r[11].n, newLeads: r[12].n }, topPages: r[7], scoreByPage: r[8], activityByDay: r[9], timeByStudent: r[10] }));
+      // تفاصيل خانات «نظرة عامة»: من هم النشطون الآن، ومن تنتهي اشتراكاتهم، والمهتمون الجدد، وأماكن الزوار
+      await ensureLeadsSchema(DB);
+      const soft = q => q.catch(() => []), wk = new Date(now + 7 * 864e5).toISOString(), m30 = now - 30 * 864e5;
+      jobs.dashX = Promise.all([
+        soft(all('SELECT ip,ua,country,region,city,started_at,last_at FROM trials WHERE last_at>? ORDER BY last_at DESC LIMIT 100', now - 15 * 60000)),
+        soft(all("SELECT s.id,s.name,s.last_seen,(SELECT e.page FROM events e WHERE e.student_id=s.id ORDER BY e.id DESC LIMIT 1) page FROM students s WHERE s.status='active' AND s.last_seen>? ORDER BY s.last_seen DESC LIMIT 100", activeSince)),
+        soft(all("SELECT id,name,role,last_seen FROM staff_users WHERE status='active' AND last_seen>? ORDER BY last_seen DESC", activeSince)),
+        soft(all("SELECT s.id,s.name,s.expires_at end_at,NULL course,NULL package_name,(SELECT a.phone FROM accounts a WHERE a.student_id=s.id) phone FROM students s WHERE s.status='active' AND s.expires_at IS NOT NULL AND s.expires_at>? AND s.expires_at<? ORDER BY s.expires_at", iso, wk)),
+        soft(all("SELECT s.id,s.name,x.end_at,x.course,x.package_name,a.phone FROM subscriptions x JOIN students s ON s.id=x.student_id LEFT JOIN accounts a ON a.student_id=s.id WHERE x.status='active' AND x.end_at>? AND x.end_at<? ORDER BY x.end_at", iso, wk)),
+        soft(all('SELECT id,name,phone,interest,source,status,country,region,city,created_at FROM guest_leads WHERE created_at>? ORDER BY id DESC LIMIT 200', new Date(now - 7 * 864e5).toISOString())),
+        soft(all("SELECT COALESCE(country,'') country,COALESCE(region,'') region,COALESCE(city,'') city,COUNT(*) n FROM trials WHERE started_at>? GROUP BY 1,2,3 ORDER BY n DESC LIMIT 15", m30)),
+        soft(all("SELECT COALESCE(country,'') country,COALESCE(region,'') region,COALESCE(city,'') city,COUNT(*) n FROM guest_leads GROUP BY 1,2,3 ORDER BY n DESC LIMIT 15"))
+      ]).then(r => ({ guests: r[0].map(g => ({ ...g, ip: String(g.ip || '').replace(/(\d+\.\d+)\.\d+\.\d+$/, '$1.*.*').replace(/^([0-9a-f]+:[0-9a-f]+):.*/i, '$1:…') })), students: r[1], staff: r[2], expiring: r[3].concat(r[4]).sort((a, b) => a.end_at < b.end_at ? -1 : 1), leads: r[5], guestPlaces: r[6], leadPlaces: r[7] }));
     }
     if (can('groups.view')) {
       jobs.groups = all('SELECT g.id,g.name,g.description,g.status,g.created_at,COUNT(gm.student_id) members FROM student_groups g LEFT JOIN group_members gm ON gm.group_id=g.id GROUP BY g.id ORDER BY g.id DESC');
@@ -2026,7 +2042,7 @@ export async function onRequest({ request, env, params }) {
     const keys = Object.keys(jobs), vals = await Promise.all(keys.map(k => jobs[k])), R = Object.fromEntries(keys.map((k, i) => [k, vals[i]]));
     if (R.students) out.students = can('students.codes') ? R.students : R.students.map(s => ({ ...s, code: s.code.slice(0, 2) + '******' }));
     if (R.pages) { out.pages = R.pages; out.feed = R.feed; out.pageList = R.pageList.map(r => r.page); }
-    if (R.dash) out.dashboard = R.dash;
+    if (R.dash) { out.dashboard = R.dash; if (R.dashX) { Object.assign(out.dashboard, { list: R.dashX }); out.dashboard.totals.expiringSoon = new Set(R.dashX.expiring.map(x => x.id)).size; } }
     if (R.groups) { out.groups = R.groups; out.groupMembers = R.groupMembers; }
     if (R.leads) { out.leads = R.leads; out.leadStats = { leads: R.leadCount.n, visitors: R.visitors.n }; }
     if (R.bans) { out.bans = R.bans; out.flagged = R.flagged.n; }

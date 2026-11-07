@@ -106,7 +106,14 @@ async function guard(env, request, now, iso) {
   if (ip && await env.DB.prepare('SELECT 1 x FROM ip_bans WHERE ip=? AND until>?').bind(ip, iso).first()) return { deny: 'banned' };
   const fp = await sha(ip + '|' + ua);
   const g = await env.DB.prepare('SELECT * FROM trials WHERE fp=?').bind(fp).first();
-  if (!g) { await env.DB.prepare('INSERT INTO trials (fp,ip,ua,started_at,strikes,last_at) VALUES (?,?,?,?,0,?)').bind(fp, ip, ua.slice(0, 200), now, now).run(); return { start: now, warn: 0 }; }
+  // مكان الزائر (من Cloudflare) لتعرف لوحة التحكم المناطق المهتمة؛ لو لم تُضف الأعمدة بعد نكمل بدونها
+  const cf = request.cf || {}, loc = [String(cf.country || '').slice(0, 2) || null, String(cf.region || '').slice(0, 60) || null, String(cf.city || '').slice(0, 60) || null];
+  if (!g) {
+    try { await env.DB.prepare('INSERT INTO trials (fp,ip,ua,started_at,strikes,last_at,country,region,city) VALUES (?,?,?,?,0,?,?,?,?)').bind(fp, ip, ua.slice(0, 200), now, now, ...loc).run(); }
+    catch (e) { await env.DB.prepare('INSERT INTO trials (fp,ip,ua,started_at,strikes,last_at) VALUES (?,?,?,?,0,?)').bind(fp, ip, ua.slice(0, 200), now, now).run(); }
+    return { start: now, warn: 0 };
+  }
+  if (!g.country && loc[0] && 'country' in g) { try { await env.DB.prepare('UPDATE trials SET country=?,region=?,city=? WHERE fp=?').bind(...loc, fp).run(); } catch (e) { } }
   let strikes = g.strikes;
   if (!INAPP.test(ua) && now - (g.last_at || 0) > 30 * 60000) {
     strikes++;
